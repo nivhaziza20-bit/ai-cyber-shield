@@ -1,0 +1,355 @@
+# AI Cyber Shield — Reusable Composite Action
+#
+# Use from any repository:
+#
+#   - uses: your-org/ai-cyber-shield@v1
+#     with:
+#       url:         https://staging.example.com
+#       fail_on:     high
+#       api_key:     ${{ secrets.AICS_API_KEY }}
+#       api_base_url: ${{ secrets.AICS_API_BASE_URL }}
+#
+# The action:
+#   1. Calls the AI Cyber Shield REST API (or runs locally if no api_base_url)
+#   2. Writes aics-findings.sarif and aics-summary.json to the workspace
+#   3. Sets outputs: total, critical, high, top_cvss, sarif_path, summary_path
+#   4. Fails with exit code 1 if findings exceed fail_on threshold
+
+name: 'AI Cyber Shield Security Scan'
+description: '17-tool DAST pipeline with CVSS 3.1, OWASP 2025, and SARIF 2.1 output'
+author: 'AI Cyber Shield'
+
+branding:
+  icon:  shield
+  color: red
+
+inputs:
+  url:
+    description: 'Target URL to scan (must be http/https)'
+    required: true
+
+  mode:
+    description: 'Scan mode: standard (passive DAST) or pt (active verification)'
+    required: false
+    default: 'standard'
+
+  fail_on:
+    description: 'Minimum severity to fail: critical | high | medium | none'
+    required: false
+    default: 'critical'
+
+  api_key:
+    description: 'AI Cyber Shield API key (X-API-Key header)'
+    required: false
+    default: ''
+
+  api_base_url:
+    description: 'Base URL of deployed AI Cyber Shield API (e.g. https://aics.example.com)'
+    required: false
+    default: ''
+
+  sarif_output:
+    description: 'Path for SARIF output file'
+    required: false
+    default: 'aics-findings.sarif'
+
+  summary_output:
+    description: 'Path for JSON summary output file'
+    required: false
+    default: 'aics-summary.json'
+
+  upload_sarif:
+    description: 'Whether to upload SARIF to GitHub Code Scanning (requires security-events: write permission)'
+    required: false
+    default: 'true'
+
+  timeout_minutes:
+    description: 'Maximum time to wait for scan completion (minutes)'
+    required: false
+    default: '15'
+
+outputs:
+  total:
+    description: 'Total number of findings'
+    value: ${{ steps.parse-results.outputs.total }}
+
+  critical:
+    description: 'Number of CRITICAL findings'
+    value: ${{ steps.parse-results.outputs.critical }}
+
+  high:
+    description: 'Number of HIGH findings'
+    value: ${{ steps.parse-results.outputs.high }}
+
+  top_cvss:
+    description: 'Top CVSS 3.1 score (0.0–10.0)'
+    value: ${{ steps.parse-results.outputs.top_cvss }}
+
+  sarif_path:
+    description: 'Absolute path to SARIF output file'
+    value: ${{ steps.parse-results.outputs.sarif_path }}
+
+  summary_path:
+    description: 'Absolute path to summary JSON file'
+    value: ${{ steps.parse-results.outputs.summary_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        URL="${{ inputs.url }}"
+        if [[ ! "$URL" =~ ^https?:// ]]; then
+          echo "::error::url must start with http:// or https://"
+          exit 1
+        fi
+        FAIL_ON="${{ inputs.fail_on }}"
+        if [[ ! "$FAIL_ON" =~ ^(critical|high|medium|none)$ ]]; then
+          echo "::error::fail_on must be one of: critical, high, medium, none"
+          exit 1
+        fi
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: pip
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pip install httpx requests --quiet
+
+    - name: Run scan (API mode)
+      id: api-scan
+      if: inputs.api_base_url != ''
+      shell: python
+      env:
+        AICS_API_BASE_URL:  ${{ inputs.api_base_url }}
+        AICS_API_KEY:       ${{ inputs.api_key }}
+        AICS_TARGET_URL:    ${{ inputs.url }}
+        AICS_SCAN_MODE:     ${{ inputs.mode }}
+        AICS_TIMEOUT_MINS:  ${{ inputs.timeout_minutes }}
+        AICS_SARIF_OUTPUT:  ${{ inputs.sarif_output }}
+        AICS_SUMMARY_OUTPUT: ${{ inputs.summary_output }}
+      run: |
+        import httpx, json, os, sys, time
+
+        base        = os.environ["AICS_API_BASE_URL"].rstrip("/")
+        key         = os.environ.get("AICS_API_KEY", "")
+        target      = os.environ["AICS_TARGET_URL"]
+        mode        = os.environ.get("AICS_SCAN_MODE", "standard")
+        timeout_min = int(os.environ.get("AICS_TIMEOUT_MINS", "15"))
+        sarif_path  = os.environ.get("AICS_SARIF_OUTPUT", "aics-findings.sarif")
+        summary_path = os.environ.get("AICS_SUMMARY_OUTPUT", "aics-summary.json")
+
+        headers = {"X-API-Key": key, "Content-Type": "application/json"}
+
+        print(f"::group::AI Cyber Shield Scan")
+        print(f"Target:  {target}")
+        print(f"Mode:    {mode}")
+        print(f"API:     {base}")
+
+        # Create scan
+        try:
+            r = httpx.post(f"{base}/api/v1/scans",
+                           json={"url": target, "mode": mode},
+                           headers=headers, timeout=30)
+            r.raise_for_status()
+        except Exception as e:
+            print(f"::error::Failed to create scan: {e}")
+            sys.exit(1)
+
+        scan_id = r.json()["scan_id"]
+        print(f"Scan ID: {scan_id}")
+        print("Waiting for completion...", flush=True)
+
+        max_polls = timeout_min * 12  # poll every 5s
+        for i in range(max_polls):
+            time.sleep(5)
+            try:
+                r = httpx.get(f"{base}/api/v1/scans/{scan_id}",
+                              headers=headers, timeout=10)
+                r.raise_for_status()
+            except Exception as e:
+                print(f"  Poll error (attempt {i+1}): {e}", flush=True)
+                continue
+
+            status = r.json()["status"]
+            elapsed = (i+1)*5
+            print(f"  [{elapsed}s] status={status}", flush=True)
+
+            if status == "complete":
+                break
+            if status == "failed":
+                msg = r.json().get("error_message", "unknown error")
+                print(f"::error::Scan failed: {msg}")
+                sys.exit(1)
+        else:
+            print(f"::error::Scan timed out after {timeout_min} minutes")
+            sys.exit(1)
+
+        # Fetch SARIF
+        sarif_r = httpx.get(f"{base}/api/v1/scans/{scan_id}/sarif",
+                            headers=headers, timeout=15)
+        sarif_r.raise_for_status()
+        with open(sarif_path, "w") as f:
+            f.write(sarif_r.text)
+
+        # Fetch summary
+        sum_r = httpx.get(f"{base}/api/v1/scans/{scan_id}/summary",
+                          headers=headers, timeout=10)
+        sum_r.raise_for_status()
+        with open(summary_path, "w") as f:
+            json.dump(sum_r.json(), f, indent=2)
+
+        summary = sum_r.json()
+        sev = summary.get("by_severity", {})
+        print(f"\nResults:")
+        print(f"  Critical: {sev.get('CRITICAL',0)}")
+        print(f"  High:     {sev.get('HIGH',0)}")
+        print(f"  Medium:   {sev.get('MEDIUM',0)}")
+        print(f"  Low:      {sev.get('LOW',0)}")
+        print(f"  Total:    {summary.get('total',0)}")
+        print(f"  Top CVSS: {summary.get('top_cvss_score',0)}")
+        print("::endgroup::")
+
+    - name: Run scan (local mode)
+      id: local-scan
+      if: inputs.api_base_url == ''
+      shell: python
+      env:
+        AICS_TARGET_URL:    ${{ inputs.url }}
+        AICS_SCAN_MODE:     ${{ inputs.mode }}
+        AICS_SARIF_OUTPUT:  ${{ inputs.sarif_output }}
+        AICS_SUMMARY_OUTPUT: ${{ inputs.summary_output }}
+      run: |
+        import json, os, sys
+
+        target       = os.environ["AICS_TARGET_URL"]
+        mode         = os.environ.get("AICS_SCAN_MODE", "standard")
+        sarif_path   = os.environ.get("AICS_SARIF_OUTPUT", "aics-findings.sarif")
+        summary_path = os.environ.get("AICS_SUMMARY_OUTPUT", "aics-summary.json")
+
+        print(f"::group::AI Cyber Shield Local Scan")
+        print(f"Target: {target}")
+        print(f"Mode:   {mode}")
+
+        try:
+            from url_scanner_pipeline import run_url_security_audit
+            raw = run_url_security_audit(target)
+        except ImportError:
+            print("::warning::url_scanner_pipeline not installed — results will be empty")
+            raw = {"url": target, "overall_score": 0, "overall_grade": "?",
+                   "tool_results": {}, "critical_findings": []}
+
+        if mode == "pt":
+            try:
+                from active_verification_runner import run_active_verification_for_scan
+                raw["av_results"] = run_active_verification_for_scan(
+                    target, raw.get("tool_results", {}))
+            except ImportError:
+                print("::warning::active_verification_runner not available")
+
+        from finding_enricher import enrich_scan_result, findings_summary, to_sarif_json
+
+        av = raw.pop("av_results", None)
+        findings = enrich_scan_result(raw, av_results=av)
+        sarif    = to_sarif_json(findings, target_url=target, scan_id="ci")
+        summary  = findings_summary(findings)
+
+        with open(sarif_path, "w") as f:
+            json.dump(sarif, f, indent=2)
+        with open(summary_path, "w") as f:
+            json.dump(summary, f, indent=2)
+
+        sev = summary.get("by_severity", {})
+        print(f"Results: total={summary['total']} "
+              f"crit={sev.get('CRITICAL',0)} "
+              f"high={sev.get('HIGH',0)} "
+              f"top_cvss={summary['top_cvss_score']}")
+        print("::endgroup::")
+
+    - name: Parse results for outputs
+      id: parse-results
+      shell: python
+      env:
+        AICS_SUMMARY_OUTPUT: ${{ inputs.summary_output }}
+        AICS_SARIF_OUTPUT:   ${{ inputs.sarif_output }}
+        GITHUB_OUTPUT:       ${{ env.GITHUB_OUTPUT }}
+      run: |
+        import json, os
+
+        summary_path = os.environ.get("AICS_SUMMARY_OUTPUT", "aics-summary.json")
+        sarif_path   = os.environ.get("AICS_SARIF_OUTPUT", "aics-findings.sarif")
+        gh_output    = os.environ.get("GITHUB_OUTPUT", "")
+
+        try:
+            summary = json.load(open(summary_path))
+        except Exception:
+            summary = {"total": 0, "by_severity": {}, "top_cvss_score": 0.0}
+
+        sev      = summary.get("by_severity", {})
+        total    = summary.get("total", 0)
+        critical = sev.get("CRITICAL", 0)
+        high     = sev.get("HIGH", 0)
+        top_cvss = summary.get("top_cvss_score", 0.0)
+
+        lines = [
+            f"total={total}",
+            f"critical={critical}",
+            f"high={high}",
+            f"top_cvss={top_cvss}",
+            f"sarif_path={os.path.abspath(sarif_path)}",
+            f"summary_path={os.path.abspath(summary_path)}",
+        ]
+        if gh_output:
+            with open(gh_output, "a") as f:
+                f.write("\n".join(lines) + "\n")
+        else:
+            for line in lines:
+                print(line)
+
+    - name: Upload SARIF to GitHub Code Scanning
+      if: inputs.upload_sarif == 'true' && hashFiles(inputs.sarif_output) != ''
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif_output }}
+        category:   ai-cyber-shield
+
+    - name: Enforce severity threshold
+      shell: python
+      env:
+        AICS_FAIL_ON:        ${{ inputs.fail_on }}
+        AICS_SUMMARY_OUTPUT: ${{ inputs.summary_output }}
+      run: |
+        import json, os, sys
+
+        fail_on      = os.environ.get("AICS_FAIL_ON", "critical").lower()
+        summary_path = os.environ.get("AICS_SUMMARY_OUTPUT", "aics-summary.json")
+
+        if fail_on == "none":
+            sys.exit(0)
+
+        try:
+            summary = json.load(open(summary_path))
+        except Exception:
+            sys.exit(0)
+
+        sev = summary.get("by_severity", {})
+        thresholds = {
+            "critical": ["CRITICAL"],
+            "high":     ["CRITICAL", "HIGH"],
+            "medium":   ["CRITICAL", "HIGH", "MEDIUM"],
+        }
+        fail_sevs = thresholds.get(fail_on, ["CRITICAL"])
+        count     = sum(sev.get(s, 0) for s in fail_sevs)
+
+        if count > 0:
+            print(f"::error title=Security Gate Failed::"
+                  f"AI Cyber Shield found {count} finding(s) at or above "
+                  f"'{fail_on}' severity. Fix before merging.")
+            sys.exit(1)
+        else:
+            print(f"✅ Security gate passed — no {fail_on}+ findings.")

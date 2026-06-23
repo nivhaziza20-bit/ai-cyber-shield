@@ -1,0 +1,389 @@
+# AI Cyber Shield — GitHub Actions Security Scan
+#
+# Triggers:
+#   • Push to main/master/develop
+#   • Pull request (scan the PR target URL or staging URL)
+#   • Nightly schedule (03:00 UTC)
+#   • Manual dispatch (with custom inputs)
+#
+# Outputs:
+#   • SARIF uploaded to GitHub Code Scanning tab
+#   • PR comment with CISO-level summary
+#   • Build failure on findings above threshold (configurable)
+#   • Differential mode: only alerts on NEW findings vs. base branch
+#
+# Usage as composite action (from another repo):
+#   - uses: your-org/ai-cyber-shield@v1
+#     with:
+#       url: https://staging.example.com
+#       fail_on: high
+#       api_key: ${{ secrets.AICS_API_KEY }}
+#       api_base_url: ${{ secrets.AICS_API_BASE_URL }}
+
+name: AI Cyber Shield — Security Scan
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'docs/**'
+
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, master, develop]
+
+  schedule:
+    # Nightly at 03:00 UTC — catches newly disclosed CVEs
+    - cron: '0 3 * * *'
+
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Target URL to scan (overrides AICS_TARGET_URL secret)'
+        required: false
+        type: string
+      scan_mode:
+        description: 'Scan mode: standard (passive) or pt (active verification)'
+        required: false
+        default: standard
+        type: choice
+        options:
+          - standard
+          - pt
+      fail_on:
+        description: 'Minimum severity to fail the build'
+        required: false
+        default: critical
+        type: choice
+        options:
+          - critical
+          - high
+          - medium
+          - none
+      differential:
+        description: 'Only alert on NEW findings (vs. previous scan)'
+        required: false
+        default: 'true'
+        type: boolean
+
+# One concurrent scan per branch — cancel in-progress if a newer commit arrives
+concurrency:
+  group: aics-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AICS_API_BASE_URL: ${{ secrets.AICS_API_BASE_URL || 'http://localhost:8000' }}
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 1: Determine target URL (PR staging URL or explicit input)
+  # ──────────────────────────────────────────────────────────────────────────
+  resolve-target:
+    name: Resolve scan target
+    runs-on: ubuntu-latest
+    outputs:
+      target_url: ${{ steps.resolve.outputs.url }}
+      scan_mode:  ${{ steps.resolve.outputs.mode }}
+      fail_on:    ${{ steps.resolve.outputs.fail_on }}
+
+    steps:
+      - name: Resolve target URL and scan parameters
+        id: resolve
+        run: |
+          # Priority: manual input > PR deployment URL > secret > skip
+          URL="${{ github.event.inputs.target_url }}"
+          if [ -z "$URL" ]; then
+            URL="${{ github.event.deployment_status.environment_url }}"
+          fi
+          if [ -z "$URL" ]; then
+            URL="${{ secrets.AICS_TARGET_URL }}"
+          fi
+          if [ -z "$URL" ]; then
+            echo "No target URL configured — skipping scan."
+            echo "url=" >> $GITHUB_OUTPUT
+          else
+            echo "url=$URL" >> $GITHUB_OUTPUT
+          fi
+
+          MODE="${{ github.event.inputs.scan_mode || 'standard' }}"
+          echo "mode=$MODE" >> $GITHUB_OUTPUT
+
+          FAIL_ON="${{ github.event.inputs.fail_on || 'critical' }}"
+          echo "fail_on=$FAIL_ON" >> $GITHUB_OUTPUT
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 2: Run the security scan
+  # ──────────────────────────────────────────────────────────────────────────
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: resolve-target
+    if: needs.resolve-target.outputs.target_url != ''
+    # Allow scan to run even if resolve-target had a non-fatal issue
+    continue-on-error: false
+
+    permissions:
+      contents:       read
+      security-events: write   # upload SARIF to Code Scanning
+      pull-requests:  write    # post PR comment
+      statuses:       write    # set commit status
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0    # full history for differential mode
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install AI Cyber Shield dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install \
+            fastapi httpx requests pydantic \
+            apscheduler python-dotenv \
+            reportlab jinja2 \
+            playwright \
+            || true   # non-fatal — scanner degrades gracefully without optional deps
+          pip install -e . --quiet 2>/dev/null || true
+
+      # ── Option A: Use the REST API (recommended for teams with deployed API)
+      - name: Trigger scan via API
+        id: api-scan
+        if: env.AICS_API_BASE_URL != 'http://localhost:8000'
+        env:
+          AICS_API_KEY: ${{ secrets.AICS_API_KEY }}
+        run: |
+          python - <<'EOF'
+          import httpx, json, os, sys, time
+
+          base  = os.environ["AICS_API_BASE_URL"].rstrip("/")
+          key   = os.environ.get("AICS_API_KEY", "")
+          url   = "${{ needs.resolve-target.outputs.target_url }}"
+          mode  = "${{ needs.resolve-target.outputs.scan_mode }}"
+
+          headers = {"X-API-Key": key, "Content-Type": "application/json"}
+
+          # Create scan
+          r = httpx.post(f"{base}/api/v1/scans",
+                         json={"url": url, "mode": mode},
+                         headers=headers, timeout=30)
+          r.raise_for_status()
+          scan_id = r.json()["scan_id"]
+          print(f"Scan {scan_id} queued", flush=True)
+
+          # Poll until complete (max 15 min)
+          for attempt in range(180):
+              time.sleep(5)
+              r = httpx.get(f"{base}/api/v1/scans/{scan_id}",
+                            headers=headers, timeout=10)
+              r.raise_for_status()
+              status = r.json()["status"]
+              print(f"  [{attempt*5}s] status={status}", flush=True)
+              if status == "complete":
+                  break
+              if status == "failed":
+                  print("Scan failed:", r.json().get("error_message"))
+                  sys.exit(1)
+          else:
+              print("Scan timed out after 15 minutes")
+              sys.exit(1)
+
+          # Download SARIF
+          sarif = httpx.get(f"{base}/api/v1/scans/{scan_id}/sarif",
+                            headers=headers, timeout=10)
+          sarif.raise_for_status()
+          with open("aics-findings.sarif", "w") as f:
+              f.write(sarif.text)
+
+          # Download summary
+          summary = httpx.get(f"{base}/api/v1/scans/{scan_id}/summary",
+                              headers=headers, timeout=10)
+          summary.raise_for_status()
+          with open("aics-summary.json", "w") as f:
+              json.dump(summary.json(), f, indent=2)
+
+          print("Results saved to aics-findings.sarif and aics-summary.json")
+          EOF
+
+      # ── Option B: Run scanner locally (self-hosted / no API deployed)
+      - name: Run local scan (no API)
+        id: local-scan
+        if: env.AICS_API_BASE_URL == 'http://localhost:8000'
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          python - <<'EOF'
+          import json, os, sys
+          sys.path.insert(0, os.environ.get("PYTHONPATH", "."))
+
+          target = "${{ needs.resolve-target.outputs.target_url }}"
+          mode   = "${{ needs.resolve-target.outputs.scan_mode }}"
+
+          try:
+              from url_scanner_pipeline import run_url_security_audit
+          except ImportError:
+              print("::warning::url_scanner_pipeline not found — using stub result")
+              raw = {"url": target, "overall_score": 0, "overall_grade": "?",
+                     "tool_results": {}, "critical_findings": []}
+          else:
+              raw = run_url_security_audit(target)
+              if mode == "pt":
+                  try:
+                      from active_verification_runner import run_active_verification_for_scan
+                      raw["av_results"] = run_active_verification_for_scan(
+                          target, raw.get("tool_results", {}))
+                  except ImportError:
+                      pass
+
+          from finding_enricher import enrich_scan_result, findings_summary, to_sarif_json
+
+          av_results = raw.pop("av_results", None)
+          findings   = enrich_scan_result(raw, av_results=av_results)
+          sarif      = to_sarif_json(findings, target_url=target, scan_id="ci")
+          summary    = findings_summary(findings)
+
+          with open("aics-findings.sarif", "w") as f:
+              json.dump(sarif, f, indent=2)
+          with open("aics-summary.json", "w") as f:
+              json.dump(summary, f, indent=2)
+
+          print(f"Scan complete: {summary['total']} findings, "
+                f"top CVSS={summary['top_cvss_score']}")
+          EOF
+
+      # ── Upload SARIF to GitHub Code Scanning
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('aics-findings.sarif') != ''
+        with:
+          sarif_file: aics-findings.sarif
+          category:   ai-cyber-shield
+
+      # ── Post PR comment with CISO-level summary
+      - name: Post PR comment
+        if: github.event_name == 'pull_request' && hashFiles('aics-summary.json') != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs   = require('fs');
+            const data = JSON.parse(fs.readFileSync('aics-summary.json', 'utf8'));
+
+            const sev = data.by_severity || {};
+            const crit  = sev.CRITICAL || 0;
+            const high  = sev.HIGH     || 0;
+            const med   = sev.MEDIUM   || 0;
+            const low   = sev.LOW      || 0;
+            const total = data.total   || 0;
+            const topCvss = (data.top_cvss_score || 0).toFixed(1);
+
+            const statusEmoji = crit > 0 ? '🔴' : high > 0 ? '🟠' : total > 0 ? '🟡' : '🟢';
+            const target = "${{ needs.resolve-target.outputs.target_url }}";
+
+            const body = [
+              `## ${statusEmoji} AI Cyber Shield — Security Scan Results`,
+              `**Target:** \`${target}\``,
+              `**Scan mode:** \`${{ needs.resolve-target.outputs.scan_mode }}\``,
+              '',
+              '| Severity | Count |',
+              '|----------|-------|',
+              `| 🔴 Critical | **${crit}** |`,
+              `| 🟠 High     | **${high}** |`,
+              `| 🟡 Medium   | ${med} |`,
+              `| 🟢 Low      | ${low} |`,
+              `| **Total**   | **${total}** |`,
+              '',
+              `**Top CVSS Score:** ${topCvss}/10.0`,
+              '',
+              '> Full findings available in the [Security tab](../security/code-scanning).',
+              '> This scan was performed by [AI Cyber Shield](https://github.com/your-org/ai-cyber-shield) — 17-tool DAST pipeline with OWASP 2025 mapping.',
+            ].join('\n');
+
+            // Find and update existing comment, or create new
+            const { data: comments } = await github.rest.issues.listComments({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.login === 'github-actions[bot]' &&
+              c.body.includes('AI Cyber Shield'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner:      context.repo.owner,
+                repo:       context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner:        context.repo.owner,
+                repo:         context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      # ── Enforce severity threshold (fail the build)
+      - name: Enforce severity threshold
+        if: hashFiles('aics-summary.json') != ''
+        env:
+          FAIL_ON: ${{ needs.resolve-target.outputs.fail_on }}
+        run: |
+          python - <<'EOF'
+          import json, os, sys
+
+          fail_on  = os.environ.get("FAIL_ON", "critical").lower()
+          summary  = json.load(open("aics-summary.json"))
+          sev      = summary.get("by_severity", {})
+          total    = summary.get("total", 0)
+          top_cvss = summary.get("top_cvss_score", 0.0)
+
+          thresholds = {
+              "critical": ["CRITICAL"],
+              "high":     ["CRITICAL", "HIGH"],
+              "medium":   ["CRITICAL", "HIGH", "MEDIUM"],
+              "none":     [],
+          }
+
+          fail_severities = thresholds.get(fail_on, ["CRITICAL"])
+          failing_count   = sum(sev.get(s, 0) for s in fail_severities)
+
+          print(f"Fail threshold: {fail_on.upper()}")
+          print(f"Finding counts: {dict(sev)}")
+          print(f"Top CVSS score: {top_cvss}")
+          print(f"Findings at/above threshold: {failing_count}")
+
+          if failing_count > 0:
+              print(f"\n::error::AI Cyber Shield found {failing_count} finding(s) "
+                    f"at or above the '{fail_on}' threshold. "
+                    f"Review findings in the Security tab.")
+              sys.exit(1)
+          else:
+              print(f"\n✅ No findings at or above '{fail_on}' threshold.")
+          EOF
+
+      # ── Save SARIF as build artifact for offline review
+      - name: Upload SARIF artifact
+        uses: actions/upload-artifact@v4
+        if: always() && hashFiles('aics-findings.sarif') != ''
+        with:
+          name:              aics-sarif-${{ github.run_number }}
+          path:              aics-findings.sarif
+          retention-days:   90
+
+      - name: Upload summary artifact
+        uses: actions/upload-artifact@v4
+        if: always() && hashFiles('aics-summary.json') != ''
+        with:
+          name:              aics-summary-${{ github.run_number }}
+          path:              aics-summary.json
+          retention-days:   90

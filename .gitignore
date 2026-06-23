@@ -1,0 +1,54 @@
+# ─── Secrets — NEVER commit ───────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.cover
+.hypothesis/
+
+# ─── Virtual environments ─────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+.env_dir/
+
+# ─── AI Cyber Shield runtime data ────────────────────────────────────────────
+.cve_cache/
+scan_history.json
+tenants.json
+*.tmp
+reports_output/
+false_positives.json
+scheduled_scans.json
+
+# ─── Playwright ───────────────────────────────────────────────────────────────
+playwright-report/
+test-results/
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
