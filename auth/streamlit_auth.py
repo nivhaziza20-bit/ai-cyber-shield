@@ -10,7 +10,12 @@ import streamlit as st
 
 _log = logging.getLogger(__name__)
 
-QUOTA_HOURLY: int = 2  # free tier: 2 scans per hour per user
+TIER_DAILY_LIMITS: dict[str, int] = {
+    "free":         5,    # 5 scans/day
+    "starter":      50,   # 50 scans/day  — $29/mo
+    "professional": 200,  # 200 scans/day — $99/mo
+    "enterprise":   -1,   # unlimited     — $299/mo
+}
 
 
 @dataclass
@@ -19,11 +24,21 @@ class UserSession:
     email: str
     role: str = "user"
     pt_approved: bool = False
+    subscription_tier: str = "free"
+    stripe_customer_id: str = ""
     access_token: str = ""
 
     @property
     def is_admin(self) -> bool:
         return self.role == "admin"
+
+    @property
+    def daily_limit(self) -> int:
+        return TIER_DAILY_LIMITS.get(self.subscription_tier, 5)
+
+    @property
+    def is_paid(self) -> bool:
+        return self.subscription_tier != "free"
 
 
 def _client():
@@ -84,21 +99,27 @@ def sign_in(email: str, password: str) -> dict:
             return {"error": "Invalid email or password"}
 
         profile_resp = (c.table("profiles")
-                        .select("role,pt_approved")
+                        .select("role,pt_approved,subscription_tier,stripe_customer_id")
                         .eq("id", resp.user.id)
                         .maybe_single()
                         .execute())
         role = "user"
         pt_approved = False
+        tier = "free"
+        stripe_cid = ""
         if profile_resp.data:
             role = profile_resp.data.get("role", "user")
             pt_approved = bool(profile_resp.data.get("pt_approved", False))
+            tier = profile_resp.data.get("subscription_tier", "free")
+            stripe_cid = profile_resp.data.get("stripe_customer_id") or ""
 
         session = UserSession(
             user_id=resp.user.id,
             email=resp.user.email or email,
             role=role,
             pt_approved=pt_approved,
+            subscription_tier=tier,
+            stripe_customer_id=stripe_cid,
             access_token=resp.session.access_token if resp.session else "",
         )
         st.session_state["_user_session"] = session
@@ -154,43 +175,45 @@ def supabase_available() -> bool:
 # ── Quota enforcement ─────────────────────────────────────────────────────────
 
 def check_quota(user: UserSession) -> dict:
-    """Returns {"allowed": True} or {"allowed": False, "resets_in": N minutes}."""
+    """Check daily quota. Returns {"allowed": True/False, "used": N, "limit": N}."""
+    if user.is_admin:
+        return {"allowed": True, "used": 0, "limit": -1}
     c = _client()
     if c is None:
-        return {"allowed": True}
-    if user.is_admin:
-        return {"allowed": True}
-
-    now = datetime.now(timezone.utc)
-    window = now.replace(minute=0, second=0, microsecond=0).isoformat()
-
+        return {"allowed": True, "used": 0, "limit": user.daily_limit}
+    limit = user.daily_limit
     try:
-        resp = (c.table("scan_quotas")
-                .select("scan_count")
-                .eq("user_id", user.user_id)
-                .eq("window_start", window)
+        resp = (c.table("profiles")
+                .select("scans_today,scans_today_reset")
+                .eq("id", user.user_id)
                 .maybe_single()
                 .execute())
-        count = resp.data["scan_count"] if resp.data else 0
-        if count >= QUOTA_HOURLY:
-            next_window = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-            minutes_left = max(1, int((next_window - now).total_seconds() / 60))
-            return {"allowed": False, "resets_in": minutes_left, "used": count}
-        return {"allowed": True, "used": count, "remaining": QUOTA_HOURLY - count}
+        if not resp.data:
+            return {"allowed": True, "used": 0, "limit": limit}
+        from datetime import date
+        reset_date_str = (resp.data.get("scans_today_reset") or "")[:10]
+        today_str = date.today().isoformat()
+        used = resp.data.get("scans_today", 0) if reset_date_str == today_str else 0
+        if limit >= 0 and used >= limit:
+            return {"allowed": False, "used": used, "limit": limit}
+        return {"allowed": True, "used": used, "limit": limit, "remaining": max(0, limit - used)}
     except Exception as exc:
         _log.debug("quota check: %s", exc)
-        return {"allowed": True}
+        return {"allowed": True, "used": 0, "limit": limit}
 
 
 def increment_quota(user: UserSession) -> None:
-    """Atomically increment the current-hour scan counter."""
-    c = _client()
-    if c is None or user.is_admin:
+    """Atomically increment daily scan counter via Supabase RPC."""
+    if user.is_admin:
         return
-    now = datetime.now(timezone.utc)
-    window = now.replace(minute=0, second=0, microsecond=0).isoformat()
+    c = _client()
+    if c is None:
+        return
     try:
-        c.rpc("increment_scan_quota", {"p_user_id": user.user_id, "p_window": window}).execute()
+        c.rpc("check_and_increment_daily_quota", {
+            "p_user_id": user.user_id,
+            "p_limit": user.daily_limit,
+        }).execute()
     except Exception as exc:
         _log.debug("quota increment: %s", exc)
 

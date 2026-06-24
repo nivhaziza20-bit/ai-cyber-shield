@@ -35,8 +35,10 @@ st.set_page_config(
 from auth.streamlit_auth import (
     require_auth, get_current_user, sign_out,
     check_quota, increment_quota, supabase_available,
+    TIER_DAILY_LIMITS,
 )
 from audit_log import log_action
+from billing_ui import show_pricing_page, show_upgrade_prompt, PLANS
 
 if supabase_available():
     _current_user = require_auth()  # shows login page + st.stop() if not authed
@@ -1118,26 +1120,40 @@ def _render_report_sections(report_markdown: str) -> None:
 with st.sidebar:
     # ── User info + logout ────────────────────────────────────────────────────
     if _current_user:
+        # Tier badge colors
+        _tier_colors = {"free":"#475569","starter":"#10b981","professional":"#6366f1","enterprise":"#f59e0b"}
+        _tc = _tier_colors.get(_current_user.subscription_tier, "#475569")
+        _tier_label = _current_user.subscription_tier.title()
         st.markdown(
             f"<div style='padding:10px 0 4px;'>"
-            f"<span style='color:#10b981;font-size:0.8rem;font-family:monospace'>👤 {_current_user.email}</span><br>"
-            f"<span style='color:#475569;font-size:0.7rem'>"
-            f"{'🔑 Admin' if _current_user.is_admin else '⚪ User'}"
-            f"{'  |  ✅ PT Approved' if _current_user.pt_approved else ''}"
-            f"</span></div>",
+            f"<span style='color:#10b981;font-size:0.78rem;font-family:monospace'>👤 {_current_user.email}</span><br>"
+            f"<span style='color:{_tc};font-size:0.72rem;font-weight:700'>● {_tier_label}</span>"
+            f"{'<span style=\"color:#475569;font-size:0.7rem\">  🔑 Admin</span>' if _current_user.is_admin else ''}"
+            f"{'<span style=\"color:#10b981;font-size:0.7rem\">  ✅ PT</span>' if _current_user.pt_approved else ''}"
+            f"</div>",
             unsafe_allow_html=True,
         )
         _quota = check_quota(_current_user)
+        _limit = _quota.get("limit", 5)
+        _used  = _quota.get("used", 0)
         if _quota.get("allowed"):
-            used = _quota.get("used", 0)
-            remaining = _quota.get("remaining", 2)
-            st.progress(used / 2, text=f"Quota: {used}/2 scans this hour")
+            if _limit > 0:
+                st.progress(min(_used / _limit, 1.0), text=f"{_used}/{_limit} scans today")
+            else:
+                st.success("♾ Unlimited scans")
         else:
-            st.error(f"⛔ Quota reached — resets in {_quota.get('resets_in', '?')} min")
-        if st.button("Logout", use_container_width=True, key="logout_btn"):
-            log_action("logout")
-            sign_out()
-            st.rerun()
+            st.error(f"⛔ Daily limit reached ({_limit}/day)")
+
+        col_up, col_lo = st.columns(2)
+        with col_up:
+            if st.button("⬆ Upgrade", use_container_width=True, key="upgrade_btn"):
+                st.session_state["_show_pricing"] = not st.session_state.get("_show_pricing", False)
+                st.rerun()
+        with col_lo:
+            if st.button("Logout", use_container_width=True, key="logout_btn"):
+                log_action("logout")
+                sign_out()
+                st.rerun()
         st.divider()
 
         # ── Admin panel ───────────────────────────────────────────────────────
@@ -1498,6 +1514,14 @@ button[kind="primary"]:hover {
             st.session_state.pop(k, None)
         st.rerun()
 
+    # ── Pricing page overlay ──────────────────────────────────────────────────
+    if st.session_state.get("_show_pricing"):
+        show_pricing_page()
+        if st.button("← Back to Scanner", key="pricing_back_btn"):
+            st.session_state["_show_pricing"] = False
+            st.rerun()
+        st.stop()
+
     # ── Admin panel overlay ───────────────────────────────────────────────────
     if st.session_state.get("_show_admin") and _current_user and _current_user.is_admin:
         from auth.auth_pages import show_admin_panel
@@ -1506,16 +1530,22 @@ button[kind="primary"]:hover {
 
     # ── Scan action ───────────────────────────────────────────────────────────
     if scan_btn:
+        # Prevent double-submit
+        if st.session_state.get("_scanning"):
+            st.warning("⏳ Scan already running — please wait.")
+            st.stop()
+
         # Quota check before every scan
         if _current_user:
             _q = check_quota(_current_user)
             if not _q.get("allowed"):
-                st.error(
-                    f"⛔ Hourly quota reached ({2} scans/hour). "
-                    f"Resets in **{_q.get('resets_in', '?')} minutes**."
-                )
-                log_action("quota_exceeded", target=url_input.strip(), severity="warning")
+                log_action("quota_exceeded", target=url_input.strip(), severity="warning",
+                           details={"tier": _current_user.subscription_tier,
+                                    "limit": _q.get("limit", 0)})
+                show_upgrade_prompt(_current_user.subscription_tier, _q.get("limit", 5))
                 st.stop()
+
+        st.session_state["_scanning"] = True
 
         # Passive Recon: OSINT-only, no API key needed — but demo_mode shows notice
         if scan_mode == "passive":
@@ -1609,6 +1639,7 @@ button[kind="primary"]:hover {
                         logging.getLogger(__name__).error("Passive recon error: %s", _exc, exc_info=True)
                         _ps.update(label="❌ Passive Recon failed", state="error")
                         st.error("Passive Recon failed — check the target URL and try again. Details logged.")
+                st.session_state["_scanning"] = False
                 st.rerun()
         elif demo_mode:
             # Demo mode — only for Standard / PT modes, not passive
@@ -1712,6 +1743,7 @@ button[kind="primary"]:hover {
                                      "Check the target URL and try again.")
                     finally:
                         _limiter.release(target)
+                        st.session_state["_scanning"] = False
                 if "url_report" in st.session_state:
                     st.rerun()
 
