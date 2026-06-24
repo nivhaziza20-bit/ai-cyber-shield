@@ -742,11 +742,16 @@ def enrich_technology(name: str, version: str | None = None) -> list[CVERecord]:
     deduped = _deduplicate(all_records)
     enriched = _enrich_with_epss(deduped)
 
-    # Sort: CRITICAL → HIGH → MEDIUM → LOW, then by EPSS descending
-    _order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "UNKNOWN": 4}
-    enriched.sort(key=lambda r: (_order.get(r.severity, 4), -r.epss_score))
+    # False-positive filtering with confidence scoring
+    from tools.cve_confidence import filter_false_positives
+    kept, removed = filter_false_positives(enriched, name, version)
+    if removed:
+        _log.debug(
+            "cve_feed: filtered %d likely false positives for '%s %s'",
+            len(removed), name, version
+        )
 
-    return enriched
+    return kept
 
 
 def enrich_findings(tech_findings: list[dict]) -> list[dict]:

@@ -89,10 +89,37 @@ def sign_up(email: str, password: str) -> dict:
         return {"error": msg}
 
 
+def _check_brute_force(email: str) -> dict:
+    """Returns {"blocked": True/False, "attempts": N}. Fails open on error."""
+    c = _client()
+    if c is None:
+        return {"blocked": False}
+    try:
+        resp = c.rpc("check_login_attempts", {"p_email": email}).execute()
+        return resp.data if resp.data else {"blocked": False}
+    except Exception:
+        return {"blocked": False}
+
+
+def _record_attempt(email: str, success: bool) -> None:
+    c = _client()
+    if c is None:
+        return
+    try:
+        c.rpc("record_login_attempt", {"p_email": email, "p_success": success}).execute()
+    except Exception:
+        pass
+
+
 def sign_in(email: str, password: str) -> dict:
     c = _client()
     if c is None:
         return {"error": "Supabase not configured"}
+
+    bf = _check_brute_force(email)
+    if bf.get("blocked"):
+        return {"error": "Too many failed attempts — account locked for 15 minutes. Try again later."}
+
     try:
         resp = c.auth.sign_in_with_password({"email": email, "password": password})
         if not resp.user:
@@ -123,9 +150,11 @@ def sign_in(email: str, password: str) -> dict:
             access_token=resp.session.access_token if resp.session else "",
         )
         st.session_state["_user_session"] = session
+        _record_attempt(email, success=True)
         return {"ok": True, "session": session}
     except Exception as exc:
         _log.warning("sign_in error: %s", exc)
+        _record_attempt(email, success=False)
         return {"error": "Invalid email or password"}
 
 

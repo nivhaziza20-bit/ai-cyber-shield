@@ -32,6 +32,14 @@ st.set_page_config(
 # Auth gate — Supabase if configured, else simple APP_PASSWORD fallback
 # ─────────────────────────────────────────────────────────────────────────────
 
+from monitoring import init_sentry, set_user_context
+from legal_pages import show_terms_of_service, show_privacy_policy, show_legal_nav
+from healthcheck import maybe_show_health
+from ip_rate_limit import enforce_rate_limit
+init_sentry()  # Must be before any other imports that might throw
+maybe_show_health()   # ?health=1 → status page, no auth needed
+enforce_rate_limit()  # Block abusive sessions before auth
+
 from auth.streamlit_auth import (
     require_auth, get_current_user, sign_out,
     check_quota, increment_quota, supabase_available,
@@ -39,9 +47,18 @@ from auth.streamlit_auth import (
 )
 from audit_log import log_action
 from billing_ui import show_pricing_page, show_upgrade_prompt, PLANS
+from scan_history import save_scan, show_scan_history_panel
+from notifications import notify_scan_complete, should_notify
+from scheduled_scans_ui import show_scheduled_scans_panel
+from api_docs_ui import show_api_docs
+from team_ui import show_team_panel
+from scan_cache import get_cached_scan, set_cached_scan
+from ip_rate_limit import check_scan_rate
 
 if supabase_available():
     _current_user = require_auth()  # shows login page + st.stop() if not authed
+    if _current_user:
+        set_user_context(_current_user.user_id, _current_user.email)
 else:
     # Fallback: simple APP_PASSWORD
     _app_pw = st.secrets.get("APP_PASSWORD", "")
@@ -683,8 +700,10 @@ _CATEGORY_ICONS: dict[str, str] = {
     "deep_js_crawler":   "⚡",
 }
 
+_DEMO_TARGET_URL = "https://example.com"
+
 _DEMO_URL_REPORT = """
-## Web Security Report — https://demo-site.example.com
+## Web Security Report — https://example.com
 
 ### Overall Grade: C (58/100)
 
@@ -1156,6 +1175,22 @@ with st.sidebar:
                 st.rerun()
         st.divider()
 
+        # ── Scan history ──────────────────────────────────────────────────────
+        if st.button("📊 Scan History", use_container_width=True, key="history_btn"):
+            st.session_state["_show_history"] = not st.session_state.get("_show_history", False)
+
+        # ── Scheduled scans ───────────────────────────────────────────────────
+        if st.button("🕐 Schedules", use_container_width=True, key="schedule_btn"):
+            st.session_state["_show_schedules"] = not st.session_state.get("_show_schedules", False)
+
+        # ── API docs ──────────────────────────────────────────────────────────
+        if st.button("📡 API Docs", use_container_width=True, key="api_docs_btn"):
+            st.session_state["_show_api_docs"] = not st.session_state.get("_show_api_docs", False)
+
+        # ── Team management ───────────────────────────────────────────────────
+        if st.button("👥 Team", use_container_width=True, key="team_btn"):
+            st.session_state["_show_team"] = not st.session_state.get("_show_team", False)
+
         # ── Admin panel ───────────────────────────────────────────────────────
         if _current_user.is_admin:
             if st.button("🔐 Admin Panel", use_container_width=True, key="admin_panel_btn"):
@@ -1354,12 +1389,16 @@ with tab_url:
 
     # ── Target URL input ──────────────────────────────────────────────────────
     st.markdown('<div class="section-label">TARGET URL</div>', unsafe_allow_html=True)
+    _demo_default = _DEMO_TARGET_URL if demo_mode else ""
     url_input = st.text_input(
         "Target URL",
+        value=_demo_default,
         placeholder="https://your-site.com",
         help="Enter the full URL of a website you own or have written permission to scan.",
         label_visibility="collapsed",
     )
+    if demo_mode:
+        st.caption("🎮 Demo Mode: showing a pre-built report for example.com — no real requests sent.")
 
     # ── Authentication (Optional) ─────────────────────────────────────────────
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
@@ -1514,6 +1553,19 @@ button[kind="primary"]:hover {
             st.session_state.pop(k, None)
         st.rerun()
 
+    # ── Legal pages overlay ───────────────────────────────────────────────────
+    _legal = st.session_state.get("_show_legal", "")
+    if _legal == "tos":
+        show_terms_of_service()
+        show_legal_nav()
+        if st.button("← Back", key="tos_back"): st.session_state.pop("_show_legal"); st.rerun()
+        st.stop()
+    elif _legal == "privacy":
+        show_privacy_policy()
+        show_legal_nav()
+        if st.button("← Back", key="privacy_back"): st.session_state.pop("_show_legal"); st.rerun()
+        st.stop()
+
     # ── Pricing page overlay ──────────────────────────────────────────────────
     if st.session_state.get("_show_pricing"):
         show_pricing_page()
@@ -1521,6 +1573,29 @@ button[kind="primary"]:hover {
             st.session_state["_show_pricing"] = False
             st.rerun()
         st.stop()
+
+    # ── Scan history overlay ──────────────────────────────────────────────────
+    if st.session_state.get("_show_history") and _current_user:
+        show_scan_history_panel(_current_user.user_id)
+        st.divider()
+
+    # ── Scheduled scans overlay ───────────────────────────────────────────────
+    if st.session_state.get("_show_schedules") and _current_user:
+        show_scheduled_scans_panel(_current_user, is_paid=_current_user.is_paid)
+        st.divider()
+
+    # ── API docs overlay ──────────────────────────────────────────────────────
+    if st.session_state.get("_show_api_docs"):
+        show_api_docs()
+        if st.button("← Close API Docs", key="api_docs_close"):
+            st.session_state.pop("_show_api_docs"); st.rerun()
+        st.stop()
+
+    # ── Team management overlay ───────────────────────────────────────────────
+    if st.session_state.get("_show_team") and _current_user:
+        is_ent = _current_user.subscription_tier == "enterprise" or _current_user.is_admin
+        show_team_panel(_current_user, is_enterprise=is_ent)
+        st.divider()
 
     # ── Admin panel overlay ───────────────────────────────────────────────────
     if st.session_state.get("_show_admin") and _current_user and _current_user.is_admin:
@@ -1645,7 +1720,7 @@ button[kind="primary"]:hover {
             # Demo mode — only for Standard / PT modes, not passive
             st.session_state["url_report"]      = _DEMO_URL_REPORT
             st.session_state["url_meta"]        = _DEMO_URL_META
-            st.session_state["url_target"]      = "https://demo-site.example.com"
+            st.session_state["url_target"]      = _DEMO_TARGET_URL
             st.session_state["url_last_mode"]   = "demo"
             st.session_state.pop("url_passive_recon", None)
             st.rerun()

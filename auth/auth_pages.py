@@ -138,6 +138,10 @@ def show_auth_page() -> None:
                                    help="Minimum 8 characters including at least one number or symbol")
             r_pass2 = st.text_input("Confirm password", type="password", key="reg_pass2",
                                     placeholder="Repeat password")
+            r_tos = st.checkbox(
+                "I agree to the [Terms of Service](/?legal=tos) and [Privacy Policy](/?legal=privacy)",
+                key="reg_tos",
+            )
             st.markdown("")
 
             if st.button("Create Account →", use_container_width=True, key="reg_btn", type="primary"):
@@ -149,6 +153,8 @@ def show_auth_page() -> None:
                     errors.append(f"Password: {pw_msg}")
                 if r_pass != r_pass2:
                     errors.append("Passwords do not match.")
+                if not r_tos:
+                    errors.append("You must agree to the Terms of Service.")
 
                 if errors:
                     for e in errors:
