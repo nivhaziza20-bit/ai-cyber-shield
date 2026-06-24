@@ -573,10 +573,24 @@ def run_url_security_audit(
     system_prompt, human_prompt = _build_llm_prompt(
         url, tool_results, overall_score, category_scores
     )
-    llm_response = llm.invoke([
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=human_prompt),
-    ])
+    try:
+        llm_response = llm.invoke([
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=human_prompt),
+        ])
+    except Exception as _llm_exc:
+        _msg = str(_llm_exc).lower()
+        if any(k in _msg for k in ("rate", "quota", "429", "limit", "exceeded")):
+            raise RuntimeError(
+                "GROQ_QUOTA_EXCEEDED: Groq API rate limit reached. "
+                "Free tier allows ~30 requests/minute. Please wait a moment and retry."
+            ) from _llm_exc
+        if any(k in _msg for k in ("auth", "401", "403", "api key", "invalid")):
+            raise RuntimeError(
+                "GROQ_AUTH_ERROR: Groq API key is missing or invalid. "
+                "Add a valid GROQ_API_KEY in Streamlit Secrets."
+            ) from _llm_exc
+        raise RuntimeError(f"LLM analysis failed: {_llm_exc}") from _llm_exc
 
     # ── Phase 3: multi-layer vulnerability chain analysis ─────────────────────
     chain_section = ""

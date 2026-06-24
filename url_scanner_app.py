@@ -1517,10 +1517,15 @@ button[kind="primary"]:hover {
                 log_action("quota_exceeded", target=url_input.strip(), severity="warning")
                 st.stop()
 
-        # Passive Recon always runs live — it's OSINT-only, no API key needed
+        # Passive Recon: OSINT-only, no API key needed — but demo_mode shows notice
         if scan_mode == "passive":
+            if demo_mode:
+                st.info(
+                    "ℹ️ **Demo Mode is ON** — Passive Recon always runs live (OSINT only, no payloads sent). "
+                    "It does not use your Groq API key. Disable Demo Mode only affects Standard/PT scans."
+                )
             if not url_input.strip():
-                st.warning("הכנס URL לפני הרצת Passive Recon.")
+                st.warning("Enter a target URL before running Passive Recon.")
             else:
                 target = url_input.strip()
                 if not target.startswith("http"):
@@ -1691,7 +1696,20 @@ button[kind="primary"]:hover {
                     except Exception as exc:
                         logging.getLogger(__name__).error("URL scan error: %s", exc, exc_info=True)
                         status.update(label="❌ Scan failed", state="error")
-                        st.error("Scan failed — check the target URL and try again. Details logged.")
+                        _exc_str = str(exc)
+                        if "GROQ_QUOTA_EXCEEDED" in _exc_str:
+                            st.error(
+                                "⏳ **Groq API quota reached** — the free tier allows ~30 requests/minute. "
+                                "Please wait 1-2 minutes and scan again."
+                            )
+                        elif "GROQ_AUTH_ERROR" in _exc_str:
+                            st.error(
+                                "🔑 **Groq API key missing or invalid** — add a valid `GROQ_API_KEY` "
+                                "in Streamlit → Settings → Secrets, then reboot the app."
+                            )
+                        else:
+                            st.error(f"❌ Scan failed — {_exc_str[:200] if _exc_str else 'Unknown error'}. "
+                                     "Check the target URL and try again.")
                     finally:
                         _limiter.release(target)
                 if "url_report" in st.session_state:
