@@ -53,7 +53,9 @@ def _score_cipher(cipher_name: str) -> tuple[int, str]:
     for marker in _WEAK_CIPHER_MARKERS:
         if marker in upper:
             return 0, f"Weak cipher in use: {cipher_name}"
-    has_pfs = any(m in upper for m in _FORWARD_SECRECY_MARKERS)
+    # TLS 1.3 suites always start with "TLS_" and always have PFS built-in
+    is_tls13 = upper.startswith("TLS_")
+    has_pfs = is_tls13 or any(m in upper for m in _FORWARD_SECRECY_MARKERS)
     if "AES_256" in upper or "AES256" in upper or "CHACHA20" in upper:
         return (100 if has_pfs else 85), "Strong cipher"
     if "AES_128" in upper or "AES128" in upper:

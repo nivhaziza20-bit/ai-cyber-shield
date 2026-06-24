@@ -27,9 +27,9 @@ class TestScoreCipher:
         score, _ = _score_cipher("TLS_CHACHA20_POLY1305_SHA256")
         assert score == 100
 
-    def test_aes128_scores_80(self):
+    def test_aes128_scores_85_with_ecdhe(self):
         score, _ = _score_cipher("ECDHE-RSA-AES128-GCM-SHA256")
-        assert score == 80
+        assert score == 85  # AES-128 + ECDHE (PFS) = 85
 
     def test_rc4_scores_0(self):
         score, reason = _score_cipher("RC4-MD5")
