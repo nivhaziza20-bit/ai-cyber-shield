@@ -29,44 +29,41 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Password gate — checked before anything else renders
+# Auth gate — Supabase if configured, else simple APP_PASSWORD fallback
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _check_password() -> bool:
-    """Return True if the user has entered the correct access password."""
-    app_password = st.secrets.get("APP_PASSWORD", "")
-    if not app_password:
-        return True  # no password configured → open access (dev mode)
+from auth.streamlit_auth import (
+    require_auth, get_current_user, sign_out,
+    check_quota, increment_quota, supabase_available,
+)
+from audit_log import log_action
 
-    if st.session_state.get("_authenticated"):
-        return True
-
-    st.markdown(
-        """
-        <div style="max-width:400px;margin:80px auto 0;text-align:center">
-            <div style="font-size:3rem;margin-bottom:8px">🛡</div>
-            <h2 style="color:#10b981;font-family:monospace;margin-bottom:4px">AI Cyber Shield</h2>
-            <p style="color:#475569;font-size:0.8rem;letter-spacing:0.1em;margin-bottom:32px">
-                AUTHORIZED ACCESS ONLY
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        entered = st.text_input("Access password", type="password", placeholder="Enter password...")
-        if st.button("Enter", use_container_width=True):
-            import hmac
-            if hmac.compare_digest(entered.encode(), app_password.encode()):
-                st.session_state["_authenticated"] = True
-                st.rerun()
-            else:
-                st.error("Incorrect password.")
-    return False
-
-if not _check_password():
-    st.stop()
+if supabase_available():
+    _current_user = require_auth()  # shows login page + st.stop() if not authed
+else:
+    # Fallback: simple APP_PASSWORD
+    _app_pw = st.secrets.get("APP_PASSWORD", "")
+    if _app_pw and not st.session_state.get("_authenticated"):
+        import hmac
+        st.markdown(
+            "<div style='max-width:400px;margin:80px auto 0;text-align:center'>"
+            "<div style='font-size:3rem'>🛡</div>"
+            "<h2 style='color:#10b981;font-family:monospace'>AI Cyber Shield</h2>"
+            "<p style='color:#475569;font-size:0.8rem;letter-spacing:0.1em'>AUTHORIZED ACCESS ONLY</p>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        _, col, _ = st.columns([1, 2, 1])
+        with col:
+            pw = st.text_input("Access password", type="password")
+            if st.button("Enter", use_container_width=True):
+                if hmac.compare_digest(pw.encode(), _app_pw.encode()):
+                    st.session_state["_authenticated"] = True
+                    st.rerun()
+                else:
+                    st.error("Incorrect password.")
+        st.stop()
+    _current_user = None
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Dark security theme CSS
@@ -1119,6 +1116,35 @@ def _render_report_sections(report_markdown: str) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 
 with st.sidebar:
+    # ── User info + logout ────────────────────────────────────────────────────
+    if _current_user:
+        st.markdown(
+            f"<div style='padding:10px 0 4px;'>"
+            f"<span style='color:#10b981;font-size:0.8rem;font-family:monospace'>👤 {_current_user.email}</span><br>"
+            f"<span style='color:#475569;font-size:0.7rem'>"
+            f"{'🔑 Admin' if _current_user.is_admin else '⚪ User'}"
+            f"{'  |  ✅ PT Approved' if _current_user.pt_approved else ''}"
+            f"</span></div>",
+            unsafe_allow_html=True,
+        )
+        _quota = check_quota(_current_user)
+        if _quota.get("allowed"):
+            used = _quota.get("used", 0)
+            remaining = _quota.get("remaining", 2)
+            st.progress(used / 2, text=f"Quota: {used}/2 scans this hour")
+        else:
+            st.error(f"⛔ Quota reached — resets in {_quota.get('resets_in', '?')} min")
+        if st.button("Logout", use_container_width=True, key="logout_btn"):
+            log_action("logout")
+            sign_out()
+            st.rerun()
+        st.divider()
+
+        # ── Admin panel ───────────────────────────────────────────────────────
+        if _current_user.is_admin:
+            if st.button("🔐 Admin Panel", use_container_width=True, key="admin_panel_btn"):
+                st.session_state["_show_admin"] = not st.session_state.get("_show_admin", False)
+
     # ── Demo / Live toggle ────────────────────────────────────────────────────
     st.markdown('<div class="section-label">⚙ Configuration</div>', unsafe_allow_html=True)
     demo_mode = st.toggle("Demo Mode (no API call)", value=True, key="demo_mode_toggle")
@@ -1172,8 +1198,26 @@ with st.sidebar:
         pt_mode_active = False
 
     else:
-        # PT mode requires ownership confirmation + live mode
-        st.markdown("""
+        # PT mode requires admin approval
+        _pt_user_approved = _current_user.pt_approved if _current_user else False
+
+        if not _pt_user_approved:
+            st.markdown("""
+<div class="mode-badge-locked">
+🔒 PT MODE — ADMIN APPROVAL REQUIRED<br>
+<span style="font-weight:400;font-size:0.7rem;color:#fca5a5">
+  Contact admin to request PT Mode access.<br>
+  Your account must be approved before use.
+</span>
+</div>""", unsafe_allow_html=True)
+            if _current_user:
+                if st.button("📩 Request PT Access", use_container_width=True, key="pt_request_btn"):
+                    log_action("pt_request", severity="warning",
+                               details={"email": _current_user.email})
+                    st.success("Request sent — admin will review and approve your account.")
+            pt_mode_active = False
+        else:
+            st.markdown("""
 <div class="mode-badge-pt">
 🔴 ACTIVE PT MODE<br>
 <span style="font-weight:400;color:#fca5a5;font-size:0.72rem">
@@ -1182,32 +1226,30 @@ with st.sidebar:
   Only for authorized targets
 </span>
 </div>""", unsafe_allow_html=True)
-
-        st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
-        st.markdown(
-            '<span style="color:#f59e0b;font-size:0.75rem;font-weight:700;'
-            'font-family:Courier New,monospace">⚠️ LEGAL CONFIRMATION REQUIRED</span>',
-            unsafe_allow_html=True,
-        )
-        pt_owns = st.checkbox(
-            "I confirm: this site is mine, or I hold explicit written permission to actively test it.",
-            value=False,
-            key="pt_owns_confirm",
-        )
-
-        if not pt_owns:
-            st.markdown("""
+            st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
+            st.markdown(
+                '<span style="color:#f59e0b;font-size:0.75rem;font-weight:700;'
+                'font-family:Courier New,monospace">⚠️ LEGAL CONFIRMATION REQUIRED</span>',
+                unsafe_allow_html=True,
+            )
+            pt_owns = st.checkbox(
+                "I confirm: this site is mine, or I hold explicit written permission.",
+                value=False,
+                key="pt_owns_confirm",
+            )
+            if not pt_owns:
+                st.markdown("""
 <div class="mode-badge-locked">
 🔒 PT MODE LOCKED<br>
 <span style="font-weight:400;font-size:0.7rem">Check the box above to unlock.</span>
 </div>""", unsafe_allow_html=True)
-            pt_mode_active = False
-        elif demo_mode:
-            st.warning("Switch to **Live Mode** to use PT Mode.")
-            pt_mode_active = False
-        else:
-            st.success("✅ PT Mode active — live probes will run automatically after each scan")
-            pt_mode_active = True
+                pt_mode_active = False
+            elif demo_mode:
+                st.warning("Switch to **Live Mode** to use PT Mode.")
+                pt_mode_active = False
+            else:
+                st.success("✅ PT Mode active — live probes enabled")
+                pt_mode_active = True
 
     st.divider()
 
@@ -1456,8 +1498,25 @@ button[kind="primary"]:hover {
             st.session_state.pop(k, None)
         st.rerun()
 
+    # ── Admin panel overlay ───────────────────────────────────────────────────
+    if st.session_state.get("_show_admin") and _current_user and _current_user.is_admin:
+        from auth.auth_pages import show_admin_panel
+        show_admin_panel()
+        st.divider()
+
     # ── Scan action ───────────────────────────────────────────────────────────
     if scan_btn:
+        # Quota check before every scan
+        if _current_user:
+            _q = check_quota(_current_user)
+            if not _q.get("allowed"):
+                st.error(
+                    f"⛔ Hourly quota reached ({2} scans/hour). "
+                    f"Resets in **{_q.get('resets_in', '?')} minutes**."
+                )
+                log_action("quota_exceeded", target=url_input.strip(), severity="warning")
+                st.stop()
+
         # Passive Recon always runs live — it's OSINT-only, no API key needed
         if scan_mode == "passive":
             if not url_input.strip():
@@ -1484,6 +1543,10 @@ button[kind="primary"]:hover {
                     "dns_deep":           "🌐 DNS Deep Analysis",
                 }
                 _sev_icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "⚪", "INFO": "✅"}
+
+                log_action("scan_start", target=target, details={"mode": "passive"})
+                if _current_user:
+                    increment_quota(_current_user)
 
                 with st.status("🔵 Running Passive Recon — 15 OSINT tools…", expanded=True) as _ps:
                     st.write(f"🎯 Target: **{target}** — OSINT only, no active probes")

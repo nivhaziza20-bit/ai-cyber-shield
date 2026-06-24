@@ -1,0 +1,267 @@
+"""Supabase Auth wrapper for Streamlit — session, quota, profile."""
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timezone, timedelta
+from typing import Optional
+
+import streamlit as st
+
+_log = logging.getLogger(__name__)
+
+QUOTA_HOURLY: int = 2  # free tier: 2 scans per hour per user
+
+
+@dataclass
+class UserSession:
+    user_id: str
+    email: str
+    role: str = "user"
+    pt_approved: bool = False
+    access_token: str = ""
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == "admin"
+
+
+def _client():
+    """Return a Supabase client or None if not configured."""
+    url = st.secrets.get("SUPABASE_URL", "")
+    key = st.secrets.get("SUPABASE_KEY", "")
+    if not url or not key:
+        return None
+    try:
+        from supabase import create_client
+        return create_client(url, key)
+    except Exception:
+        return None
+
+
+def _authed_client(session: UserSession):
+    """Return a Supabase client authenticated as the given user."""
+    url = st.secrets.get("SUPABASE_URL", "")
+    key = st.secrets.get("SUPABASE_KEY", "")
+    if not url or not key:
+        return None
+    try:
+        from supabase import create_client
+        from gotrue.types import Session as GotrueSession
+        c = create_client(url, key)
+        c.auth.set_session(session.access_token, "")
+        return c
+    except Exception:
+        return _client()
+
+
+# ── Auth operations ───────────────────────────────────────────────────────────
+
+def sign_up(email: str, password: str) -> dict:
+    c = _client()
+    if c is None:
+        return {"error": "Supabase not configured — add SUPABASE_URL and SUPABASE_KEY to Secrets"}
+    try:
+        resp = c.auth.sign_up({"email": email, "password": password})
+        if resp.user:
+            confirm_needed = resp.user.email_confirmed_at is None
+            return {"ok": True, "confirm_required": confirm_needed}
+        return {"error": "Registration failed — please try again"}
+    except Exception as exc:
+        msg = str(exc)
+        if "already registered" in msg.lower() or "already been registered" in msg.lower():
+            return {"error": "This email is already registered"}
+        return {"error": msg}
+
+
+def sign_in(email: str, password: str) -> dict:
+    c = _client()
+    if c is None:
+        return {"error": "Supabase not configured"}
+    try:
+        resp = c.auth.sign_in_with_password({"email": email, "password": password})
+        if not resp.user:
+            return {"error": "Invalid email or password"}
+
+        profile_resp = (c.table("profiles")
+                        .select("role,pt_approved")
+                        .eq("id", resp.user.id)
+                        .maybe_single()
+                        .execute())
+        role = "user"
+        pt_approved = False
+        if profile_resp.data:
+            role = profile_resp.data.get("role", "user")
+            pt_approved = bool(profile_resp.data.get("pt_approved", False))
+
+        session = UserSession(
+            user_id=resp.user.id,
+            email=resp.user.email or email,
+            role=role,
+            pt_approved=pt_approved,
+            access_token=resp.session.access_token if resp.session else "",
+        )
+        st.session_state["_user_session"] = session
+        return {"ok": True, "session": session}
+    except Exception as exc:
+        _log.warning("sign_in error: %s", exc)
+        return {"error": "Invalid email or password"}
+
+
+def sign_out() -> None:
+    c = _client()
+    if c:
+        try:
+            c.auth.sign_out()
+        except Exception:
+            pass
+    st.session_state.pop("_user_session", None)
+
+
+def request_password_reset(email: str) -> dict:
+    c = _client()
+    if c is None:
+        return {"error": "Supabase not configured"}
+    try:
+        c.auth.reset_password_email(email)
+        return {"ok": True}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+# ── Session helpers ───────────────────────────────────────────────────────────
+
+def get_current_user() -> Optional[UserSession]:
+    return st.session_state.get("_user_session")
+
+
+def require_auth() -> UserSession:
+    """Call at top of page; stops rendering and shows auth UI if not logged in."""
+    user = get_current_user()
+    if user is None:
+        from auth.auth_pages import show_auth_page
+        show_auth_page()
+        st.stop()
+    return user
+
+
+def supabase_available() -> bool:
+    url = st.secrets.get("SUPABASE_URL", "")
+    key = st.secrets.get("SUPABASE_KEY", "")
+    return bool(url and key)
+
+
+# ── Quota enforcement ─────────────────────────────────────────────────────────
+
+def check_quota(user: UserSession) -> dict:
+    """Returns {"allowed": True} or {"allowed": False, "resets_in": N minutes}."""
+    c = _client()
+    if c is None:
+        return {"allowed": True}
+    if user.is_admin:
+        return {"allowed": True}
+
+    now = datetime.now(timezone.utc)
+    window = now.replace(minute=0, second=0, microsecond=0).isoformat()
+
+    try:
+        resp = (c.table("scan_quotas")
+                .select("scan_count")
+                .eq("user_id", user.user_id)
+                .eq("window_start", window)
+                .maybe_single()
+                .execute())
+        count = resp.data["scan_count"] if resp.data else 0
+        if count >= QUOTA_HOURLY:
+            next_window = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+            minutes_left = max(1, int((next_window - now).total_seconds() / 60))
+            return {"allowed": False, "resets_in": minutes_left, "used": count}
+        return {"allowed": True, "used": count, "remaining": QUOTA_HOURLY - count}
+    except Exception as exc:
+        _log.debug("quota check: %s", exc)
+        return {"allowed": True}
+
+
+def increment_quota(user: UserSession) -> None:
+    """Atomically increment the current-hour scan counter."""
+    c = _client()
+    if c is None or user.is_admin:
+        return
+    now = datetime.now(timezone.utc)
+    window = now.replace(minute=0, second=0, microsecond=0).isoformat()
+    try:
+        c.rpc("increment_scan_quota", {"p_user_id": user.user_id, "p_window": window}).execute()
+    except Exception as exc:
+        _log.debug("quota increment: %s", exc)
+
+
+# ── Admin helpers ─────────────────────────────────────────────────────────────
+
+def fetch_audit_logs(limit: int = 200) -> list[dict]:
+    """Admin only — fetch recent audit logs."""
+    user = get_current_user()
+    if not user or not user.is_admin:
+        return []
+    c = _authed_client(user)
+    if c is None:
+        return []
+    try:
+        resp = (c.table("audit_logs")
+                .select("*")
+                .order("created_at", desc=True)
+                .limit(limit)
+                .execute())
+        return resp.data or []
+    except Exception as exc:
+        _log.warning("fetch_audit_logs: %s", exc)
+        return []
+
+
+def fetch_all_users() -> list[dict]:
+    """Admin only — fetch all user profiles."""
+    user = get_current_user()
+    if not user or not user.is_admin:
+        return []
+    c = _authed_client(user)
+    if c is None:
+        return []
+    try:
+        resp = c.table("profiles").select("*").order("created_at", desc=True).execute()
+        return resp.data or []
+    except Exception as exc:
+        _log.warning("fetch_all_users: %s", exc)
+        return []
+
+
+def approve_pt_mode(target_user_id: str, admin: UserSession) -> bool:
+    """Admin: grant PT mode to a user."""
+    c = _authed_client(admin)
+    if c is None:
+        return False
+    try:
+        c.table("profiles").update({
+            "pt_approved": True,
+            "pt_approved_by": admin.email,
+            "pt_approved_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", target_user_id).execute()
+        return True
+    except Exception as exc:
+        _log.warning("approve_pt_mode: %s", exc)
+        return False
+
+
+def revoke_pt_mode(target_user_id: str, admin: UserSession) -> bool:
+    """Admin: revoke PT mode from a user."""
+    c = _authed_client(admin)
+    if c is None:
+        return False
+    try:
+        c.table("profiles").update({
+            "pt_approved": False,
+            "pt_approved_by": None,
+            "pt_approved_at": None,
+        }).eq("id", target_user_id).execute()
+        return True
+    except Exception as exc:
+        _log.warning("revoke_pt_mode: %s", exc)
+        return False
