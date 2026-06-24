@@ -38,6 +38,11 @@ reports_output/
 false_positives.json
 scheduled_scans.json
 
+# ─── JavaScript / Node ────────────────────────────────────────────────────────
+node_modules/
+.next/
+.nuxt/
+
 # ─── Playwright ───────────────────────────────────────────────────────────────
 playwright-report/
 test-results/
