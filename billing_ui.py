@@ -29,8 +29,8 @@ PLANS = [
     {
         "key":        "starter",
         "name":       "Starter",
-        "price":      29,
-        "price_label":"$29 / month",
+        "price":      20,
+        "price_label":"€20 / month",
         "scans":      "50 scans / day",
         "features":   [
             "✅ Everything in Free",
@@ -52,8 +52,8 @@ PLANS = [
     {
         "key":        "professional",
         "name":       "Professional",
-        "price":      99,
-        "price_label":"$99 / month",
+        "price":      50,
+        "price_label":"€50 / month",
         "scans":      "200 scans / day",
         "badge":      "Most Popular",
         "features":   [
@@ -76,8 +76,8 @@ PLANS = [
     {
         "key":        "enterprise",
         "name":       "Enterprise",
-        "price":      299,
-        "price_label":"$299 / month",
+        "price":      120,
+        "price_label":"€120 / month",
         "scans":      "Unlimited scans",
         "features":   [
             "✅ Everything in Professional",
