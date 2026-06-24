@@ -29,6 +29,46 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Password gate — checked before anything else renders
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _check_password() -> bool:
+    """Return True if the user has entered the correct access password."""
+    app_password = st.secrets.get("APP_PASSWORD", "")
+    if not app_password:
+        return True  # no password configured → open access (dev mode)
+
+    if st.session_state.get("_authenticated"):
+        return True
+
+    st.markdown(
+        """
+        <div style="max-width:400px;margin:80px auto 0;text-align:center">
+            <div style="font-size:3rem;margin-bottom:8px">🛡</div>
+            <h2 style="color:#10b981;font-family:monospace;margin-bottom:4px">AI Cyber Shield</h2>
+            <p style="color:#475569;font-size:0.8rem;letter-spacing:0.1em;margin-bottom:32px">
+                AUTHORIZED ACCESS ONLY
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        entered = st.text_input("Access password", type="password", placeholder="Enter password...")
+        if st.button("Enter", use_container_width=True):
+            import hmac
+            if hmac.compare_digest(entered.encode(), app_password.encode()):
+                st.session_state["_authenticated"] = True
+                st.rerun()
+            else:
+                st.error("Incorrect password.")
+    return False
+
+if not _check_password():
+    st.stop()
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Dark security theme CSS
 # ─────────────────────────────────────────────────────────────────────────────
 
