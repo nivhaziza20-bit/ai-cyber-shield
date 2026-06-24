@@ -1143,12 +1143,13 @@ with st.sidebar:
         _tier_colors = {"free":"#475569","starter":"#10b981","professional":"#6366f1","enterprise":"#f59e0b"}
         _tc = _tier_colors.get(_current_user.subscription_tier, "#475569")
         _tier_label = _current_user.subscription_tier.title()
+        _admin_badge = '<span style="color:#475569;font-size:0.7rem">  🔑 Admin</span>' if _current_user.is_admin else ''
+        _pt_badge    = '<span style="color:#10b981;font-size:0.7rem">  ✅ PT</span>' if _current_user.pt_approved else ''
         st.markdown(
             f"<div style='padding:10px 0 4px;'>"
             f"<span style='color:#10b981;font-size:0.78rem;font-family:monospace'>👤 {_current_user.email}</span><br>"
             f"<span style='color:{_tc};font-size:0.72rem;font-weight:700'>● {_tier_label}</span>"
-            f"{'<span style=\"color:#475569;font-size:0.7rem\">  🔑 Admin</span>' if _current_user.is_admin else ''}"
-            f"{'<span style=\"color:#10b981;font-size:0.7rem\">  ✅ PT</span>' if _current_user.pt_approved else ''}"
+            f"{_admin_badge}{_pt_badge}"
             f"</div>",
             unsafe_allow_html=True,
         )
