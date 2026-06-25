@@ -370,7 +370,7 @@ _PRICING_HTML = """
             <div class="lp-plan-tagline">Always free, no card needed</div>
             <ul class="lp-plan-features">
                 <li>Passive scan — 15 OSINT tools</li>
-                <li>2 scans / day</li>
+                <li>5 scans / day</li>
                 <li>Overall security score A–F</li>
                 <li class="locked">Active scanning</li>
                 <li class="locked">CVE feed + EPSS</li>
@@ -384,7 +384,7 @@ _PRICING_HTML = """
             <div class="lp-plan-tagline">Full scan suite for developers</div>
             <ul class="lp-plan-features">
                 <li>Full scan — all 17 tools</li>
-                <li>20 scans / day</li>
+                <li>50 scans / day</li>
                 <li>CVE feed + EPSS scoring</li>
                 <li>Scan history &amp; comparison</li>
                 <li>Scheduled scans</li>
@@ -399,7 +399,7 @@ _PRICING_HTML = """
             <div class="lp-plan-tagline">For security engineers &amp; consultants</div>
             <ul class="lp-plan-features">
                 <li>Everything in Starter</li>
-                <li>50 scans / day</li>
+                <li>200 scans / day</li>
                 <li>PT mode + Nuclei templates</li>
                 <li>Active verification (8 vuln classes)</li>
                 <li>REST API access</li>
