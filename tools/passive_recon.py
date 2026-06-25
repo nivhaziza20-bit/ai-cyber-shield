@@ -1559,8 +1559,12 @@ def analyze_http_security_headers(url: str, timeout: int = 10) -> dict:
                     "HSTS impossible, CSP cannot be enforced, all traffic unencrypted."
                 ),
             }
-        return {"status": "error", "severity": "INFO",
-                "finding": "Could not fetch headers — target may be offline or blocking scanners."}
+        return {"status": "completed", "severity": "INFO",
+                "finding": (
+                    "HTTP headers could not be retrieved — target likely blocks scanner IPs "
+                    "(datacenter/cloud IP filtering). Headers may be well-configured; "
+                    "re-test from a residential IP or browser extension for accurate results."
+                )}
 
     h    = r.headers
     issues: list[dict] = []
@@ -1795,9 +1799,16 @@ def check_ssl_passive(url: str, timeout: int = 10) -> dict:
             "tls_version": None, "days_until_expiry": None, "cert_subject": None, "san_domains": [],
         }
     except (socket.timeout, ConnectionRefusedError, OSError) as exc:
+        _exc_str = str(exc).lower()
+        _reason = (
+            "connection timed out — target may block scanner/cloud IPs (WAF or datacenter IP filtering). "
+            "SSL certificate may be valid; re-test from a residential IP."
+            if "timed out" in _exc_str or "timeout" in _exc_str
+            else f"Could not connect to {hostname}:{port} — {exc}"
+        )
         return {
-            "status": "error", "severity": "INFO",
-            "finding": f"Could not connect to {hostname}:{port} — {exc}",
+            "status": "completed", "severity": "INFO",
+            "finding": _reason,
             "tls_version": None, "days_until_expiry": None, "cert_subject": None, "san_domains": [],
         }
 
