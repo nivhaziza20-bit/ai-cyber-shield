@@ -22,7 +22,9 @@ _PW_MIN = 8
 _LANDING_CSS = """
 <style>
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding-top: 0 !important; padding-bottom: 0 !important; }
+[data-testid="stAppViewContainer"] { background: #060b14; }
+[data-testid="stHeader"] { background: transparent; }
+.block-container { padding-top: 0 !important; padding-bottom: 0 !important; background: #060b14; }
 
 /* ── Brand ──────────────────────────────────────────────── */
 .lp-brand { display:flex; align-items:center; gap:14px; margin-bottom:24px; margin-top:8px; }
@@ -49,20 +51,20 @@ _LANDING_CSS = """
 .lp-feat { background:#0d1421; border:1px solid #1e2d3d; border-radius:10px; padding:15px 15px 14px; transition:border-color 0.18s,background 0.18s; }
 .lp-feat:hover { border-color:#10b981; background:#0a1e16; }
 .lp-feat-icon { color:#10b981; margin-bottom:8px; display:block; line-height:0; }
-.lp-feat-name { font-size:0.83rem; font-weight:700; color:#e2e8f0; margin-bottom:4px; }
-.lp-feat-desc { font-size:0.74rem; color:#64748b; line-height:1.5; }
+.lp-feat-name { font-size:0.86rem; font-weight:700; color:#e2e8f0; margin-bottom:4px; }
+.lp-feat-desc { font-size:0.8rem; color:#64748b; line-height:1.55; }
 
 /* ── Free badge ─────────────────────────────────────────── */
 .lp-free-badge { display:inline-flex; align-items:center; gap:8px; background:#0a2018; border:1px solid #10b981; border-radius:8px; padding:9px 15px; font-size:0.8rem; color:#86efac; margin-bottom:8px; }
 .lp-free-badge strong { color:#34d399; }
 
-/* ── Auth card ──────────────────────────────────────────── */
-.auth-card-top { background:#0d1421; border:1px solid #1e2d3d; border-bottom:none; border-radius:16px 16px 0 0; padding:26px 28px 20px; }
+/* ── Auth card (floating card effect) ───────────────────── */
+.auth-card-top { background:#0d1421; border:1px solid #2a3d52; border-bottom:none; border-radius:16px 16px 0 0; padding:26px 28px 20px; box-shadow:0 4px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(16,185,129,0.06); }
 .auth-card-brand { font-size:1.5rem; margin-bottom:2px; }
 .auth-card-title { font-size:1.1rem; font-weight:700; color:#f1f5f9; margin-bottom:3px; }
 .auth-card-sub { font-size:0.75rem; color:#64748b; }
 .auth-notice { background:#0f2027; border:1px solid #10b981; border-radius:8px; padding:10px 14px; font-size:0.79rem; color:#86efac; margin-bottom:16px; line-height:1.55; }
-.auth-card-footer { background:#0d1421; border:1px solid #1e2d3d; border-top:none; border-radius:0 0 16px 16px; padding:12px 28px 22px; text-align:center; color:#334155; font-size:0.69rem; line-height:1.75; }
+.auth-card-footer { background:#0d1421; border:1px solid #2a3d52; border-top:none; border-radius:0 0 16px 16px; padding:12px 28px 22px; text-align:center; color:#334155; font-size:0.69rem; line-height:1.75; box-shadow:0 8px 32px rgba(0,0,0,0.5); }
 </style>
 """
 
