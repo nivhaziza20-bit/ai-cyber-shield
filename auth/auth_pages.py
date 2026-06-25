@@ -359,68 +359,90 @@ _FEATURES_HTML = """
 """
 
 _PRICING_HTML = """
-<div style="margin-top: 20px; padding-top: 32px; border-top: 1px solid #1f2d3d;">
-    <div class="lp-pricing-title">Simple pricing</div>
-    <div class="lp-pricing-h">Start free. Scale when ready.</div>
-
-    <div class="lp-plans">
-        <div class="lp-plan">
-            <div class="lp-plan-name">Free</div>
-            <div class="lp-plan-price">€0</div>
-            <div class="lp-plan-tagline">Always free, no card needed</div>
-            <ul class="lp-plan-features">
-                <li>Passive scan — 15 OSINT tools</li>
-                <li>5 scans / day</li>
-                <li>Overall security score A–F</li>
-                <li class="locked">Active scanning</li>
-                <li class="locked">CVE feed + EPSS</li>
-                <li class="locked">Scan history</li>
-            </ul>
-        </div>
-
-        <div class="lp-plan">
-            <div class="lp-plan-name">Starter</div>
-            <div class="lp-plan-price">€20<sub>/mo</sub></div>
-            <div class="lp-plan-tagline">Full scan suite for developers</div>
-            <ul class="lp-plan-features">
-                <li>Full scan — all 17 tools</li>
-                <li>50 scans / day</li>
-                <li>CVE feed + EPSS scoring</li>
-                <li>Scan history &amp; comparison</li>
-                <li>Scheduled scans</li>
-                <li class="locked">PT mode &amp; active probes</li>
-            </ul>
-        </div>
-
-        <div class="lp-plan lp-plan-pro">
-            <div class="lp-plan-badge">Most popular</div>
-            <div class="lp-plan-name" style="color:#86efac">Professional</div>
-            <div class="lp-plan-price" style="color:#34d399">€50<sub>/mo</sub></div>
-            <div class="lp-plan-tagline">For security engineers &amp; consultants</div>
-            <ul class="lp-plan-features">
-                <li>Everything in Starter</li>
-                <li>200 scans / day</li>
-                <li>PT mode + Nuclei templates</li>
-                <li>Active verification (8 vuln classes)</li>
-                <li>REST API access</li>
-                <li>GitHub Actions integration</li>
-            </ul>
-        </div>
-
-        <div class="lp-plan">
-            <div class="lp-plan-name">Enterprise</div>
-            <div class="lp-plan-price">€120<sub>/mo</sub></div>
-            <div class="lp-plan-tagline">For teams &amp; security departments</div>
-            <ul class="lp-plan-features">
-                <li>Unlimited scans</li>
-                <li>Team management + roles</li>
-                <li>Priority support</li>
-                <li>Custom scan schedules</li>
-                <li>JIRA / Teams / Slack export</li>
-                <li>SARIF + PDF reports</li>
-            </ul>
-        </div>
+<style>
+.aics-pricing{padding:48px 0 20px;border-top:1px solid #1f2d3d;margin-top:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.aics-pricing-eye{text-align:center;color:#10b981;font-size:.7rem;text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px}
+.aics-pricing-h{text-align:center;font-size:1.9rem;font-weight:800;color:#f8fafc;margin-bottom:6px}
+.aics-pricing-sub{text-align:center;color:#64748b;font-size:.88rem;margin-bottom:36px}
+.aics-plans{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px}
+.aics-plan{background:#0d1117;border:1px solid #1f2d3d;border-radius:14px;padding:24px 20px;position:relative}
+.aics-plan-pro{border-color:#10b981;background:linear-gradient(145deg,#0a1e16,#0d1117);box-shadow:0 0 28px rgba(16,185,129,.13)}
+.aics-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#10b981;color:#000;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:3px 12px;border-radius:99px;white-space:nowrap}
+.aics-tier{font-size:.7rem;text-transform:uppercase;letter-spacing:.15em;color:#64748b;margin-bottom:10px}
+.aics-price{font-size:2.1rem;font-weight:800;color:#f8fafc;line-height:1;margin-bottom:4px}
+.aics-price sub{font-size:.8rem;font-weight:400;color:#64748b;vertical-align:baseline}
+.aics-tagline{font-size:.72rem;color:#475569;margin-bottom:18px;min-height:30px}
+.aics-features{list-style:none;padding:0;margin:0 0 20px}
+.aics-features li{font-size:.74rem;color:#94a3b8;padding:4px 0;display:flex;gap:8px;align-items:flex-start}
+.aics-features li::before{content:"✓";color:#10b981;font-weight:700;flex-shrink:0}
+.aics-features li.off{color:#334155}
+.aics-features li.off::before{content:"—";color:#334155}
+.aics-cta{display:block;width:100%;padding:9px 0;border-radius:8px;font-size:.8rem;font-weight:700;text-align:center;border:1px solid #1f2d3d;background:transparent;color:#64748b;cursor:default}
+.aics-cta-pro{background:#10b981;color:#000;border-color:#10b981}
+</style>
+<div class="aics-pricing">
+  <div class="aics-pricing-eye">Simple pricing</div>
+  <div class="aics-pricing-h">Start free. Scale when ready.</div>
+  <div class="aics-pricing-sub">No credit card required for the free tier. Cancel anytime.</div>
+  <div class="aics-plans">
+    <div class="aics-plan">
+      <div class="aics-tier">Free</div>
+      <div class="aics-price">€0</div>
+      <div class="aics-tagline">Always free, no card needed</div>
+      <ul class="aics-features">
+        <li>Passive scan — 15 OSINT tools</li>
+        <li>5 scans / day</li>
+        <li>Security score A–F</li>
+        <li class="off">Active scanning</li>
+        <li class="off">CVE feed + EPSS</li>
+        <li class="off">Scan history</li>
+      </ul>
+      <span class="aics-cta">Current plan</span>
     </div>
+    <div class="aics-plan">
+      <div class="aics-tier">Starter</div>
+      <div class="aics-price">€20<sub>/mo</sub></div>
+      <div class="aics-tagline">Full scan suite for developers</div>
+      <ul class="aics-features">
+        <li>All 17 scan tools</li>
+        <li>50 scans / day</li>
+        <li>CVE feed + EPSS scoring</li>
+        <li>Scan history &amp; comparison</li>
+        <li>Scheduled scans</li>
+        <li class="off">PT mode &amp; active probes</li>
+      </ul>
+      <span class="aics-cta">Upgrade</span>
+    </div>
+    <div class="aics-plan aics-plan-pro">
+      <div class="aics-badge">Most popular</div>
+      <div class="aics-tier" style="color:#86efac">Professional</div>
+      <div class="aics-price" style="color:#34d399">€50<sub>/mo</sub></div>
+      <div class="aics-tagline">For security engineers &amp; consultants</div>
+      <ul class="aics-features">
+        <li>Everything in Starter</li>
+        <li>200 scans / day</li>
+        <li>PT mode + Nuclei templates</li>
+        <li>Active verification (8 vuln classes)</li>
+        <li>REST API access</li>
+        <li>GitHub Actions integration</li>
+      </ul>
+      <span class="aics-cta aics-cta-pro">Upgrade</span>
+    </div>
+    <div class="aics-plan">
+      <div class="aics-tier">Enterprise</div>
+      <div class="aics-price">€120<sub>/mo</sub></div>
+      <div class="aics-tagline">For teams &amp; security departments</div>
+      <ul class="aics-features">
+        <li>Unlimited scans</li>
+        <li>Team management + roles</li>
+        <li>Priority support</li>
+        <li>Custom scan schedules</li>
+        <li>JIRA / Teams / Slack export</li>
+        <li>SARIF + PDF reports</li>
+      </ul>
+      <span class="aics-cta">Contact us</span>
+    </div>
+  </div>
 </div>
 """
 
@@ -606,8 +628,8 @@ def show_auth_page() -> None:
         st.markdown(_AUTH_CARD_FOOTER, unsafe_allow_html=True)
 
     # ── FULL WIDTH: pricing + footer ──────────────────────────────────────────
-    st.markdown(_PRICING_HTML, unsafe_allow_html=True)
-    st.markdown(_FOOTER_HTML, unsafe_allow_html=True)
+    st.html(_PRICING_HTML)
+    st.html(_FOOTER_HTML)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
