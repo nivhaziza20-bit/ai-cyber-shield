@@ -72,6 +72,7 @@ anyio>=4.4.0
 # pytest>=8.2.0
 # pytest-asyncio>=0.23.0
 
-# ── Playwright (headless browser — requires: playwright install chromium) ──────
-# On Streamlit Cloud: add to packages.txt instead
-# playwright>=1.45.0
+# ── Playwright (headless browser for deep_js_crawler.py) ─────────────────────
+# System deps are in packages.txt.
+# First use auto-downloads Chromium (~100 MB) via _ensure_playwright_browser().
+playwright>=1.45.0

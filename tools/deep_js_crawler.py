@@ -49,6 +49,49 @@ try:
 except ImportError:
     _HAS_PLAYWRIGHT = False
 
+
+def _ensure_playwright_browser() -> None:
+    """
+    Auto-download the Playwright Chromium browser on Streamlit Cloud (or any
+    environment where playwright is installed but the browser has not yet been
+    fetched).  This is a one-shot download (~100 MB); subsequent calls are
+    instant because the binary already exists.
+
+    Skips silently when:
+      - Playwright is not installed (no playwright package).
+      - The browser binary is already present.
+      - We can't determine the path (older playwright builds).
+    """
+    if not _HAS_PLAYWRIGHT:
+        return
+
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    try:
+        # playwright.sync_api is the lightest way to resolve the executable path
+        from playwright.sync_api import sync_playwright  # type: ignore[import]
+        with sync_playwright() as pw:
+            exec_path = Path(pw.chromium.executable_path)
+        if exec_path.exists():
+            return  # already installed — nothing to do
+    except Exception:
+        pass
+
+    logger.info("Playwright Chromium not found — running 'playwright install chromium' (first-run download ~100 MB)…")
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "playwright", "install", "chromium"],
+            capture_output=True, text=True, timeout=180,
+        )
+        if result.returncode == 0:
+            logger.info("Playwright Chromium installed successfully.")
+        else:
+            logger.warning("playwright install chromium failed: %s", result.stderr[:400])
+    except Exception as exc:
+        logger.warning("Could not install Playwright Chromium automatically: %s", exc)
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Capability 4 — secret pattern registry
 # ─────────────────────────────────────────────────────────────────────────────
@@ -472,6 +515,8 @@ class DeepJsCrawler:
                 "playwright is not installed. "
                 "pip install playwright && playwright install chromium"
             )
+
+        _ensure_playwright_browser()
 
         async with async_playwright() as pw:
             browser: Browser = await pw.chromium.launch(

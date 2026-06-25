@@ -137,16 +137,27 @@ async def create_scan(
         notify_webhook_url=req.notify_webhook_url,
     )
 
-    background_tasks.add_task(
-        _execute_scan,
-        state.scan_id,
-        req.url,
-        req.mode.value,
-        store,
-        scanner_fn,
-        webhook_sender,
-        req.notify_webhook_url,
-    )
+    # ── Dispatch: Celery (distributed) or BackgroundTasks (single-process) ────
+    from api.worker import is_celery_available  # noqa: PLC0415
+    if is_celery_available():
+        from api.tasks import run_scan_task  # noqa: PLC0415
+        run_scan_task.apply_async(
+            args=[state.scan_id, req.url, req.mode.value, req.notify_webhook_url],
+            queue="aics_scans",
+        )
+        _log.info("Scan %s dispatched to Celery queue", state.scan_id)
+    else:
+        background_tasks.add_task(
+            _execute_scan,
+            state.scan_id,
+            req.url,
+            req.mode.value,
+            store,
+            scanner_fn,
+            webhook_sender,
+            req.notify_webhook_url,
+        )
+        _log.info("Scan %s dispatched to BackgroundTasks (Celery not configured)", state.scan_id)
 
     return ScanResponse(**state.to_response_dict())
 

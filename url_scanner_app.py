@@ -1538,13 +1538,52 @@ button[kind="primary"]:hover {
         _btn_label   = "🔍  Scan Now — Full Analysis"
         _btn_caption = "17 passive tools + AI report · ~30 s · no probes sent · safe for any site"
 
+    # ── Active-scan disclosure (Standard / PT modes include TCP port probing) ──
+    _active_scan_consent = True   # Passive recon has no active probes
+    if scan_mode in ("standard", "pt"):
+        with st.expander(
+            "⚠️  Active Scan Disclosure — please read before scanning",
+            expanded=not st.session_state.get("_active_consent_given", False),
+        ):
+            st.markdown("""
+**This scan mode includes active TCP port probing.**
+
+The scanner will open TCP connections to 18 common ports on the target host
+(MySQL, PostgreSQL, MongoDB, Redis, RDP, SSH, FTP, SMB…) to check whether
+they are reachable from the internet.
+
+**Before running, confirm:**
+- You own the target domain **or** have written authorisation to scan it.
+- You understand that TCP SYN connections will appear in the target's access logs.
+- You are not using this to probe infrastructure you do not control.
+
+Scanning systems without permission may violate the Computer Fraud and Abuse Act
+(CFAA), Computer Misuse Act (CMA), or local equivalent laws.
+""")
+            _consent_check = st.checkbox(
+                "I confirm I am authorised to scan this target and accept responsibility for this scan.",
+                key="active_scan_consent_cb",
+                value=st.session_state.get("_active_consent_given", False),
+            )
+            if _consent_check:
+                st.session_state["_active_consent_given"] = True
+        _active_scan_consent = st.session_state.get("_active_consent_given", False)
+
     col_scan, col_clear, col_cap = st.columns([2, 1, 3])
-    scan_btn  = col_scan.button(_btn_label,   type="primary", use_container_width=True, key="url_scan")
+    scan_btn  = col_scan.button(
+        _btn_label,
+        type="primary",
+        use_container_width=True,
+        key="url_scan",
+        disabled=(scan_mode in ("standard", "pt") and not _active_scan_consent),
+    )
     clear_btn = col_clear.button("✕  Clear",  use_container_width=True, key="url_clear")
     with col_cap:
         if pt_mode_active:
             st.markdown(f'<span style="color:#fca5a5;font-size:0.75rem">🔴 {_btn_caption}</span>',
                         unsafe_allow_html=True)
+        elif scan_mode in ("standard", "pt") and not _active_scan_consent:
+            st.caption("Check the disclosure above to enable scanning.")
         else:
             st.caption(f"🟢 {_btn_caption}")
 

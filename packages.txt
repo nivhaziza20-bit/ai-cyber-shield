@@ -2,3 +2,25 @@ build-essential
 libssl-dev
 libffi-dev
 python3-dev
+
+# ── Playwright / Chromium headless browser ─────────────────────────────────
+# Required by tools/deep_js_crawler.py on Streamlit Community Cloud.
+# Playwright downloads its own Chromium (~100 MB) on first use.
+# These system libraries are the OS-level dependencies for that Chromium build.
+libnss3
+libnspr4
+libatk1.0-0
+libatk-bridge2.0-0
+libcups2
+libxcomposite1
+libxdamage1
+libxrandr2
+libgbm1
+libpangocairo-1.0-0
+libpango-1.0-0
+libxkbcommon0
+libgtk-3-0
+libasound2
+libglib2.0-0
+libxtst6
+libxss1

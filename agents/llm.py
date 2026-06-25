@@ -26,6 +26,7 @@ Attack Path Simulation design principles
 from __future__ import annotations
 
 import json
+import logging
 import re
 from datetime import date
 from functools import lru_cache
@@ -36,9 +37,11 @@ from langchain_groq import ChatGroq
 
 from config import get_settings
 
+_log = logging.getLogger(__name__)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LLM factory
+# LLM factory + fallback
 # ─────────────────────────────────────────────────────────────────────────────
 
 @lru_cache(maxsize=None)
@@ -46,9 +49,8 @@ def get_llm(temperature: float = 0.0) -> ChatGroq:
     """
     Returns a cached ChatGroq instance keyed on temperature.
 
-    temperature=0.0  — for all security-analysis agents (deterministic)
-    temperature=0.15 — for the Attack Path Simulation (narrative needs slight
-                       variation but must remain factually grounded)
+    temperature=0.0  — deterministic security-analysis agents
+    temperature=0.15 — Attack Path Simulation (slight narrative variation)
     """
     settings = get_settings()
     return ChatGroq(
@@ -57,6 +59,63 @@ def get_llm(temperature: float = 0.0) -> ChatGroq:
         temperature=temperature,
         max_tokens=8192,
     )
+
+
+def invoke_llm(messages: list, temperature: float = 0.0) -> str:
+    """
+    Invoke the LLM with automatic Groq → Anthropic Claude fallback.
+
+    Tries Groq (LLaMA 3.3 70B) first.  If Groq is unavailable or rate-limited,
+    falls back to Anthropic Claude Haiku when ANTHROPIC_API_KEY is configured.
+
+    Args:
+        messages:    List of LangChain message objects (SystemMessage, HumanMessage…).
+        temperature: Sampling temperature forwarded to both providers.
+
+    Returns:
+        Response content string from whichever provider succeeded.
+
+    Raises:
+        RuntimeError: When both providers fail (includes root causes).
+    """
+    # ── Primary: Groq ─────────────────────────────────────────────────────────
+    try:
+        llm = get_llm(temperature=temperature)
+        response = llm.invoke(messages)
+        return response.content
+    except Exception as groq_err:
+        _log.warning(
+            "Groq LLM call failed (%s: %s) — attempting Anthropic fallback",
+            type(groq_err).__name__, groq_err,
+        )
+
+    # ── Fallback: Anthropic Claude Haiku ─────────────────────────────────────
+    settings = get_settings()
+    anthropic_key = settings.anthropic_api_key
+    if not anthropic_key:
+        raise RuntimeError(
+            "Groq LLM call failed and ANTHROPIC_API_KEY is not configured for fallback. "
+            "Add ANTHROPIC_API_KEY to your .env or Streamlit Secrets to enable the "
+            "Groq → Anthropic automatic failover."
+        )
+
+    try:
+        from langchain_anthropic import ChatAnthropic
+        fallback_llm = ChatAnthropic(
+            model="claude-haiku-4-5-20251001",
+            api_key=anthropic_key,
+            temperature=temperature,
+            max_tokens=4096,
+        )
+        response = fallback_llm.invoke(messages)
+        _log.info("Anthropic fallback succeeded.")
+        return response.content
+    except Exception as ant_err:
+        raise RuntimeError(
+            f"All LLM providers failed. "
+            f"Groq: rate-limited or unavailable. "
+            f"Anthropic: {type(ant_err).__name__}: {ant_err}"
+        ) from ant_err
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -455,10 +514,7 @@ def generate_attack_simulation(aggregated_data: dict) -> str:
     """
     system_prompt, human_prompt = build_attack_simulation_prompt(aggregated_data)
 
-    llm      = get_llm(temperature=0.15)
-    response = llm.invoke([
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=human_prompt),
-    ])
-
-    return response.content
+    return invoke_llm(
+        [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)],
+        temperature=0.15,
+    )

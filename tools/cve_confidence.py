@@ -17,8 +17,8 @@ import re
 from dataclasses import dataclass, field
 from datetime import date
 
-MIN_CONFIDENCE = 35          # below this → filter (false positive likely)
-DEMO_MIN_CONFIDENCE = 50     # stricter in demo mode
+MIN_CONFIDENCE = 45          # below this → filter (false positive likely)
+DEMO_MIN_CONFIDENCE = 60     # stricter in demo mode / public-facing previews
 
 _CURRENT_YEAR = date.today().year
 
@@ -128,19 +128,26 @@ def score_cve(rec, tech_name: str, detected_version: str | None) -> ScoredCVE:
     reasons: list[str] = []
     penalty = 0
 
-    # ── Source quality bonus ──────────────────────────────────────────────────
-    # OSV = exact version match → high confidence bonus
-    # GitHub = ecosystem-level → medium
-    # NVD = keyword-only → lower baseline
+    # ── Source quality ────────────────────────────────────────────────────────
+    # OSV  = exact version match in package ecosystem → strongest signal
+    # GitHub = advisory with version range → medium confidence
+    # NVD  = keyword-only full-text search → weaker baseline (many false positives)
+    nvd_only = "osv" not in scored.sources and "github" not in scored.sources
+
     if "osv" in scored.sources:
         reasons.append("OSV: exact version match confirmed")
-        penalty -= 15  # bonus
+        penalty -= 15  # confidence bonus
     elif "github" in scored.sources and detected_version:
         reasons.append("GitHub Advisory: version range checked")
         penalty -= 5
     else:
-        reasons.append("NVD keyword match — version not exact")
-        penalty += 20
+        reasons.append("NVD keyword match — version not exact (false-positive risk)")
+        penalty += 25  # raised from 20 — NVD keyword hits are frequently off-topic
+
+    # NVD-only + no version detected = compounded uncertainty
+    if nvd_only and not detected_version:
+        reasons.append("NVD keyword + no detected version — cannot confirm impact")
+        penalty += 10
 
     # ── Technology mention check ──────────────────────────────────────────────
     combined_text = f"{scored.title} {scored.description}"

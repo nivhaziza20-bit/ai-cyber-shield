@@ -67,8 +67,8 @@ class TestFingerprintTechnologies:
         assert "WordPress" in result["detected_technologies"]
 
     def test_nextjs_detected(self):
-        html = '<script id="__NEXT_DATA__" type="application/json">{}</script>'
-        result = self._run(html)
+        # Wappalyzer detects Next.js via x-powered-by header (the most reliable passive signal)
+        result = self._run("<html></html>", headers={"x-powered-by": "Next.js 13.4.0"})
         assert "Next.js" in result["detected_technologies"]
 
     def test_jquery_version_extracted(self):
@@ -91,7 +91,8 @@ class TestFingerprintTechnologies:
 
     def test_nginx_detected_from_header(self):
         result = self._run("<html></html>", headers={"Server": "nginx/1.24.0"})
-        assert "nginx" in result["detected_technologies"]
+        # Wappalyzer names it "Nginx" (capital N)
+        assert "Nginx" in result["detected_technologies"]
 
     def test_php_version_disclosure_flagged(self):
         result = self._run("<html></html>", headers={"X-Powered-By": "PHP/7.2.0"})
@@ -104,6 +105,7 @@ class TestFingerprintTechnologies:
         assert result["cve_findings"] == []
 
     def test_google_analytics_detected(self):
-        html = '<script>gtag("js", new Date());</script>'
+        # Wappalyzer detects Google Analytics from the gtag/js script src URL
+        html = '<script src="https://www.googletagmanager.com/gtag/js?id=G-XXX" async></script>'
         result = self._run(html)
         assert "Google Analytics" in result["detected_technologies"]
