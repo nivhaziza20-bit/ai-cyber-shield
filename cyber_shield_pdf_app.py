@@ -63,8 +63,8 @@ load_dotenv(override=False)
 
 # FIX 1: correct import paths
 from tools.input_sanitizer import sanitize_input       # for pre-flight UI badge only
-from crew_pipeline_with_alerts import run_security_audit
 from tools.pdf_exporter import create_pdf              # reuses standalone PDF utility
+# run_security_audit imported lazily inside functions to avoid crewai module-level crash
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -264,8 +264,7 @@ if run_btn:
         else:
             with st.spinner("🕵️ צוות הסוכנים פועל ברקע ומצליב נתונים..."):
                 try:
-                    # FIX 2: pass raw string — pipeline handles sanitization internally.
-                    # FIX 3: unpack the dict; store only the Markdown string.
+                    from crew_pipeline_with_alerts import run_security_audit
                     result_dict = run_security_audit(user_input)
 
                     st.session_state.report    = result_dict["raw_output"]

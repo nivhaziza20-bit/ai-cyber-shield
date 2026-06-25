@@ -2612,8 +2612,14 @@ Scan date: passive OSINT only — no active testing performed"""
 with tab_code:
     st.markdown('<div class="section-label">SOURCE CODE</div>', unsafe_allow_html=True)
 
-    from cyber_shield_pdf_app import _DEMO_REPORT
-    from crew_pipeline_with_alerts import run_security_audit
+    _crewai_available = True
+    try:
+        from cyber_shield_pdf_app import _DEMO_REPORT
+        from crew_pipeline_with_alerts import run_security_audit
+    except Exception as _crew_err:
+        _crewai_available = False
+        import logging as _logging
+        _logging.getLogger(__name__).warning("crewai unavailable: %s", _crew_err)
 
     code_input = st.text_area(
         "Paste source code",
@@ -2643,6 +2649,9 @@ with tab_code:
         st.rerun()
 
     if run2_btn:
+        if not _crewai_available:
+            st.error("AI code analysis unavailable on this platform (Python 3.14 / crewai incompatibility). Use URL scanning instead.")
+            st.stop()
         if demo_mode:
             st.session_state["code_report"] = _DEMO_REPORT
             st.session_state["code_meta"]   = {
