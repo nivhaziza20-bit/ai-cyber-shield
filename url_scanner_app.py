@@ -55,6 +55,22 @@ from team_ui import show_team_panel
 from scan_cache import get_cached_scan, set_cached_scan
 from ip_rate_limit import check_scan_rate
 
+# ── Playwright pre-download (background, one-shot at app startup) ─────────────
+# Without this, the first user who triggers a deep-JS scan waits ~2 min while
+# Chromium downloads (~100 MB) mid-scan.  @st.cache_resource runs exactly once
+# per app instance; the background thread is non-blocking so the UI is instant.
+@st.cache_resource(show_spinner=False)
+def _prefetch_playwright() -> None:
+    import threading
+    try:
+        from tools.deep_js_crawler import _ensure_playwright_browser
+        t = threading.Thread(target=_ensure_playwright_browser, daemon=True, name="playwright-prefetch")
+        t.start()
+    except Exception:
+        pass  # playwright not installed — no-op
+
+_prefetch_playwright()
+
 if supabase_available():
     _current_user = require_auth()  # shows login page + st.stop() if not authed
     if _current_user:

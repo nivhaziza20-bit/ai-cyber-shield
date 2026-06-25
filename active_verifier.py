@@ -889,8 +889,13 @@ def _build_reproduction_steps(
         steps += [
             "2. Search the raw HTML response body for the canary string.",
             "   Expected: the canary appears verbatim (not HTML-escaped).",
+            "   The canary starts with '<!--' — if that '<' is unescaped,",
+            "   the server does NOT encode HTML special characters, which",
+            "   means a <script>alert(1)</script> payload would also execute.",
             "3. Open browser DevTools → Sources → inspect the page source.",
             "4. Confirm the canary is not inside a JavaScript string literal.",
+            "5. To escalate: replace the canary with <script>alert(document.domain)</script>",
+            "   in an AUTHORISED test environment only.",
         ]
     elif vuln_type == VulnType.CORS_MISCONFIGURATION:
         steps += [

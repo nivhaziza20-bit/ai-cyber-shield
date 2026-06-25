@@ -21,8 +21,8 @@ def _default_scanner(url: str, mode: str) -> dict:
     # If PT mode, also run active verification
     if mode == "pt":
         try:
-            from active_verification_runner import run_active_verification_for_scan  # noqa: PLC0415
-            av_findings = run_active_verification_for_scan(
+            from active_verification_runner import run_active_verification  # noqa: PLC0415
+            av_findings = run_active_verification(
                 url, result.get("tool_results", {})
             )
             result["av_results"] = av_findings

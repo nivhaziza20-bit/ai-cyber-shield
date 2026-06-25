@@ -237,8 +237,8 @@ jobs:
               raw = run_url_security_audit(target)
               if mode == "pt":
                   try:
-                      from active_verification_runner import run_active_verification_for_scan
-                      raw["av_results"] = run_active_verification_for_scan(
+                      from active_verification_runner import run_active_verification
+                      raw["av_results"] = run_active_verification(
                           target, raw.get("tool_results", {}))
                   except ImportError:
                       pass
