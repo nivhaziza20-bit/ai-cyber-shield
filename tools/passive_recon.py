@@ -76,7 +76,7 @@ def _session() -> requests.Session:
 # ── DNS-over-HTTPS helper (Cloudflare) — no dnspython required ────────────────
 _DOH_URL  = "https://cloudflare-dns.com/dns-query"
 _DOH_HDRS = {"Accept": "application/dns-json"}
-_RTYPE_INT = {"A": 1, "NS": 2, "MX": 15, "TXT": 16, "CAA": 257, "AAAA": 28, "SOA": 6}
+_RTYPE_INT = {"A": 1, "NS": 2, "PTR": 12, "MX": 15, "TXT": 16, "CAA": 257, "AAAA": 28, "SOA": 6}
 
 
 def _doh_txt(name: str, rtype: str = "TXT", timeout: int = 8) -> list[str]:
@@ -211,6 +211,96 @@ def _certspotter_subdomains(domain: str, timeout: int = 15) -> list[str] | None:
         return sorted(names) if names else []
     except Exception:
         return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# IP Intelligence constants (used by check_ip_intelligence)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Port → (service_name, severity, explanation)
+_DANGEROUS_PORTS: dict[int, tuple[str, str, str]] = {
+    21:    ("FTP",          "HIGH",     "FTP exposed — plaintext credentials, brute-force target"),
+    22:    ("SSH",          "MEDIUM",   "SSH exposed — verify key-auth only, root login disabled"),
+    23:    ("Telnet",       "CRITICAL", "Telnet exposed — plaintext protocol, credential theft"),
+    25:    ("SMTP",         "MEDIUM",   "SMTP exposed — verify not an open relay"),
+    53:    ("DNS",          "MEDIUM",   "DNS resolver exposed — check for open recursion / amplification"),
+    110:   ("POP3",         "HIGH",     "POP3 exposed — plaintext email credentials"),
+    143:   ("IMAP",         "HIGH",     "IMAP exposed — plaintext email credentials"),
+    445:   ("SMB",          "CRITICAL", "SMB exposed — EternalBlue/WannaCry attack surface"),
+    1433:  ("MSSQL",        "CRITICAL", "MSSQL database directly exposed to internet"),
+    1521:  ("Oracle DB",    "CRITICAL", "Oracle DB directly exposed to internet"),
+    2375:  ("Docker HTTP",  "CRITICAL", "Docker daemon (unauthenticated) — full host takeover"),
+    2376:  ("Docker TLS",   "HIGH",     "Docker TLS daemon exposed — verify certificate pinning"),
+    3306:  ("MySQL",        "CRITICAL", "MySQL directly exposed — databases readable without VPN"),
+    3389:  ("RDP",          "CRITICAL", "RDP exposed — BlueKeep/DejaBlue, credential brute-force"),
+    4444:  ("Metasploit",   "CRITICAL", "Metasploit default listener — likely compromised host"),
+    5432:  ("PostgreSQL",   "CRITICAL", "PostgreSQL directly exposed to internet"),
+    5900:  ("VNC",          "CRITICAL", "VNC remote desktop — commonly brute-forced, no encryption"),
+    5984:  ("CouchDB",      "CRITICAL", "CouchDB exposed — admin interface may be open"),
+    6379:  ("Redis",        "CRITICAL", "Redis exposed — unauthenticated data access / RCE via SLAVEOF"),
+    7001:  ("WebLogic",     "CRITICAL", "WebLogic exposed — CVE-2019-2725 (CVSS 9.8) RCE"),
+    8888:  ("Jupyter",      "HIGH",     "Jupyter Notebook likely exposed — code execution without auth"),
+    9200:  ("Elasticsearch","CRITICAL", "Elasticsearch API exposed — full data access without auth"),
+    9300:  ("ES Transport", "HIGH",     "Elasticsearch transport port exposed"),
+    11211: ("Memcached",    "CRITICAL", "Memcached exposed — DDoS amplification (59x), data theft"),
+    27017: ("MongoDB",      "CRITICAL", "MongoDB exposed — databases readable without authentication"),
+    27018: ("MongoDB Shard","HIGH",     "MongoDB shard port exposed"),
+    50070: ("Hadoop HDFS",  "CRITICAL", "Hadoop NameNode UI — data exfiltration, no auth by default"),
+    9042:  ("Cassandra",    "CRITICAL", "Cassandra DB exposed — data access without credentials"),
+    7474:  ("Neo4j",        "HIGH",     "Neo4j graph database exposed"),
+    8161:  ("ActiveMQ",     "CRITICAL", "ActiveMQ admin console — CVE-2023-46604 (CVSS 10.0) RCE"),
+    61616: ("ActiveMQ Msg", "CRITICAL", "ActiveMQ message broker exposed"),
+    4848:  ("GlassFish",    "HIGH",     "GlassFish admin console exposed"),
+}
+
+# Known CDN/WAF/cloud providers — detected via ASN/org string matching
+_CDN_ASN_PATTERNS: dict[str, str] = {
+    "cloudflare":  "Cloudflare",
+    "amazonaws":   "AWS / CloudFront",
+    "amazon.com":  "AWS / CloudFront",
+    "akamai":      "Akamai",
+    "fastly":      "Fastly",
+    "sucuri":      "Sucuri WAF",
+    "incapsula":   "Imperva Incapsula",
+    "imperva":     "Imperva",
+    "stackpath":   "StackPath",
+    "limelight":   "Limelight",
+    "edgecast":    "Verizon EdgeCast",
+    "bunnycdn":    "BunnyCDN",
+    "cdn77":       "CDN77",
+    "azure":       "Microsoft Azure",
+    "microsoft":   "Microsoft Azure",
+    "google llc":  "Google Cloud / GCP",
+    "googlecloud": "Google Cloud",
+}
+
+# Ports we treat as expected/normal (no issue raised)
+_EXPECTED_PORTS: frozenset[int] = frozenset({80, 443, 8080, 8443, 8000})
+
+
+def _parse_cpe(cpe_str: str) -> dict:
+    """
+    Parse CPE 2.2 (cpe:/...) or CPE 2.3 (cpe:2.3:...) into
+    {part, vendor, product, version} dict.
+    """
+    if not cpe_str:
+        return {}
+    try:
+        s = cpe_str.strip()
+        if s.startswith("cpe:2.3:"):
+            parts = s.split(":")[2:]          # drop "cpe" + "2.3"
+        elif s.startswith("cpe:/"):
+            parts = s[5:].split(":")          # drop "cpe:/"
+        else:
+            return {}
+        return {
+            "part":    (parts[0] if len(parts) > 0 else "").strip("/"),
+            "vendor":  parts[1].replace("_", " ").strip() if len(parts) > 1 else "",
+            "product": parts[2].replace("_", " ").strip() if len(parts) > 2 else "",
+            "version": parts[3].strip() if len(parts) > 3 and parts[3] not in ("*", "") else "",
+        }
+    except Exception:
+        return {}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2430,6 +2520,241 @@ def check_github_leaks(domain: str, timeout: int = 15) -> dict:
 # Passive Recon runner — 15 tools, streaming + batch API
 # ─────────────────────────────────────────────────────────────────────────────
 
+def check_ip_intelligence(url: str, timeout: int = 15) -> dict:
+    """
+    IP Intelligence — 3-layer passive analysis:
+      1. Shodan InternetDB (open ports, CVEs, CPEs/tech-stack)
+      2. ip-api.com (geolocation, hosting/CDN/proxy detection)
+      3. Reverse DNS PTR record
+    Resolves domain → IP first; handles CDN edge detection.
+    100% passive — reads existing public databases, zero probes to target.
+    """
+    host = urlparse(url).netloc or url.replace("https://", "").replace("http://", "")
+    host = host.split(":")[0].split("/")[0]
+    base = re.sub(r'^www\.', '', host)
+
+    if is_ssrf_blocked(base):
+        return {"status": "completed", "severity": "INFO",
+                "finding": "IP Intelligence: skipped — internal address."}
+
+    # ── 1. DNS A record resolve ───────────────────────────────────────────────
+    a_records = _doh_txt(host, "A", timeout=6)
+    if not a_records:
+        a_records = _doh_txt(base, "A", timeout=6)
+    if not a_records:
+        return {"status": "completed", "severity": "INFO",
+                "finding": f"IP Intelligence: could not resolve {base} to an IP address."}
+
+    target_ip = a_records[0].strip()
+    all_ips   = list(dict.fromkeys(r.strip() for r in a_records))[:4]
+    multi_ip  = len(all_ips) > 1  # likely load-balanced or CDN
+
+    # ── 2. Reverse DNS PTR ───────────────────────────────────────────────────
+    reverse_dns = ""
+    try:
+        octets   = target_ip.split(".")
+        ptr_name = ".".join(reversed(octets)) + ".in-addr.arpa"
+        ptr_recs = _doh_txt(ptr_name, "PTR", timeout=5)
+        reverse_dns = ptr_recs[0].rstrip(".") if ptr_recs else ""
+    except Exception:
+        pass
+
+    # ── 3. Shodan InternetDB ─────────────────────────────────────────────────
+    open_ports:       list[int] = []
+    vulns:            list[str] = []
+    cpes:             list[str] = []
+    shodan_tags:      list[str] = []
+    shodan_hostnames: list[str] = []
+    internetdb_ok = False
+
+    try:
+        r_idb = requests.get(
+            f"https://internetdb.shodan.io/{target_ip}",
+            headers=_HEADERS,
+            timeout=timeout,
+        )
+        if r_idb.status_code == 200:
+            idb = r_idb.json()
+            open_ports       = sorted(idb.get("ports",     []) or [])
+            vulns            = sorted(idb.get("vulns",     []) or [])
+            cpes             = idb.get("cpes",             []) or []
+            shodan_tags      = [t.lower() for t in (idb.get("tags", []) or [])]
+            shodan_hostnames = idb.get("hostnames",        []) or []
+            internetdb_ok    = True
+        # 404 = IP not in Shodan DB (new/CDN-hidden IP) — not an error
+    except Exception:
+        pass
+
+    # ── 4. ip-api.com — geolocation + hosting/proxy detection ────────────────
+    isp = org = asn = country = city = ""
+    is_hosting = is_proxy = is_mobile = False
+    ip_api_ok = False
+
+    try:
+        r_ipapi = requests.get(
+            f"http://ip-api.com/json/{target_ip}",
+            params={"fields": "status,message,country,regionName,city,isp,org,as,asname,hosting,proxy,mobile"},
+            headers=_HEADERS,
+            timeout=timeout,
+        )
+        if r_ipapi.status_code == 200:
+            d = r_ipapi.json()
+            if d.get("status") == "success":
+                isp        = d.get("isp",      "") or ""
+                org        = d.get("org",      "") or ""
+                asn        = d.get("as",       "") or ""
+                country    = d.get("country",  "") or ""
+                city       = d.get("city",     "") or ""
+                is_hosting = bool(d.get("hosting", False))
+                is_proxy   = bool(d.get("proxy",   False))
+                is_mobile  = bool(d.get("mobile",  False))
+                ip_api_ok  = True
+    except Exception:
+        pass
+
+    # ── 5. CDN / WAF detection ───────────────────────────────────────────────
+    cdn_name = ""
+    _fingerprint = " ".join([
+        org.lower(), isp.lower(), asn.lower(),
+        reverse_dns.lower(), " ".join(shodan_tags),
+    ])
+    for keyword, name in _CDN_ASN_PATTERNS.items():
+        if keyword in _fingerprint:
+            cdn_name = name
+            break
+    if not cdn_name and "cdn" in shodan_tags:
+        cdn_name = "CDN (Shodan tag)"
+    if not cdn_name and multi_ip:
+        cdn_name = "Load-balanced / CDN (multiple IPs)"
+
+    # ── 6. Parse CPEs → human-readable tech stack ────────────────────────────
+    tech_stack: list[str] = []
+    for cpe_str in cpes:
+        p = _parse_cpe(cpe_str)
+        if not p:
+            continue
+        label = (p.get("product") or p.get("vendor") or "").title()
+        ver   = p.get("version", "")
+        if ver:
+            label += f" {ver}"
+        if label and label not in tech_stack:
+            tech_stack.append(label)
+
+    # ── 7. Build issues list ─────────────────────────────────────────────────
+    issues: list[dict] = []
+
+    # CVEs — highest signal
+    if vulns:
+        # Bucket by likely severity based on CVE year (rough heuristic)
+        cve_sev = "CRITICAL" if len(vulns) >= 3 else "HIGH" if len(vulns) >= 1 else "INFO"
+        issues.append({
+            "check":    "CVEs on IP",
+            "severity": cve_sev,
+            "issue":    (
+                f"{len(vulns)} CVE(s) associated with services on this IP: "
+                + ", ".join(sorted(vulns)[:6])
+                + (f" … +{len(vulns) - 6} more" if len(vulns) > 6 else "")
+            ),
+        })
+
+    # Dangerous ports — sorted by severity
+    _sev_rank = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
+    dangerous_found = [(p, _DANGEROUS_PORTS[p]) for p in open_ports if p in _DANGEROUS_PORTS]
+    dangerous_found.sort(key=lambda x: _sev_rank.get(x[1][1], 4))
+
+    for port, (service, sev, detail) in dangerous_found:
+        issues.append({
+            "check":    f"Port {port} open ({service})",
+            "severity": sev,
+            "issue":    f":{port} {service} — {detail}",
+            "port":     port,
+        })
+
+    # Unexpected non-standard ports
+    unexpected = sorted(
+        p for p in open_ports
+        if p not in _DANGEROUS_PORTS and p not in _EXPECTED_PORTS
+    )
+    if unexpected:
+        issues.append({
+            "check":    "Non-standard ports open",
+            "severity": "LOW",
+            "issue":    f"Non-standard ports: {unexpected[:8]} — verify each service is intentional",
+        })
+
+    # Proxy detection
+    if is_proxy:
+        issues.append({
+            "check":    "Proxy / VPN IP",
+            "severity": "MEDIUM",
+            "issue":    "IP identified as proxy/VPN exit node — traffic routing may obscure origin",
+        })
+
+    # CDN note (contextual — not a vulnerability)
+    if cdn_name:
+        issues.append({
+            "check":    "CDN / WAF layer",
+            "severity": "INFO",
+            "issue":    (
+                f"IP belongs to {cdn_name} — this is a CDN/WAF edge node, not the origin server. "
+                "Shodan data reflects CDN infrastructure; origin server ports may differ."
+            ),
+        })
+
+    if not internetdb_ok and not ip_api_ok:
+        issues.append({
+            "check":    "Intelligence unavailable",
+            "severity": "INFO",
+            "issue":    "Both Shodan InternetDB and ip-api.com are temporarily unavailable.",
+        })
+
+    # ── 8. Final severity (exclude INFO from score) ───────────────────────────
+    _sev_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
+    scored = [i for i in issues if i["severity"] != "INFO"]
+    worst  = min((_sev_order[i["severity"]] for i in scored), default=4)
+    final_sev = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"][worst]
+
+    # ── 9. Finding summary ───────────────────────────────────────────────────
+    parts: list[str] = [f"IP: {target_ip}"]
+    if cdn_name:
+        parts.append(f"via {cdn_name}")
+    elif org:
+        parts.append(org[:45])
+    if country:
+        parts.append(f"{city + ', ' if city else ''}{country}")
+    if open_ports:
+        parts.append(f"ports: {open_ports[:6]}")
+    if vulns:
+        parts.append(f"⚠ {len(vulns)} CVE(s)")
+    if tech_stack:
+        parts.append(f"tech: {', '.join(tech_stack[:3])}")
+
+    return {
+        "status":       "completed",
+        "severity":     final_sev,
+        "ip":           target_ip,
+        "all_ips":      all_ips,
+        "reverse_dns":  reverse_dns,
+        "open_ports":   open_ports,
+        "vulns":        vulns,
+        "cpes":         cpes,
+        "tech_stack":   tech_stack,
+        "shodan_tags":  shodan_tags,
+        "isp":          isp,
+        "org":          org,
+        "asn":          asn,
+        "country":      country,
+        "city":         city,
+        "is_hosting":   is_hosting,
+        "is_proxy":     is_proxy,
+        "cdn_name":     cdn_name,
+        "internetdb_ok":internetdb_ok,
+        "ip_api_ok":    ip_api_ok,
+        "issues":       issues,
+        "finding":      " | ".join(parts),
+    }
+
+
 def check_whois_domain(url: str, timeout: int = 12) -> dict:
     """
     WHOIS lookup via HackerTarget API.
@@ -2640,6 +2965,7 @@ def _build_tasks(url: str, domain: str, tech_results: dict) -> dict:
         "dns_deep":           lambda: check_dns_deep(domain),
         "whois":              lambda: check_whois_domain(url),
         "urlscan":            lambda: scan_urlscan_io(url),
+        "ip_intelligence":    lambda: check_ip_intelligence(url),
     }
 
 

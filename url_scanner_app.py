@@ -1089,7 +1089,7 @@ def _render_mode_selector(pt_mode_active: bool) -> None:
   <div class="msc-std-color">🟢 STANDARD SCAN{std_tag}</div>
   <div class="msc-title">Deep Web Analysis + AI</div>
   <div class="msc-desc">
-    ✅ 17 tools: SSL · Headers · Crawler · CORS · DNS · WAF<br>
+    ✅ 18 tools: SSL · Headers · Crawler · CORS · DNS · WAF<br>
     ✅ LLM threat-narrative report (Groq API key required)<br>
     ✅ Safe for <b style="color:#e2e8f0">any site worldwide</b><br>
     ✅ Results in ~30 seconds<br>
@@ -1284,9 +1284,9 @@ with st.sidebar:
     if scan_mode == "passive":
         st.markdown("""
 <div class="mode-badge-passive">
-🔵 PASSIVE RECON — 17 OSINT TOOLS<br>
+🔵 PASSIVE RECON — 18 OSINT TOOLS<br>
 <span style="font-weight:400;color:#93c5fd;font-size:0.72rem">
-  17 OSINT tools · safe on ANY website<br>
+  18 OSINT tools · safe on ANY website<br>
   JS secrets · Cloud buckets · CVE match<br>
   GitHub leaks · Email spoofability · Wayback<br>
   DNS deep · CNAME takeover · Exposed files
@@ -1413,7 +1413,7 @@ st.markdown(f"""
   <div class="cs-tagline">Web Application Security Intelligence Platform</div>
   <div>
     <span class="cs-badge">v6.0</span>
-    <span class="cs-badge" style="margin-left:6px">{'17 OSINT TOOLS' if scan_mode == 'passive' else '17 TOOLS'}</span>
+    <span class="cs-badge" style="margin-left:6px">{'18 OSINT TOOLS' if scan_mode == 'passive' else '18 TOOLS'}</span>
     {_mode_badge_html}
     <span class="cs-badge" style="margin-left:6px">DEFENSIVE USE ONLY</span>
   </div>
@@ -1590,7 +1590,7 @@ button[kind="primary"]:hover {
 }
 </style>""", unsafe_allow_html=True)
         _btn_label   = "🔵  Run Passive Recon (15 Tools)"
-        _btn_caption = "17 OSINT tools · SSL/TLS · DNS · CT Logs · Exposed files · HTTP headers · JS + source maps · CVEs (55) · ~90 s"
+        _btn_caption = "18 OSINT tools · SSL/TLS · DNS · CT Logs · Exposed files · HTTP headers · JS + source maps · CVEs (55) · ~90 s"
     else:
         _btn_label   = "🔍  Scan Now — Full Analysis"
         _btn_caption = "17 passive tools + AI report · ~30 s · no probes sent · safe for any site"
@@ -1762,6 +1762,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                     "dns_deep":           "🌐 DNS Deep Analysis",
                     "whois":              "📋 WHOIS & Domain Age",
                     "urlscan":            "🔎 URLScan.io Fingerprint",
+                    "ip_intelligence":    "🖥️ IP Intelligence (Shodan)",
                 }
                 _sev_icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "⚪", "INFO": "✅"}
 
@@ -1769,7 +1770,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                 if _current_user:
                     increment_quota(_current_user)
 
-                with st.status("🔵 Running Passive Recon — 17 OSINT tools…", expanded=True) as _ps:
+                with st.status("🔵 Running Passive Recon — 18 OSINT tools…", expanded=True) as _ps:
                     st.write(f"🎯 Target: **{target}** — OSINT only, no active probes")
                     try:
                         from tools.passive_recon import run_passive_recon_streaming, _build_passive_result
@@ -1848,7 +1849,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
             else:
                 with st.status("🔍 Running 17-tool security scan…", expanded=True) as status:
                     _prog = st.progress(0, text="Initialising parallel tool pipeline…")
-                    st.write("⚡ Launching 17 tools in parallel…")
+                    st.write("⚡ Launching 18 tools in parallel…")
                     try:
                         _prog.progress(8,  text="🔒 SSL/TLS certificate analysis…")
                         st.write("🔒 SSL/TLS · 📋 Security Headers · 🌐 HTML/JS scanning…")
@@ -2123,7 +2124,7 @@ confirm vulnerabilities with non-destructive canary probes and get curl PoC repr
       <div style="color:#e2e8f0;font-size:1.1rem;font-weight:700">
         Passive Recon Results — {_pr_target}
       </div>
-      <div style="color:#475569;font-size:0.75rem;margin-top:4px;font-family:'JetBrains Mono',monospace">17 OSINT tools · Overall severity: <span style="color:{_ov_color};font-weight:700">{_pr_overall}</span> · <span style="color:#64748b">{_pr_data.get('scan_timestamp','')[:16].replace('T',' ')} UTC</span></div>
+      <div style="color:#475569;font-size:0.75rem;margin-top:4px;font-family:'JetBrains Mono',monospace">18 OSINT tools · Overall severity: <span style="color:{_ov_color};font-weight:700">{_pr_overall}</span> · <span style="color:#64748b">{_pr_data.get('scan_timestamp','')[:16].replace('T',' ')} UTC</span></div>
       <div style="color:#64748b;font-size:0.7rem;margin-top:3px">📊 100{f' − {_n_crit}×25(C)' if _n_crit else ''}{f' − {_n_high}×15(H)' if _n_high else ''}{f' − {_n_med}×8(M)' if _n_med else ''} = <b style="color:{_gc}">{_pr_score}/100</b> · {len(_pr_tools)} tools</div>
       <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
         <span style="background:#3f0000;color:#ef4444;border:1px solid #ef444440;
@@ -2221,6 +2222,7 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
             "dns_deep":           ("🌐", "DNS Deep Analysis"),
             "whois":              ("📋", "WHOIS & Domain Age"),
             "urlscan":            ("🔎", "URLScan.io Fingerprint"),
+            "ip_intelligence":    ("🖥️",  "IP Intelligence (Shodan InternetDB)"),
         }
 
         # Plain-language "what it means / what to report" per tool
@@ -2433,6 +2435,7 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
                 "email_spoofability": None,
                 "whois":              None,
                 "urlscan":            None,
+                "ip_intelligence":    None,
             }
             if tool_key in _detail_keys and sev in ("CRITICAL", "HIGH", "MEDIUM"):
                 detail_info = _detail_keys[tool_key]
@@ -2491,6 +2494,92 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
                             _u_c2.markdown("**Detected technologies:**")
                             for _t in _techs[:8]:
                                 _u_c2.markdown(f"- {_t}")
+                    elif detail_info is None and tool_key == "ip_intelligence":
+                        _ip     = tr.get("ip", "")
+                        _ports  = tr.get("open_ports", [])
+                        _vulns  = tr.get("vulns", [])
+                        _tech   = tr.get("tech_stack", [])
+                        _tags   = tr.get("shodan_tags", [])
+                        _cdn    = tr.get("cdn_name", "")
+                        _rdns   = tr.get("reverse_dns", "")
+                        _isp    = tr.get("isp", "")
+                        _org    = tr.get("org", "")
+                        _asn    = tr.get("asn", "")
+                        _city   = tr.get("city", "")
+                        _country= tr.get("country", "")
+                        _all_ips= tr.get("all_ips", [])
+                        _idb_ok = tr.get("internetdb_ok", False)
+
+                        _ip_c1, _ip_c2 = st.columns([1, 1])
+
+                        with _ip_c1:
+                            st.markdown(f"""
+| Field | Value |
+|-------|-------|
+| IP address | `{_ip}` |
+| All IPs | `{', '.join(_all_ips)}` |
+| Reverse DNS | `{_rdns or '—'}` |
+| ISP / Org | {_isp or _org or '—'} |
+| ASN | {_asn or '—'} |
+| Location | {_city + ', ' if _city else ''}{_country or '—'} |
+| CDN / WAF | {'⚠️ ' + _cdn if _cdn else '✅ Not detected'} |
+| Via proxy | {'⚠️ Yes' if tr.get('is_proxy') else '✅ No'} |
+| Data source | {'✅ Shodan InternetDB' if _idb_ok else '⚠️ Not in Shodan DB'} |
+""")
+
+                        with _ip_c2:
+                            # Port visualization
+                            if _ports:
+                                _port_colors = {
+                                    "CRITICAL": "#ef4444", "HIGH": "#f97316",
+                                    "MEDIUM": "#f59e0b", "LOW": "#60a5fa", "INFO": "#475569",
+                                }
+                                _dp_map = {21:"HIGH",22:"MEDIUM",23:"CRITICAL",25:"MEDIUM",
+                                           53:"MEDIUM",110:"HIGH",143:"HIGH",445:"CRITICAL",
+                                           1433:"CRITICAL",1521:"CRITICAL",2375:"CRITICAL",
+                                           2376:"HIGH",3306:"CRITICAL",3389:"CRITICAL",
+                                           5432:"CRITICAL",5900:"CRITICAL",6379:"CRITICAL",
+                                           7001:"CRITICAL",9200:"CRITICAL",11211:"CRITICAL",
+                                           27017:"CRITICAL",8888:"HIGH",9300:"HIGH"}
+                                _port_html = '<div style="margin-bottom:8px"><b style="color:#e2e8f0">Open ports:</b><br>'
+                                for _p in _ports[:20]:
+                                    _ps = _dp_map.get(_p, "LOW" if _p not in {80,443,8080,8443} else "INFO")
+                                    _pc = _port_colors.get(_ps, "#475569")
+                                    _port_html += (
+                                        f'<span style="display:inline-block;background:{_pc}22;'
+                                        f'color:{_pc};border:1px solid {_pc}60;'
+                                        f'border-radius:4px;padding:1px 8px;margin:2px;'
+                                        f'font-family:monospace;font-size:0.8rem">{_p}</span>'
+                                    )
+                                _port_html += "</div>"
+                                st.markdown(_port_html, unsafe_allow_html=True)
+                            else:
+                                st.caption("No open ports found in Shodan InternetDB.")
+
+                            # CVEs
+                            if _vulns:
+                                st.markdown(f"**⚠️ {len(_vulns)} CVE(s) detected:**")
+                                for _v in _vulns[:10]:
+                                    st.markdown(
+                                        f'<span style="background:#3f0000;color:#ef4444;'
+                                        f'border:1px solid #ef444440;border-radius:3px;'
+                                        f'padding:1px 7px;margin:2px;display:inline-block;'
+                                        f'font-family:monospace;font-size:0.78rem">{_v}</span>',
+                                        unsafe_allow_html=True,
+                                    )
+                                if len(_vulns) > 10:
+                                    st.caption(f"+{len(_vulns)-10} more CVEs")
+                            else:
+                                st.caption("✅ No CVEs found in Shodan InternetDB for this IP.")
+
+                            # Tech stack
+                            if _tech:
+                                st.markdown("**Detected tech (CPE):**  " +
+                                            " · ".join(f"`{t}`" for t in _tech[:8]))
+                            # Shodan tags
+                            if _tags:
+                                st.markdown("**Shodan tags:**  " +
+                                            " ".join(f"`{t}`" for t in _tags))
                     else:
                         items_key, items_label = detail_info
                         items = tr.get(items_key, [])
