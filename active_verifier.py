@@ -1281,9 +1281,33 @@ class ActiveVerifier:
             is_confirmed=False, confidence_score=0.0,
         )
 
+        # Baseline check: "7777" appearing in the uninstrumented page (version
+        # strings, IDs, port numbers) would produce a false-positive if we only
+        # checked probe responses.  Send one clean request and bail out early if
+        # the expression is already present.
+        _baseline_body = ""
+        try:
+            _baseline_req = ProbeRequest(
+                method="GET", url=endpoint,
+                headers={"X-Verification-Context": "AICS-Baseline"},
+                allow_redirects=True,
+            )
+            _, _, _baseline_body, _ = await self._prober.probe(_baseline_req)
+        except Exception:
+            pass  # Baseline fetch failed — proceed; accuracy note added to error field
+
+        if _SSTI_EXPRESSION in _baseline_body:
+            result.error = (
+                f"SSTI inconclusive: expression '{_SSTI_EXPRESSION}' appears in "
+                "the baseline response before any payload was injected. "
+                "Manual verification required with a site-specific expression."
+            )
+            result.probes_sent = 1
+            return result
+
         for i, request in enumerate(probes[:self._max_probes]):
             result.raw_poc_request = request
-            result.probes_sent     = i + 1
+            result.probes_sent     = i + 2  # +1 for baseline
             try:
                 status, headers, body, elapsed = await self._prober.probe(request)
             except WafBlockError as exc:

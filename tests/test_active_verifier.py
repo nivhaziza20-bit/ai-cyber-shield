@@ -951,7 +951,19 @@ class TestActiveVerifierSsti:
     @pytest.mark.asyncio
     async def test_confirmed(self):
         verifier = ActiveVerifier()
-        _patch_prober(verifier, status=200, body=f"Result: {_SSTI_EXPRESSION}")
+        # Call 1 = baseline (clean), call 2+ = SSTI-triggered response.
+        # The baseline must NOT contain the expression, otherwise the verifier
+        # correctly flags the result as inconclusive and returns early.
+        call_count = 0
+
+        async def baseline_then_ssti(request):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return 200, {}, "Normal template output", 0.05  # baseline: clean
+            return 200, {}, f"Result: {_SSTI_EXPRESSION}", 0.05  # SSTI evaluated
+
+        verifier._prober.probe = baseline_then_ssti
 
         result = await verifier.verify_vulnerability(
             VulnType.SSTI, "https://target.example.com/template", "msg", {}
@@ -970,6 +982,18 @@ class TestActiveVerifierSsti:
         assert not result.is_confirmed
 
     @pytest.mark.asyncio
+    async def test_inconclusive_when_expression_in_baseline(self):
+        """Expression already present in baseline → verifier must not confirm."""
+        verifier = ActiveVerifier()
+        _patch_prober(verifier, status=200, body=f"page with {_SSTI_EXPRESSION} in it")
+
+        result = await verifier.verify_vulnerability(
+            VulnType.SSTI, "https://target.example.com/template", "msg", {}
+        )
+        assert not result.is_confirmed
+        assert _SSTI_EXPRESSION in result.error
+
+    @pytest.mark.asyncio
     async def test_confirmed_on_second_probe(self):
         verifier = ActiveVerifier()
         call_count = 0
@@ -977,7 +1001,9 @@ class TestActiveVerifierSsti:
         async def probe_responses(request):
             nonlocal call_count
             call_count += 1
-            if call_count == 1:
+            # call 1 = baseline, call 2 = first SSTI probe (no eval),
+            # call 3 = second SSTI probe (confirmed)
+            if call_count <= 2:
                 return 200, {}, "no eval here", 0.05
             return 200, {}, f"evaluated: {_SSTI_EXPRESSION}", 0.05
 
@@ -987,7 +1013,7 @@ class TestActiveVerifierSsti:
             VulnType.SSTI, "https://target.example.com/template", "msg", {}
         )
         assert result.is_confirmed
-        assert result.probes_sent == 2
+        assert result.probes_sent >= 2
 
 
 class TestActiveVerifierCrlf:

@@ -1539,11 +1539,18 @@ button[kind="primary"]:hover {
         _btn_caption = "17 passive tools + AI report · ~30 s · no probes sent · safe for any site"
 
     # ── Active-scan disclosure (Standard / PT modes include TCP port probing) ──
+    # Consent is per-URL: changing the target resets the gate so the user must
+    # re-confirm for each new host.  Storing the consented URL (not just a bool)
+    # prevents a single consent from covering unlimited future targets.
     _active_scan_consent = True   # Passive recon has no active probes
     if scan_mode in ("standard", "pt"):
+        _current_url_key    = url_input.strip()
+        _consented_for_url  = st.session_state.get("_active_consent_given", "")
+        _already_consented  = bool(_consented_for_url) and (_consented_for_url == _current_url_key)
+
         with st.expander(
             "⚠️  Active Scan Disclosure — please read before scanning",
-            expanded=not st.session_state.get("_active_consent_given", False),
+            expanded=not _already_consented,
         ):
             st.markdown("""
 **This scan mode includes active TCP port probing.**
@@ -1563,11 +1570,16 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
             _consent_check = st.checkbox(
                 "I confirm I am authorised to scan this target and accept responsibility for this scan.",
                 key="active_scan_consent_cb",
-                value=st.session_state.get("_active_consent_given", False),
+                value=_already_consented,
             )
-            if _consent_check:
-                st.session_state["_active_consent_given"] = True
-        _active_scan_consent = st.session_state.get("_active_consent_given", False)
+            if _consent_check and _current_url_key:
+                st.session_state["_active_consent_given"] = _current_url_key
+            elif not _consent_check:
+                st.session_state["_active_consent_given"] = ""
+        _active_scan_consent = (
+            st.session_state.get("_active_consent_given", "") == _current_url_key
+            and bool(_current_url_key)
+        )
 
     col_scan, col_clear, col_cap = st.columns([2, 1, 3])
     scan_btn  = col_scan.button(
