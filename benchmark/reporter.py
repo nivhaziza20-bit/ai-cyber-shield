@@ -81,7 +81,7 @@ def print_report(run: BenchmarkRun, report: ScorerReport | None = None) -> None:
                         "D": "yellow", "F": "red"}.get(m.grade(), "reset")
         print(
             f"  {tool_name:<20} {_pct(m.precision):>17} {_pct(m.recall):>17} "
-            f"{_pct(m.f1):>17} {_c(m.grade():>6, grade_colour)}  "
+            f"{_pct(m.f1):>17} {_c(f'{m.grade():>6}', grade_colour)}  "
             f"{m.tp:>2}  {m.fp:>2}  {m.tn:>2}  {m.fn:>2}"
         )
 
