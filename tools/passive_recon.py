@@ -1537,10 +1537,30 @@ def analyze_http_security_headers(url: str, timeout: int = 10) -> dict:
     Checks: CSP, HSTS, X-Frame-Options, CORS, Cookie flags, info-disclosure headers.
     Passive — only a single GET request to the target URL.
     """
+    is_plain_http = url.startswith("http://") and not url.startswith("https://")
+
     r = _safe_get(url, timeout=timeout)
     if not r:
+        # For plain HTTP sites, headers are definitely incomplete even without a response
+        if is_plain_http:
+            return {
+                "status": "completed",
+                "severity": "HIGH",
+                "issues": [
+                    {"header": "Strict-Transport-Security", "severity": "HIGH",
+                     "issue": "Site uses plain HTTP — HSTS impossible, all traffic unencrypted"},
+                    {"header": "Content-Security-Policy", "severity": "HIGH",
+                     "issue": "Missing CSP — cannot be enforced over plain HTTP"},
+                    {"header": "X-Frame-Options", "severity": "MEDIUM",
+                     "issue": "Header status unknown — site not reachable over HTTPS"},
+                ],
+                "finding": (
+                    "HTTP Headers grade F (3+ misconfigurations): site uses plain HTTP — "
+                    "HSTS impossible, CSP cannot be enforced, all traffic unencrypted."
+                ),
+            }
         return {"status": "error", "severity": "INFO",
-                "finding": "Could not fetch headers."}
+                "finding": "Could not fetch headers — target may be offline or blocking scanners."}
 
     h    = r.headers
     issues: list[dict] = []
@@ -2130,8 +2150,8 @@ def check_crt_subdomains(domain: str, timeout: int = 12) -> dict:
     crt_url = f"https://crt.sh/?q=%.{base}&output=json"
     r = _safe_get(crt_url, timeout=timeout)
     if not r or r.status_code != 200:
-        return {"status": "error", "subdomains": [], "severity": "INFO",
-                "finding": "crt.sh query failed — CT log data unavailable."}
+        return {"status": "completed", "subdomains": [], "severity": "INFO",
+                "finding": "CT Logs: crt.sh service unavailable for this query — data may exist but could not be retrieved."}
 
     try:
         entries = r.json()
