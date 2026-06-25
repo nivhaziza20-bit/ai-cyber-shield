@@ -3,6 +3,8 @@
 .env.*
 !.env.example
 .streamlit/secrets.toml
+streamlit_secrets_PASTE_TO_CLOUD.txt
+supabase/.temp/
 
 # ─── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
