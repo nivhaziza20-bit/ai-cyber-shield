@@ -111,6 +111,35 @@ def _record_attempt(email: str, success: bool) -> None:
         pass
 
 
+def _build_user_session(supabase_user, supabase_session) -> "UserSession":
+    """Build a UserSession from a live Supabase auth user + session object."""
+    c = _client()
+    role, pt_approved, tier, stripe_cid = "user", False, "free", ""
+    if c:
+        try:
+            profile_resp = (c.table("profiles")
+                            .select("role,pt_approved,subscription_tier,stripe_customer_id")
+                            .eq("id", supabase_user.id)
+                            .maybe_single()
+                            .execute())
+            if profile_resp.data:
+                role = profile_resp.data.get("role", "user")
+                pt_approved = bool(profile_resp.data.get("pt_approved", False))
+                tier = profile_resp.data.get("subscription_tier", "free")
+                stripe_cid = profile_resp.data.get("stripe_customer_id") or ""
+        except Exception:
+            pass
+    return UserSession(
+        user_id=supabase_user.id,
+        email=supabase_user.email or "",
+        role=role,
+        pt_approved=pt_approved,
+        subscription_tier=tier,
+        stripe_customer_id=stripe_cid,
+        access_token=supabase_session.access_token if supabase_session else "",
+    )
+
+
 def sign_in(email: str, password: str) -> dict:
     c = _client()
     if c is None:
@@ -124,31 +153,7 @@ def sign_in(email: str, password: str) -> dict:
         resp = c.auth.sign_in_with_password({"email": email, "password": password})
         if not resp.user:
             return {"error": "Invalid email or password"}
-
-        profile_resp = (c.table("profiles")
-                        .select("role,pt_approved,subscription_tier,stripe_customer_id")
-                        .eq("id", resp.user.id)
-                        .maybe_single()
-                        .execute())
-        role = "user"
-        pt_approved = False
-        tier = "free"
-        stripe_cid = ""
-        if profile_resp.data:
-            role = profile_resp.data.get("role", "user")
-            pt_approved = bool(profile_resp.data.get("pt_approved", False))
-            tier = profile_resp.data.get("subscription_tier", "free")
-            stripe_cid = profile_resp.data.get("stripe_customer_id") or ""
-
-        session = UserSession(
-            user_id=resp.user.id,
-            email=resp.user.email or email,
-            role=role,
-            pt_approved=pt_approved,
-            subscription_tier=tier,
-            stripe_customer_id=stripe_cid,
-            access_token=resp.session.access_token if resp.session else "",
-        )
+        session = _build_user_session(resp.user, resp.session)
         st.session_state["_user_session"] = session
         _record_attempt(email, success=True)
         return {"ok": True, "session": session}

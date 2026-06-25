@@ -71,6 +71,47 @@ def _prefetch_playwright() -> None:
 
 _prefetch_playwright()
 
+# ── Email confirmation callback handler ───────────────────────────────────────
+# Supabase sends #access_token=...&refresh_token=...&type=signup in the URL hash
+# after email confirmation. Browsers never send hash fragments to the server, so
+# we inject JS to copy them into query params and reload — then exchange for a
+# real session here.
+st.html("""
+<script>
+(function(){
+  var h = window.location.hash;
+  if (!h || !h.includes('access_token')) return;
+  var params = {};
+  h.replace(/^#/, '').split('&').forEach(function(p){
+    var kv = p.split('='); params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1]||'');
+  });
+  if (params.access_token) {
+    var qs = '?st_at=' + encodeURIComponent(params.access_token) +
+             '&st_rt=' + encodeURIComponent(params.refresh_token||'') +
+             '&st_type=' + encodeURIComponent(params.type||'');
+    window.location.replace(window.location.pathname + qs);
+  }
+})();
+</script>
+""")
+
+# Exchange Supabase token from email confirmation callback
+_qp = st.query_params
+if _qp.get("st_at") and _qp.get("st_type") in ("signup", "recovery", "email_change"):
+    try:
+        from auth.streamlit_auth import _client
+        _sb = _client()
+        if _sb:
+            _sb.auth.set_session(_qp["st_at"], _qp.get("st_rt", ""))
+            _sess = _sb.auth.get_session()
+            if _sess and _sess.user:
+                from auth.streamlit_auth import _build_user_session
+                st.session_state["_user_session"] = _build_user_session(_sess.user, _sess)
+    except Exception:
+        pass
+    st.query_params.clear()
+    st.rerun()
+
 if supabase_available():
     _current_user = require_auth()  # shows login page + st.stop() if not authed
     if _current_user:
