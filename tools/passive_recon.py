@@ -162,6 +162,57 @@ def _redact(secret: str) -> str:
     return secret[:6] + "****"
 
 
+def _hackertarget_headers(url: str, timeout: int = 15) -> dict | None:
+    """Fetch HTTP headers via HackerTarget API — bypasses WAF/datacenter IP blocking."""
+    try:
+        r = requests.get(
+            "https://api.hackertarget.com/httpheaders/",
+            params={"q": url},
+            headers={**_HEADERS, "Accept": "text/plain"},
+            timeout=timeout,
+        )
+        if r.status_code != 200:
+            return None
+        text = r.text.strip()
+        if not text or text.lower().startswith("error") or "api count exceeded" in text.lower():
+            return None
+        lines = text.split("\n")
+        headers: dict[str, str] = {}
+        for line in lines[1:]:  # skip HTTP/x.x STATUS line
+            if ":" in line:
+                k, _, v = line.partition(":")
+                k = k.strip()
+                v = v.strip()
+                if k:
+                    headers[k.lower()] = v
+        return headers if len(headers) >= 2 else None
+    except Exception:
+        return None
+
+
+def _certspotter_subdomains(domain: str, timeout: int = 15) -> list[str] | None:
+    """Fetch subdomains from CertSpotter API — faster alternative to crt.sh."""
+    try:
+        r = requests.get(
+            "https://api.certspotter.com/v1/issuances",
+            params={"domain": domain, "include_subdomains": "true", "expand": "dns_names"},
+            headers=_HEADERS,
+            timeout=timeout,
+        )
+        if r.status_code != 200:
+            return None
+        data = r.json()
+        names: set[str] = set()
+        for cert in data:
+            for name in cert.get("dns_names", []):
+                clean = name.lstrip("*.")
+                if clean and domain in clean:
+                    names.add(clean)
+        return sorted(names) if names else []
+    except Exception:
+        return None
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. security.txt — RFC 9116
 # ─────────────────────────────────────────────────────────────────────────────
@@ -936,6 +987,17 @@ def analyze_email_spoofability(domain: str, timeout: int = 10) -> dict:
     if spf_include_count > 8:
         detail += f" Warning: SPF has {spf_include_count}+ DNS lookups — approaching RFC 7208 limit of 10."
 
+    # ── MTA-STS — SMTP transport layer security policy ────────────────────────
+    mta_sts_records = _txt(f"_mta-sts.{base}")
+    has_mta_sts = bool(mta_sts_records and any("v=STSv1" in r for r in mta_sts_records))
+    if not has_mta_sts and dmarc_policy in ("reject", "quarantine"):
+        # MTA-STS matters more when DMARC is strict
+        detail += " MTA-STS missing — SMTP connections to mail servers not enforced to use TLS."
+
+    # ── SMTP TLS Reporting (RFC 8460) ─────────────────────────────────────────
+    tls_rpt_records = _txt(f"_smtp._tls.{base}")
+    has_tls_rpt = bool(tls_rpt_records and any("v=TLSRPTv1" in r for r in tls_rpt_records))
+
     # ── BIMI check (Brand Indicators for Message Identification) ──────────────
     bimi_records = _txt(f"default._bimi.{base}")
     has_bimi     = bool(bimi_records and any("v=BIMI1" in r for r in bimi_records))
@@ -982,6 +1044,8 @@ def analyze_email_spoofability(domain: str, timeout: int = 10) -> dict:
         "dkim_found": bool(dkim_found),
         "dkim_selectors": dkim_found,
         "has_bimi": has_bimi,
+        "has_mta_sts": has_mta_sts,
+        "has_tls_rpt": has_tls_rpt,
         "registered_services": registered_services,
         "spoofability": spoofability,
         "can_spoof": can_spoof,
@@ -1540,8 +1604,9 @@ def analyze_http_security_headers(url: str, timeout: int = 10) -> dict:
     is_plain_http = url.startswith("http://") and not url.startswith("https://")
 
     r = _safe_get(url, timeout=timeout)
+    _via_hackertarget = False
+
     if not r:
-        # For plain HTTP sites, headers are definitely incomplete even without a response
         if is_plain_http:
             return {
                 "status": "completed",
@@ -1559,15 +1624,22 @@ def analyze_http_security_headers(url: str, timeout: int = 10) -> dict:
                     "HSTS impossible, CSP cannot be enforced, all traffic unencrypted."
                 ),
             }
-        return {"status": "completed", "severity": "INFO",
-                "finding": (
-                    "HTTP headers could not be retrieved — target likely blocks scanner IPs "
-                    "(datacenter/cloud IP filtering). Headers may be well-configured; "
-                    "re-test from a residential IP or browser extension for accurate results."
-                )}
+        # Try HackerTarget as fallback (scans from a different IP, bypasses WAF)
+        ht_h = _hackertarget_headers(url, timeout=timeout + 5)
+        if not ht_h:
+            return {"status": "completed", "severity": "INFO",
+                    "finding": (
+                        "HTTP headers could not be retrieved — target likely blocks scanner IPs "
+                        "(datacenter/cloud IP filtering). Headers may be well-configured; "
+                        "re-test from a residential IP or browser extension for accurate results."
+                    )}
+        h = ht_h
+        _via_hackertarget = True
+    else:
+        h = r.headers
 
-    h    = r.headers
     issues: list[dict] = []
+    _source_note = " [via HackerTarget API]" if _via_hackertarget else ""
 
     # ── CSP ──────────────────────────────────────────────────────────────────
     csp = h.get("Content-Security-Policy", "")
@@ -1660,8 +1732,12 @@ def analyze_http_security_headers(url: str, timeout: int = 10) -> dict:
                        "fix": "Add: Referrer-Policy: strict-origin-when-cross-origin"})
 
     # ── Cookie security ──────────────────────────────────────────────────────
-    set_cookies = r.headers.getlist("Set-Cookie") if hasattr(r.headers, "getlist") else \
-                  [v for k, v in r.headers.items() if k.lower() == "set-cookie"]
+    if _via_hackertarget or r is None:
+        set_cookies = []  # HackerTarget doesn't forward Set-Cookie reliably
+    elif hasattr(r.headers, "getlist"):
+        set_cookies = r.headers.getlist("Set-Cookie")
+    else:
+        set_cookies = [v for k, v in r.headers.items() if k.lower() == "set-cookie"]
     cookie_issues: list[str] = []
     for ck in set_cookies:
         ck_lower = ck.lower()
@@ -1737,11 +1813,12 @@ def analyze_http_security_headers(url: str, timeout: int = 10) -> dict:
         "xfo_present": bool(xfo) or csp_frame,
         "cors_wildcard": acao == "*",
         "severity": sev,
+        "via_hackertarget": _via_hackertarget,
         "finding": (
-            f"HTTP Headers grade {grade} ({score}/100) — {len(issues)} misconfiguration(s): "
+            f"HTTP Headers grade {grade} ({score}/100){_source_note} — {len(issues)} misconfiguration(s): "
             + "; ".join(i["issue"][:60] for i in issues[:3])
             if issues else
-            f"HTTP Security Headers grade {grade} — all major headers properly configured."
+            f"HTTP Security Headers grade {grade}{_source_note} — all major headers properly configured."
         ),
     }
 
@@ -2160,15 +2237,44 @@ def check_crt_subdomains(domain: str, timeout: int = 12) -> dict:
 
     crt_url = f"https://crt.sh/?q=%.{base}&output=json"
     r = _safe_get(crt_url, timeout=timeout)
+
+    # CertSpotter fallback when crt.sh times out or fails
     if not r or r.status_code != 200:
+        cs_names = _certspotter_subdomains(base, timeout=timeout + 3)
+        if cs_names is not None:
+            subdomains = [{"subdomain": n, "label": n.replace(f".{base}", "").replace(base, "root"),
+                           "interesting": bool(_INTERESTING_SUBDOMAIN.match(n.replace(f".{base}", ""))),
+                           "issuer": "CertSpotter", "not_before": ""}
+                          for n in cs_names]
+            interesting = [d for d in subdomains if d["interesting"]]
+            sev = ("CRITICAL" if any(re.search(r'(jenkins|admin|internal|corp|intranet)', d["label"])
+                                     for d in interesting)
+                   else "HIGH" if len(interesting) >= 3
+                   else "MEDIUM" if interesting
+                   else "LOW" if len(subdomains) > 5
+                   else "INFO")
+            return {
+                "status": "completed", "source": "certspotter",
+                "total_subdomains": len(subdomains),
+                "subdomains": subdomains[:50],
+                "interesting_subdomains": interesting[:20],
+                "interesting_count": len(interesting),
+                "severity": sev,
+                "finding": (
+                    f"CT Logs [CertSpotter] reveal {len(subdomains)} subdomain(s)"
+                    + (f" — {len(interesting)} interesting: "
+                       + ", ".join(d['label'] for d in interesting[:5])
+                       if interesting else " — no high-risk subdomains detected.")
+                ),
+            }
         return {"status": "completed", "subdomains": [], "severity": "INFO",
-                "finding": "CT Logs: crt.sh service unavailable for this query — data may exist but could not be retrieved."}
+                "finding": "CT Logs: crt.sh and CertSpotter both unavailable — could not enumerate subdomains."}
 
     try:
         entries = r.json()
     except Exception:
-        return {"status": "error", "subdomains": [], "severity": "INFO",
-                "finding": "crt.sh returned invalid JSON."}
+        return {"status": "completed", "subdomains": [], "severity": "INFO",
+                "finding": "CT Logs: crt.sh returned invalid data."}
 
     # Collect unique subdomains from name_value field
     seen: set[str] = set()
@@ -2324,8 +2430,198 @@ def check_github_leaks(domain: str, timeout: int = 15) -> dict:
 # Passive Recon runner — 15 tools, streaming + batch API
 # ─────────────────────────────────────────────────────────────────────────────
 
+def check_whois_domain(url: str, timeout: int = 12) -> dict:
+    """
+    WHOIS lookup via HackerTarget API.
+    Returns domain age, registrar, expiry date, and privacy protection status.
+    Passive — reads public WHOIS data.
+    """
+    host = urlparse(url).netloc or url.replace("https://", "").replace("http://", "")
+    base = re.sub(r'^www\.', '', host.split(":")[0].split("/")[0])
+
+    if is_ssrf_blocked(base):
+        return {"status": "completed", "severity": "INFO",
+                "finding": "WHOIS: skipped for internal address."}
+
+    r = _safe_get(
+        f"https://api.hackertarget.com/whois/?q={base}",
+        timeout=timeout,
+    )
+    if not r or r.status_code != 200:
+        return {"status": "completed", "severity": "INFO",
+                "finding": "WHOIS: HackerTarget API unavailable — try again later."}
+
+    text = r.text.strip()
+    if not text or text.lower().startswith("error") or "api count exceeded" in text.lower():
+        return {"status": "completed", "severity": "INFO",
+                "finding": "WHOIS: No data returned (domain may not exist or WHOIS is restricted)."}
+
+    # Parse creation date → domain age
+    age_days: int | None = None
+    for pattern in [
+        r"Creation Date[:\s]+([^\r\n]+)",
+        r"created[:\s]+([^\r\n]+)",
+        r"Registered[:\s]+([^\r\n]+)",
+        r"Domain Registration Date[:\s]+([^\r\n]+)",
+    ]:
+        m = re.search(pattern, text, re.IGNORECASE)
+        if m:
+            raw = m.group(1).strip()[:30]
+            for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S",
+                        "%Y-%m-%d", "%d-%b-%Y", "%d/%m/%Y", "%Y-%m-%dT%H:%M:%S.%fZ"):
+                try:
+                    created = datetime.datetime.strptime(raw[:19], fmt[:len(raw[:19])])
+                    age_days = (datetime.datetime.utcnow() - created).days
+                    break
+                except Exception:
+                    pass
+            if age_days is not None:
+                break
+
+    # Parse expiry
+    expiry_str = ""
+    for pattern in [
+        r"Registry Expiry Date[:\s]+([^\r\n]+)",
+        r"Expiry date[:\s]+([^\r\n]+)",
+        r"Expiration Date[:\s]+([^\r\n]+)",
+    ]:
+        m = re.search(pattern, text, re.IGNORECASE)
+        if m:
+            expiry_str = m.group(1).strip()[:25]
+            break
+
+    # Parse registrar
+    registrar = ""
+    m = re.search(r"^Registrar[:\s]+([^\r\n]+)", text, re.IGNORECASE | re.MULTILINE)
+    if m:
+        registrar = m.group(1).strip()[:60]
+
+    # Privacy protection
+    privacy = any(x in text.lower() for x in [
+        "redacted for privacy", "privacy protect", "domains by proxy",
+        "whoisguard", "registrant: protected",
+    ])
+
+    # Nameservers
+    ns_matches = re.findall(r"Name Server[:\s]+([^\r\n]+)", text, re.IGNORECASE)
+    nameservers = list({n.strip().lower() for n in ns_matches if n.strip()})[:4]
+
+    issues: list[dict] = []
+    if age_days is not None and age_days < 30:
+        issues.append({"check": "Domain Age", "severity": "HIGH",
+                       "issue": f"Domain only {age_days} days old — newly registered, high phishing risk"})
+    elif age_days is not None and age_days < 180:
+        issues.append({"check": "Domain Age", "severity": "MEDIUM",
+                       "issue": f"Domain {age_days} days old ({age_days // 30} months) — relatively new"})
+
+    sev = issues[0]["severity"] if issues else "INFO"
+    age_str = (f"{age_days // 365}y {(age_days % 365) // 30}m"
+               if age_days and age_days >= 365
+               else f"{age_days}d" if age_days else "unknown")
+
+    return {
+        "status": "completed",
+        "severity": sev,
+        "domain_age_days": age_days,
+        "registrar": registrar,
+        "expiry": expiry_str,
+        "privacy_protected": privacy,
+        "nameservers": nameservers,
+        "issues": issues,
+        "finding": (
+            f"WHOIS: age {age_str} | registrar: {registrar[:40] or 'unknown'} | "
+            f"privacy: {'yes' if privacy else 'no'}"
+            + (f" | {nameservers[0]}" if nameservers else "")
+            + (f" ⚠ {issues[0]['issue']}" if issues else "")
+        ),
+    }
+
+
+def scan_urlscan_io(url: str, timeout: int = 12) -> dict:
+    """
+    Search URLScan.io for previous public scans of this domain.
+    Returns technology stack, third-party resource count, and scan history.
+    Passive — reads existing scan data, zero requests to the target.
+    """
+    host = urlparse(url).netloc or url.replace("https://", "").replace("http://", "")
+    base = re.sub(r'^www\.', '', host.split(":")[0].split("/")[0])
+
+    if is_ssrf_blocked(base):
+        return {"status": "completed", "severity": "INFO",
+                "finding": "URLScan.io: skipped for internal address."}
+
+    r = _safe_get(
+        f"https://urlscan.io/api/v1/search/?q=domain:{base}&size=5",
+        headers={"Accept": "application/json"},
+        timeout=timeout,
+    )
+    if not r or r.status_code != 200:
+        return {"status": "completed", "severity": "INFO",
+                "finding": "URLScan.io: service unavailable — no scan history retrieved."}
+
+    try:
+        data = r.json()
+    except Exception:
+        return {"status": "completed", "severity": "INFO",
+                "finding": "URLScan.io: could not parse response."}
+
+    results = data.get("results", [])
+    if not results:
+        return {"status": "completed", "severity": "INFO",
+                "finding": f"URLScan.io: no public scans found for {base}."}
+
+    # Aggregate technology tags across scans
+    techs: list[str] = []
+    third_party_counts: list[int] = []
+    last_scan = ""
+
+    for scan in results[:5]:
+        if not last_scan:
+            last_scan = (scan.get("task", {}).get("time", "") or "")[:10]
+        page = scan.get("page", {})
+        # Tech from page metadata (available in search index)
+        for key in ("technologies", "technology"):
+            for tech in (page.get(key) or []):
+                name = tech.get("name") or tech if isinstance(tech, str) else ""
+                if name and name not in techs:
+                    techs.append(name)
+        # Third-party count from stats
+        stats = scan.get("stats", {})
+        domains_count = stats.get("domains", 0) or len(scan.get("lists", {}).get("domains", []))
+        if domains_count:
+            third_party_counts.append(max(0, domains_count - 1))
+
+    avg_third = int(sum(third_party_counts) / len(third_party_counts)) if third_party_counts else 0
+
+    issues: list[dict] = []
+    if avg_third >= 15:
+        issues.append({"check": "Third-party resources", "severity": "MEDIUM",
+                       "issue": f"~{avg_third} third-party domains per page load — large attack/tracking surface"})
+    elif avg_third >= 30:
+        issues.append({"check": "Third-party resources", "severity": "HIGH",
+                       "issue": f"~{avg_third} third-party domains — excessive supply chain exposure"})
+
+    sev = issues[0]["severity"] if issues else "INFO"
+
+    return {
+        "status": "completed",
+        "severity": sev,
+        "technologies": techs[:12],
+        "avg_third_party_domains": avg_third,
+        "scan_count": len(results),
+        "last_scan_date": last_scan,
+        "issues": issues,
+        "finding": (
+            f"URLScan.io ({len(results)} scans, last: {last_scan or 'unknown'}): "
+            + (f"tech stack: {', '.join(techs[:6])} | " if techs else "no tech tags | ")
+            + f"avg {avg_third} third-party domains per load"
+            + (f" ⚠ {issues[0]['issue']}" if issues else "")
+        ),
+    }
+
+
 def _build_tasks(url: str, domain: str, tech_results: dict) -> dict:
-    """Return ordered task dict for all 15 OSINT tools."""
+    """Return ordered task dict for all 17 OSINT tools."""
     return {
         "security_txt":       lambda: check_security_txt(url),
         "robots_sitemap":     lambda: analyze_robots_sitemap(url),
@@ -2342,6 +2638,8 @@ def _build_tasks(url: str, domain: str, tech_results: dict) -> dict:
         "ssl_passive":        lambda: check_ssl_passive(url),
         "crt_subdomains":     lambda: check_crt_subdomains(domain),
         "dns_deep":           lambda: check_dns_deep(domain),
+        "whois":              lambda: check_whois_domain(url),
+        "urlscan":            lambda: scan_urlscan_io(url),
     }
 
 

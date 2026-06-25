@@ -1284,9 +1284,9 @@ with st.sidebar:
     if scan_mode == "passive":
         st.markdown("""
 <div class="mode-badge-passive">
-🔵 PASSIVE RECON — 15 OSINT TOOLS<br>
+🔵 PASSIVE RECON — 17 OSINT TOOLS<br>
 <span style="font-weight:400;color:#93c5fd;font-size:0.72rem">
-  15 OSINT tools · safe on ANY website<br>
+  17 OSINT tools · safe on ANY website<br>
   JS secrets · Cloud buckets · CVE match<br>
   GitHub leaks · Email spoofability · Wayback<br>
   DNS deep · CNAME takeover · Exposed files
@@ -1413,7 +1413,7 @@ st.markdown(f"""
   <div class="cs-tagline">Web Application Security Intelligence Platform</div>
   <div>
     <span class="cs-badge">v6.0</span>
-    <span class="cs-badge" style="margin-left:6px">{'15 OSINT TOOLS' if scan_mode == 'passive' else '17 TOOLS'}</span>
+    <span class="cs-badge" style="margin-left:6px">{'17 OSINT TOOLS' if scan_mode == 'passive' else '17 TOOLS'}</span>
     {_mode_badge_html}
     <span class="cs-badge" style="margin-left:6px">DEFENSIVE USE ONLY</span>
   </div>
@@ -1590,7 +1590,7 @@ button[kind="primary"]:hover {
 }
 </style>""", unsafe_allow_html=True)
         _btn_label   = "🔵  Run Passive Recon (15 Tools)"
-        _btn_caption = "15 OSINT tools · SSL/TLS · DNS · CT Logs · Exposed files · HTTP headers · JS + source maps · CVEs (55) · ~90 s"
+        _btn_caption = "17 OSINT tools · SSL/TLS · DNS · CT Logs · Exposed files · HTTP headers · JS + source maps · CVEs (55) · ~90 s"
     else:
         _btn_label   = "🔍  Scan Now — Full Analysis"
         _btn_caption = "17 passive tools + AI report · ~30 s · no probes sent · safe for any site"
@@ -1760,6 +1760,8 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                     "ssl_passive":        "🔒 SSL/TLS Certificate",
                     "crt_subdomains":     "🔏 CT Log Subdomains",
                     "dns_deep":           "🌐 DNS Deep Analysis",
+                    "whois":              "📋 WHOIS & Domain Age",
+                    "urlscan":            "🔎 URLScan.io Fingerprint",
                 }
                 _sev_icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "⚪", "INFO": "✅"}
 
@@ -1767,7 +1769,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                 if _current_user:
                     increment_quota(_current_user)
 
-                with st.status("🔵 Running Passive Recon — 15 OSINT tools…", expanded=True) as _ps:
+                with st.status("🔵 Running Passive Recon — 17 OSINT tools…", expanded=True) as _ps:
                     st.write(f"🎯 Target: **{target}** — OSINT only, no active probes")
                     try:
                         from tools.passive_recon import run_passive_recon_streaming, _build_passive_result
@@ -2121,8 +2123,8 @@ confirm vulnerabilities with non-destructive canary probes and get curl PoC repr
       <div style="color:#e2e8f0;font-size:1.1rem;font-weight:700">
         Passive Recon Results — {_pr_target}
       </div>
-      <div style="color:#475569;font-size:0.75rem;margin-top:4px;font-family:'JetBrains Mono',monospace">15 OSINT tools · Overall severity: <span style="color:{_ov_color};font-weight:700">{_pr_overall}</span> · <span style="color:#64748b">{_pr_data.get('scan_timestamp','')[:16].replace('T',' ')} UTC</span></div>
-      <div style="color:#64748b;font-size:0.7rem;margin-top:3px">📊 100{f' − {_n_crit}×25(C)' if _n_crit else ''}{f' − {_n_high}×15(H)' if _n_high else ''}{f' − {_n_med}×8(M)' if _n_med else ''} = <b style="color:{_gc}">{_pr_score}/100</b></div>
+      <div style="color:#475569;font-size:0.75rem;margin-top:4px;font-family:'JetBrains Mono',monospace">17 OSINT tools · Overall severity: <span style="color:{_ov_color};font-weight:700">{_pr_overall}</span> · <span style="color:#64748b">{_pr_data.get('scan_timestamp','')[:16].replace('T',' ')} UTC</span></div>
+      <div style="color:#64748b;font-size:0.7rem;margin-top:3px">📊 100{f' − {_n_crit}×25(C)' if _n_crit else ''}{f' − {_n_high}×15(H)' if _n_high else ''}{f' − {_n_med}×8(M)' if _n_med else ''} = <b style="color:{_gc}">{_pr_score}/100</b> · {len(_pr_tools)} tools</div>
       <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
         <span style="background:#3f0000;color:#ef4444;border:1px solid #ef444440;
                      padding:2px 10px;border-radius:4px;font-size:0.75rem;font-weight:700">
@@ -2166,7 +2168,7 @@ th{{background:#1e293b;padding:10px;text-align:left;font-size:.8rem;color:#94a3b
 td{{padding:9px 10px;border-bottom:1px solid #1e293b;font-size:.82rem;vertical-align:top}}
 </style></head><body>
 <h1>⬡ AI Cyber Shield — Passive Recon Report</h1>
-<h2>Target: {target} &nbsp;|&nbsp; Scan: {_ts} UTC &nbsp;|&nbsp; Tools: 15 OSINT</h2>
+<h2>Target: {target} &nbsp;|&nbsp; Scan: {_ts} UTC &nbsp;|&nbsp; Tools: 17 OSINT</h2>
 <div class="score">{score}/100</div>
 <div style="font-size:1.5rem;color:#94a3b8">Grade {grade}</div>
 <table><thead><tr><th>Tool</th><th>Severity</th><th>Finding</th></tr></thead>
@@ -2217,6 +2219,8 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
             "crt_subdomains":     ("🔏", "CT Logs — Subdomain Enumeration"),
             "ssl_passive":        ("🔒", "SSL/TLS Certificate Analysis"),
             "dns_deep":           ("🌐", "DNS Deep Analysis"),
+            "whois":              ("📋", "WHOIS & Domain Age"),
+            "urlscan":            ("🔎", "URLScan.io Fingerprint"),
         }
 
         # Plain-language "what it means / what to report" per tool
@@ -2427,11 +2431,13 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
                 "ssl_passive":        ("issues",                  "🔒 TLS issues"),
                 "dns_deep":           ("issues",                  "🌐 DNS issues"),
                 "email_spoofability": None,
+                "whois":              None,
+                "urlscan":            None,
             }
             if tool_key in _detail_keys and sev in ("CRITICAL", "HIGH", "MEDIUM"):
                 detail_info = _detail_keys[tool_key]
                 with st.expander(f"↳ Details — {label}"):
-                    if detail_info is None:
+                    if detail_info is None and tool_key == "email_spoofability":
                         # Email spoofability — full structured data + BIMI + services
                         _sp_c1, _sp_c2 = st.columns(2)
                         _sp_c1.markdown(f"""
@@ -2443,6 +2449,8 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
 | DKIM selectors | `{', '.join(tr.get('dkim_selectors',[]) or ['none found'])}` |
 | Can spoof? | **{'⚠️ YES' if tr.get('can_spoof') else '✅ NO'}** |
 | BIMI record | {'✅ Yes' if tr.get('has_bimi') else '❌ No'} |
+| MTA-STS | {'✅ Yes' if tr.get('has_mta_sts') else '❌ No'} |
+| TLS Reporting | {'✅ Yes' if tr.get('has_tls_rpt') else '❌ No'} |
 """)
                         _svcs = tr.get("registered_services", [])
                         if _svcs:
@@ -2451,6 +2459,38 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
                                 _sp_c2.markdown(f"- 🔍 {_svc}")
                         else:
                             _sp_c2.caption("No third-party services detected via TXT records.")
+                    elif detail_info is None and tool_key == "whois":
+                        _w_c1, _w_c2 = st.columns(2)
+                        _age = tr.get("domain_age_days")
+                        _age_str = (f"{_age // 365}y {(_age % 365) // 30}m" if _age and _age >= 365
+                                    else f"{_age}d" if _age else "unknown")
+                        _w_c1.markdown(f"""
+| Field | Value |
+|-------|-------|
+| Domain age | **{_age_str}** |
+| Registrar | {tr.get('registrar','unknown')[:50]} |
+| Expiry | {tr.get('expiry','unknown')[:20]} |
+| Privacy protected | {'✅ Yes' if tr.get('privacy_protected') else '❌ No'} |
+""")
+                        _ns = tr.get("nameservers", [])
+                        if _ns:
+                            _w_c2.markdown("**Nameservers:**")
+                            for _n in _ns:
+                                _w_c2.markdown(f"- `{_n}`")
+                    elif detail_info is None and tool_key == "urlscan":
+                        _u_c1, _u_c2 = st.columns(2)
+                        _u_c1.markdown(f"""
+| Field | Value |
+|-------|-------|
+| Public scans found | {tr.get('scan_count', 0)} |
+| Last scan date | {tr.get('last_scan_date','unknown')} |
+| Avg 3rd-party domains | {tr.get('avg_third_party_domains', 0)} |
+""")
+                        _techs = tr.get("technologies", [])
+                        if _techs:
+                            _u_c2.markdown("**Detected technologies:**")
+                            for _t in _techs[:8]:
+                                _u_c2.markdown(f"- {_t}")
                     else:
                         items_key, items_label = detail_info
                         items = tr.get(items_key, [])
