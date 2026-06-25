@@ -1153,12 +1153,13 @@ def correlate_cves(tech_results: dict) -> dict:
     tech_results: dict from tools.tech_fingerprinter.fingerprint_technologies()
     """
     if not tech_results or tech_results.get("status") == "error":
-        return {"status": "skipped", "matched_cves": [], "severity": "INFO"}
+        return {"status": "completed", "matched_cves": [], "severity": "INFO",
+                "finding": "No technology fingerprint available — CVE correlation skipped for this target."}
 
     technologies = tech_results.get("technologies", {})
     if not technologies:
         return {"status": "completed", "matched_cves": [], "severity": "INFO",
-                "finding": "No technology versions detected to correlate."}
+                "finding": "No technology versions detected — no known CVEs to correlate."}
 
     matched: list[dict] = []
     for entry in _CVE_DB:
@@ -2095,7 +2096,15 @@ _INTERESTING_SUBDOMAIN = re.compile(
 )
 
 
-def check_crt_subdomains(domain: str, timeout: int = 15) -> dict:
+_MEGA_PLATFORM_DOMAINS = {
+    "streamlit.app", "github.io", "netlify.app", "vercel.app",
+    "pages.dev", "herokuapp.com", "azurewebsites.net", "web.app",
+    "firebaseapp.com", "amplifyapp.com", "render.com", "railway.app",
+    "fly.dev", "glitch.me", "replit.app", "onrender.com",
+}
+
+
+def check_crt_subdomains(domain: str, timeout: int = 12) -> dict:
     """
     Query crt.sh Certificate Transparency logs to enumerate subdomains.
     100% passive — reads public CT log data, no probes sent.
@@ -2104,6 +2113,19 @@ def check_crt_subdomains(domain: str, timeout: int = 15) -> dict:
     host = urlparse(domain).netloc or domain.replace("https://","").replace("http://","")
     host = host.split(":")[0].split("/")[0]
     base = re.sub(r'^www\.', '', host)
+
+    # Shared hosting platforms host millions of apps — crt.sh returns
+    # hundreds of thousands of entries and always times out or OOMs.
+    for _platform in _MEGA_PLATFORM_DOMAINS:
+        if host.endswith("." + _platform) or host == _platform:
+            return {
+                "status": "completed", "subdomains": [], "severity": "INFO",
+                "finding": (
+                    f"CT Logs: target is a subdomain of {_platform} — "
+                    f"shared platform with millions of certificates. "
+                    f"CT enumeration not applicable to individual app subdomains."
+                ),
+            }
 
     crt_url = f"https://crt.sh/?q=%.{base}&output=json"
     r = _safe_get(crt_url, timeout=timeout)
