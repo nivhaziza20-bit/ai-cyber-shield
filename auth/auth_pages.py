@@ -196,17 +196,25 @@ button[kind="primary"]:active {
   transform: translateY(0) !important;
   box-shadow: 0 1px 8px rgba(16,185,129,0.20) !important;
 }
+/* Secondary buttons on landing page are always toggle/link actions */
 button[kind="secondary"] {
-  background: #0d1421 !important;
-  color: #64748b !important;
-  border: 1px solid #2a3d52 !important;
-  border-radius: 10px !important;
+  background: transparent !important;
+  color: #10b981 !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 2px !important;
+  font-size: 0.81rem !important;
   font-weight: 600 !important;
-  transition: all 0.18s ease !important;
+  min-height: 26px !important;
+  line-height: 1 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px !important;
+  text-decoration-color: rgba(16,185,129,0.4) !important;
 }
 button[kind="secondary"]:hover {
-  border-color: #10b981 !important;
-  color: #10b981 !important;
+  color: #34d399 !important;
+  transform: none !important;
+  text-decoration-color: rgba(52,211,153,0.85) !important;
 }
 
 /* ── MOBILE — tablet (≤768px) ───────────────────────────── */
@@ -656,8 +664,7 @@ def show_auth_page() -> None:
 
         # ── GitHub OAuth (shown for signin + signup) ──────────────────────────
         if _view in ("signin", "signup"):
-            st.markdown("<div style='padding:20px 24px 0'>", unsafe_allow_html=True)
-            st.markdown('<div class="auth-github-row">', unsafe_allow_html=True)
+            st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
             if st.button(
                 "⬡  Continue with GitHub",
                 use_container_width=True,
@@ -669,18 +676,16 @@ def show_auth_page() -> None:
                     st.html(f'<script>window.location.href="{_gh["url"]}";</script>')
                 else:
                     st.error(_gh.get("error", "GitHub login is not configured yet."))
-            st.markdown('</div>', unsafe_allow_html=True)
 
             st.markdown("""
-<div style="display:flex;align-items:center;gap:10px;margin:16px 0 14px">
+<div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px">
   <div style="flex:1;height:1px;background:#1a2a3d"></div>
   <span style="color:#2d4056;font-size:0.7rem;white-space:nowrap;letter-spacing:0.06em">or continue with email</span>
   <div style="flex:1;height:1px;background:#1a2a3d"></div>
 </div>""", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
 
-        # ── Form content ──────────────────────────────────────────────────────
-        st.markdown("<div style='padding:0 24px'>", unsafe_allow_html=True)
+        # ── Form content ──────────────────────────name="auth-body"──────────
+        st.markdown("<div style='height:2px'></div>", unsafe_allow_html=True)
 
         # ── Sign In ───────────────────────────────────────────────────────────
         if _view == "signin":
@@ -829,26 +834,29 @@ def show_auth_page() -> None:
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown("</div>", unsafe_allow_html=True)  # /form padding
-
         # ── Card footer + JS column marker ────────────────────────────────────
-        st.markdown(
-            '<div style="height:20px"></div>',
-            unsafe_allow_html=True,
-        )
+        st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
         st.markdown(_AUTH_CARD_FOOTER, unsafe_allow_html=True)
 
-        # Inject class on auth column for CSS targeting
+        # JS: mark auth column + apply GitHub button dark styling
         st.html("""<script>
 (function(){
   function markCol(){
     var t=document.querySelector('.auth-card-top');
     if(!t){setTimeout(markCol,120);return;}
-    for(var n=t,i=0;i<14;i++){
+    for(var n=t,i=0;i<16;i++){
       n=n.parentElement;
       if(!n)break;
-      if(n.getAttribute&&n.getAttribute('data-testid')==='stColumn'){
+      var td=n.getAttribute&&n.getAttribute('data-testid');
+      if(td==='column'||td==='stColumn'){
         n.classList.add('aics-auth-col');
+        /* Also style GitHub button dark */
+        var btns=n.querySelectorAll('button');
+        btns.forEach(function(b){
+          if(b.textContent.includes('GitHub')){
+            b.style.cssText='background:#21262d!important;color:#e6edf3!important;border:1px solid #30363d!important;border-radius:10px!important;font-weight:700!important;';
+          }
+        });
         return;
       }
     }
