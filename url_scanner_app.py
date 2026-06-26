@@ -1589,8 +1589,8 @@ button[kind="primary"]:hover {
     box-shadow: 0 4px 12px rgba(37,99,235,.35) !important;
 }
 </style>""", unsafe_allow_html=True)
-        _btn_label   = "🔵  Run Passive Recon (15 Tools)"
-        _btn_caption = "18 OSINT tools · SSL/TLS · DNS · CT Logs · Exposed files · HTTP headers · JS + source maps · CVEs (55) · ~90 s"
+        _btn_label   = "🔵  Run Passive Recon (18 Tools)"
+        _btn_caption = "18 OSINT tools · SSL/TLS · DNS · CT Logs · HTTP headers · IP Intelligence (Shodan) · WHOIS · URLScan · ~90 s"
     else:
         _btn_label   = "🔍  Scan Now — Full Analysis"
         _btn_caption = "17 passive tools + AI report · ~30 s · no probes sent · safe for any site"
