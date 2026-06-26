@@ -66,33 +66,92 @@ _LANDING_CSS = """
 .auth-notice { background:#0f2027; border:1px solid #10b981; border-radius:8px; padding:10px 14px; font-size:0.79rem; color:#86efac; margin-bottom:16px; line-height:1.55; }
 .auth-card-footer { background:#0d1421; border:1px solid #2a3d52; border-top:none; border-radius:0 0 16px 16px; padding:12px 28px 22px; text-align:center; color:#334155; font-size:0.69rem; line-height:1.75; box-shadow:0 8px 32px rgba(0,0,0,0.5); }
 
-/* ── Auth card tab strip — blends seamlessly with card ───── */
-.stTabs [data-baseweb="tab-list"] {
-    background: #0d1421 !important;
-    border-bottom: 1px solid #2a3d52 !important;
-    border-left: 1px solid #2a3d52 !important;
-    border-right: 1px solid #2a3d52 !important;
-    gap: 2px !important;
-    padding: 0 8px !important;
+/* ── Auth column card (JS-injected .aics-auth-col on the right column) ── */
+.aics-auth-col {
+    background: #0b1220 !important;
+    border-radius: 18px !important;
+    overflow: hidden !important;
+    box-shadow:
+        0 1px 0 rgba(255,255,255,0.04) inset,
+        0 24px 80px rgba(0,0,0,0.55),
+        0 0 0 1px rgba(16,185,129,0.10) !important;
 }
-.stTabs [data-baseweb="tab-panel"] {
-    background: #0d1421 !important;
-    border-left: 1px solid #2a3d52 !important;
-    border-right: 1px solid #2a3d52 !important;
-    padding: 0 !important;
-}
-.stTabs [data-baseweb="tab"] {
-    background: transparent !important;
-    color: #64748b !important;
-    border-radius: 6px 6px 0 0 !important;
-    font-size: 0.82rem !important;
-    padding: 9px 14px !important;
+.aics-auth-col .auth-card-top {
     border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid #1a2a3d !important;
 }
-.stTabs [aria-selected="true"] {
-    background: #111d2e !important;
+.aics-auth-col .auth-card-footer {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border-top: 1px solid #1a2a3d !important;
+    background: #080f1a !important;
+}
+
+/* ── Streamlit input overrides inside auth card ─────────── */
+[data-testid="stTextInput"] input {
+    background: #060e1e !important;
+    border: 1px solid #243347 !important;
+    color: #e2e8f0 !important;
+    border-radius: 9px !important;
+    font-size: 0.88rem !important;
+    transition: border-color 0.18s, box-shadow 0.18s !important;
+}
+[data-testid="stTextInput"] input:focus {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.12) !important;
+    outline: none !important;
+}
+[data-testid="stTextInput"] input::placeholder { color: #2a3d52 !important; }
+[data-testid="stTextInput"] label {
+    color: #64748b !important;
+    font-size: 0.73rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.09em !important;
+    text-transform: uppercase !important;
+    margin-bottom: 3px !important;
+}
+
+/* ── GitHub button ───────────────────────────────────────── */
+.auth-github-row [data-testid="stButton"] button {
+    background: #21262d !important;
+    color: #e6edf3 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    font-size: 0.88rem !important;
+    box-shadow: none !important;
+    letter-spacing: 0.01em !important;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s !important;
+}
+.auth-github-row [data-testid="stButton"] button:hover {
+    background: #2d333b !important;
+    border-color: #8b949e !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.35) !important;
+}
+
+/* ── Toggle link buttons ─────────────────────────────────── */
+.auth-toggle-row [data-testid="stButton"] button {
+    background: transparent !important;
     color: #10b981 !important;
-    border-bottom: 2px solid #10b981 !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 2px !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    min-height: 26px !important;
+    letter-spacing: 0 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 2px !important;
+    text-decoration-color: rgba(16,185,129,0.4) !important;
+}
+.auth-toggle-row [data-testid="stButton"] button:hover {
+    color: #34d399 !important;
+    transform: none !important;
+    text-decoration-color: rgba(52,211,153,0.85) !important;
 }
 
 /* ── Hero scan URL label ────────────────────────────────── */
@@ -350,23 +409,24 @@ _FEATURES_HTML = """
 # Auth card wrappers
 # ─────────────────────────────────────────────────────────────────────────────
 
-_AUTH_CARD_TOP = """
+_SVG_SHIELD = """<svg width="26" height="29" viewBox="0 0 28 31" fill="none">
+  <path d="M14 1L2 6V16C2 23.2 7.6 29.8 14 31.4C20.4 29.8 26 23.2 26 16V6L14 1Z"
+        fill="#071a10" stroke="#10b981" stroke-width="1.5"/>
+  <path d="M9 15.5L12.5 19L19 12" stroke="#10b981" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>"""
+
+def _auth_card_top(headline: str, sub: str) -> str:
+    return f"""
 <div class="auth-card-top">
-  <div class="auth-card-brand">
-    <svg width="28" height="31" viewBox="0 0 28 31" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 1L2 6V16C2 23.2 7.6 29.8 14 31.4C20.4 29.8 26 23.2 26 16V6L14 1Z"
-            fill="#071a10" stroke="#10b981" stroke-width="1.5"/>
-      <path d="M9 15.5L12.5 19L19 12" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </div>
-  <div class="auth-card-title">AI Cyber Shield</div>
-  <div class="auth-card-sub">Sign in or create a free account</div>
-</div>
-"""
+  <div class="auth-card-brand">{_SVG_SHIELD}</div>
+  <div class="auth-card-title">{headline}</div>
+  <div class="auth-card-sub">{sub}</div>
+</div>"""
 
 _AUTH_CARD_FOOTER = """
 <div class="auth-card-footer">
-    🛡 Authorized use only &nbsp;·&nbsp; Unauthorized scanning violates our <a href="#" style="color:#334155;text-decoration:underline">Terms</a>
+    🛡 Authorized use only &nbsp;·&nbsp; Scanning targets without permission violates our <a href="/?legal=tos" style="color:#334155;text-decoration:underline">Terms</a>
 </div>
 """
 
@@ -577,179 +637,225 @@ def show_auth_page() -> None:
 
         st.markdown(_FEATURES_HTML, unsafe_allow_html=True)
 
-    # ── RIGHT: auth form ──────────────────────────────────────────────────────
+    # ── RIGHT: auth card (no tabs — session-state view switching) ────────────
     with col_right:
-        st.markdown(_AUTH_CARD_TOP, unsafe_allow_html=True)
+        # ── View state ────────────────────────────────────────────────────────
+        if "_auth_view" not in st.session_state:
+            st.session_state["_auth_view"] = "signin"
+        _view = st.session_state["_auth_view"]
 
-        tab_login, tab_register, tab_reset = st.tabs(
-            ["Sign In", "Create Account", "Reset Password"]
-        )
+        _card_meta = {
+            "signin": ("Welcome back.",        "Sign in to AI Cyber Shield"),
+            "signup": ("Create your account.", "Free forever · No credit card required"),
+            "reset":  ("Forgot your password?","We'll send a reset link to your inbox"),
+        }
+        _hl, _sub = _card_meta.get(_view, _card_meta["signin"])
+
+        # ── Dynamic card header ───────────────────────────────────────────────
+        st.markdown(_auth_card_top(_hl, _sub), unsafe_allow_html=True)
+
+        # ── GitHub OAuth (shown for signin + signup) ──────────────────────────
+        if _view in ("signin", "signup"):
+            st.markdown("<div style='padding:20px 24px 0'>", unsafe_allow_html=True)
+            st.markdown('<div class="auth-github-row">', unsafe_allow_html=True)
+            if st.button(
+                "⬡  Continue with GitHub",
+                use_container_width=True,
+                key=f"gh_{_view}",
+            ):
+                from auth.streamlit_auth import sign_in_with_github
+                _gh = sign_in_with_github()
+                if "url" in _gh:
+                    st.html(f'<script>window.location.href="{_gh["url"]}";</script>')
+                else:
+                    st.error(_gh.get("error", "GitHub login is not configured yet."))
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            st.markdown("""
+<div style="display:flex;align-items:center;gap:10px;margin:16px 0 14px">
+  <div style="flex:1;height:1px;background:#1a2a3d"></div>
+  <span style="color:#2d4056;font-size:0.7rem;white-space:nowrap;letter-spacing:0.06em">or continue with email</span>
+  <div style="flex:1;height:1px;background:#1a2a3d"></div>
+</div>""", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # ── Form content ──────────────────────────────────────────────────────
+        st.markdown("<div style='padding:0 24px'>", unsafe_allow_html=True)
 
         # ── Sign In ───────────────────────────────────────────────────────────
-        with tab_login:
-            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-            email = st.text_input(
-                "Email address", key="li_email",
-                placeholder="you@example.com",
+        if _view == "signin":
+            _li_email = st.text_input(
+                "Email address", key="li_email", placeholder="you@example.com",
             )
-            password = st.text_input(
-                "Password", type="password", key="li_pass",
-                placeholder="Your password",
+            _li_pass = st.text_input(
+                "Password", type="password", key="li_pass", placeholder="••••••••",
             )
-            st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
             if st.button("Sign In →", use_container_width=True, key="li_btn", type="primary"):
-                if not email or not password:
+                if not _li_email or not _li_pass:
                     st.error("Please enter email and password.")
-                elif not _valid_email(email):
+                elif not _valid_email(_li_email):
                     st.error("Enter a valid email address.")
                 else:
                     with st.spinner("Authenticating…"):
-                        result = sign_in(email.strip().lower(), password)
+                        result = sign_in(_li_email.strip().lower(), _li_pass)
                     if result.get("ok"):
                         from audit_log import log_action
                         log_action("login", details={"method": "password"})
-                        st.success("Welcome back!")
                         st.rerun()
                     else:
                         st.error(result.get("error", "Login failed"))
 
-            st.markdown("""
-<div style="display:flex;align-items:center;gap:12px;margin:14px 0 12px">
-  <div style="flex:1;height:1px;background:#1e2d3d"></div>
-  <span style="color:#334155;font-size:0.73rem;white-space:nowrap">or continue with</span>
-  <div style="flex:1;height:1px;background:#1e2d3d"></div>
-</div>""", unsafe_allow_html=True)
-            if st.button("⬡  Continue with GitHub", use_container_width=True, key="li_github"):
-                from auth.streamlit_auth import sign_in_with_github
-                _gh = sign_in_with_github()
-                if "url" in _gh:
-                    st.html(f'<script>window.location.href = "{_gh["url"]}";</script>')
-                else:
-                    st.error(_gh.get("error", "GitHub login is not configured yet."))
+            # Toggle row
+            st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+            _tc1, _tc2 = st.columns([1, 1])
+            with _tc1:
+                st.markdown(
+                    '<div style="color:#334155;font-size:0.79rem;padding-top:6px">New here?</div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown('<div class="auth-toggle-row">', unsafe_allow_html=True)
+                if st.button("Create free account", key="go_signup"):
+                    st.session_state["_auth_view"] = "signup"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+            with _tc2:
+                st.markdown(
+                    '<div style="text-align:right;color:#334155;font-size:0.79rem;padding-top:6px">Trouble signing in?</div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown('<div class="auth-toggle-row" style="text-align:right">', unsafe_allow_html=True)
+                if st.button("Reset password", key="go_reset"):
+                    st.session_state["_auth_view"] = "reset"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── Create Account ────────────────────────────────────────────────────
-        with tab_register:
-            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        # ── Sign Up ───────────────────────────────────────────────────────────
+        elif _view == "signup":
             st.markdown(
-                '<div class="auth-notice">'
-                "🔒 By creating an account you agree to scan only targets "
-                "you own or have written permission to test."
-                "</div>",
+                '<div class="auth-notice">🔒 Only scan targets you own or have written permission to test.</div>',
                 unsafe_allow_html=True,
             )
-            r_email = st.text_input(
-                "Email address", key="reg_email",
-                placeholder="you@example.com",
+            _r_email = st.text_input(
+                "Email address", key="reg_email", placeholder="you@example.com",
             )
-            r_pass = st.text_input(
+            _r_pass = st.text_input(
                 "Password", type="password", key="reg_pass",
                 placeholder="Min 8 chars + 1 number/symbol",
             )
-            if r_pass:
+            if _r_pass:
                 _pw_score = sum([
-                    len(r_pass) >= 8,
-                    len(r_pass) >= 12,
-                    any(c.isdigit() for c in r_pass),
-                    any(not c.isalnum() for c in r_pass),
-                    any(c.isupper() for c in r_pass),
+                    len(_r_pass) >= 8,
+                    len(_r_pass) >= 12,
+                    any(c.isdigit() for c in _r_pass),
+                    any(not c.isalnum() for c in _r_pass),
+                    any(c.isupper() for c in _r_pass),
                 ])
-                _pw_labels = ["Too short", "Weak", "Fair", "Good", "Strong"]
-                _pw_colors = ["#ef4444", "#f97316", "#f59e0b", "#60a5fa", "#10b981"]
-                _pw_widths = [16, 32, 52, 75, 100]
-                _pwl = _pw_labels[min(_pw_score, 4)]
-                _pwc = _pw_colors[min(_pw_score, 4)]
-                _pww = _pw_widths[min(_pw_score, 4)]
+                _pwl = ["Too short", "Weak", "Fair", "Good", "Strong"][min(_pw_score, 4)]
+                _pwc = ["#ef4444", "#f97316", "#f59e0b", "#60a5fa", "#10b981"][min(_pw_score, 4)]
+                _pww = [16, 32, 52, 75, 100][min(_pw_score, 4)]
                 st.markdown(
                     f'<div style="margin:-4px 0 10px">'
                     f'<div style="height:3px;background:#1e2d3d;border-radius:2px;overflow:hidden">'
-                    f'<div style="width:{_pww}%;height:100%;background:{_pwc};border-radius:2px"></div>'
-                    f'</div>'
-                    f'<div style="color:{_pwc};font-size:0.7rem;margin-top:3px">{_pwl}</div>'
-                    f'</div>',
+                    f'<div style="width:{_pww}%;height:100%;background:{_pwc};border-radius:2px;transition:width 0.2s"></div>'
+                    f'</div><div style="color:{_pwc};font-size:0.7rem;margin-top:3px">{_pwl}</div></div>',
                     unsafe_allow_html=True,
                 )
             st.markdown(
-                '<div style="color:#475569;font-size:0.72rem;margin-top:2px;margin-bottom:10px;line-height:1.6">'
-                'By creating an account you agree to our '
-                '<a href="/?legal=tos" style="color:#64748b;text-decoration:underline">Terms of Service</a>'
-                ' and '
-                '<a href="/?legal=privacy" style="color:#64748b;text-decoration:underline">Privacy Policy</a>.'
+                '<div style="color:#334155;font-size:0.71rem;margin-bottom:10px;line-height:1.6">'
+                'By signing up you agree to our '
+                '<a href="/?legal=tos" style="color:#475569;text-decoration:underline">Terms</a>'
+                ' and <a href="/?legal=privacy" style="color:#475569;text-decoration:underline">Privacy Policy</a>.'
                 '</div>',
                 unsafe_allow_html=True,
             )
-
-            if st.button("Create Free Account →", use_container_width=True,
-                         key="reg_btn", type="primary"):
-                errors = []
-                if not r_email or not _valid_email(r_email):
-                    errors.append("Enter a valid email address.")
-                ok_pw, pw_msg = _valid_password(r_pass)
-                if not ok_pw:
-                    errors.append(f"Password: {pw_msg}")
-
-                if errors:
-                    for e in errors:
-                        st.error(e)
+            if st.button("Create Free Account →", use_container_width=True, key="reg_btn", type="primary"):
+                _errors = []
+                if not _r_email or not _valid_email(_r_email):
+                    _errors.append("Enter a valid email address.")
+                _ok_pw, _pw_msg = _valid_password(_r_pass)
+                if not _ok_pw:
+                    _errors.append(f"Password: {_pw_msg}")
+                if _errors:
+                    for _e in _errors:
+                        st.error(_e)
                 else:
                     with st.spinner("Creating account…"):
-                        result = sign_up(r_email.strip().lower(), r_pass)
+                        result = sign_up(_r_email.strip().lower(), _r_pass)
                     if result.get("ok"):
                         if result.get("confirm_required"):
-                            st.success(
-                                "Account created! Check your inbox for a "
-                                "confirmation email, then return here to log in."
-                            )
+                            st.success("Account created! Check your inbox for a confirmation email.")
                         else:
-                            st.success("Account created! You can now log in.")
+                            st.success("Account created! You can now sign in.")
                     else:
                         st.error(result.get("error", "Registration failed"))
 
-            st.markdown("""
-<div style="display:flex;align-items:center;gap:12px;margin:14px 0 12px">
-  <div style="flex:1;height:1px;background:#1e2d3d"></div>
-  <span style="color:#334155;font-size:0.73rem;white-space:nowrap">or sign up with</span>
-  <div style="flex:1;height:1px;background:#1e2d3d"></div>
-</div>""", unsafe_allow_html=True)
-            if st.button("⬡  Continue with GitHub", use_container_width=True, key="reg_github"):
-                from auth.streamlit_auth import sign_in_with_github
-                _gh = sign_in_with_github()
-                if "url" in _gh:
-                    st.html(f'<script>window.location.href = "{_gh["url"]}";</script>')
-                else:
-                    st.error(_gh.get("error", "GitHub login is not configured yet."))
+            st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+            st.markdown('<div class="auth-toggle-row">', unsafe_allow_html=True)
+            if st.button("← Already have an account? Sign in", key="go_signin_from_reg"):
+                st.session_state["_auth_view"] = "signin"
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # ── Reset Password ────────────────────────────────────────────────────
-        with tab_reset:
-            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-            st.info("Enter your email and we'll send a reset link.")
-            rst_email = st.text_input(
-                "Email address", key="rst_email",
-                placeholder="you@example.com",
+        elif _view == "reset":
+            st.markdown(
+                '<div style="color:#64748b;font-size:0.82rem;line-height:1.6;margin-bottom:14px">'
+                'Enter your email and we\'ll send a link to reset your password.'
+                '</div>',
+                unsafe_allow_html=True,
             )
-            st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
-
-            if st.button("Send Reset Link →", use_container_width=True,
-                         key="rst_btn"):
-                if not rst_email or not _valid_email(rst_email):
+            _rst_email = st.text_input(
+                "Email address", key="rst_email", placeholder="you@example.com",
+            )
+            st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+            if st.button("Send Reset Link →", use_container_width=True, key="rst_btn", type="primary"):
+                if not _rst_email or not _valid_email(_rst_email):
                     st.error("Enter a valid email address.")
                 else:
                     with st.spinner("Sending…"):
-                        result = request_password_reset(rst_email.strip().lower())
+                        result = request_password_reset(_rst_email.strip().lower())
                     if result.get("ok"):
-                        st.success(
-                            "Reset link sent! Check your inbox — "
-                            "if it doesn't arrive within 2 minutes, check your spam folder."
-                        )
-                        st.info(
-                            "📧 Check spam/junk folder  ·  "
-                            "🔒 Link expires in 24 hours  ·  "
-                            "Return here to sign in after resetting"
-                        )
+                        st.success("Reset link sent! Check your inbox — also check spam.")
+                        st.info("📧 Spam folder  ·  🔒 Link expires 24 h  ·  Return here to sign in")
                     else:
                         st.error(result.get("error", "Failed to send reset email"))
 
+            st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+            st.markdown('<div class="auth-toggle-row">', unsafe_allow_html=True)
+            if st.button("← Back to Sign In", key="go_signin_from_reset"):
+                st.session_state["_auth_view"] = "signin"
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)  # /form padding
+
+        # ── Card footer + JS column marker ────────────────────────────────────
+        st.markdown(
+            '<div style="height:20px"></div>',
+            unsafe_allow_html=True,
+        )
         st.markdown(_AUTH_CARD_FOOTER, unsafe_allow_html=True)
+
+        # Inject class on auth column for CSS targeting
+        st.html("""<script>
+(function(){
+  function markCol(){
+    var t=document.querySelector('.auth-card-top');
+    if(!t){setTimeout(markCol,120);return;}
+    for(var n=t,i=0;i<14;i++){
+      n=n.parentElement;
+      if(!n)break;
+      if(n.getAttribute&&n.getAttribute('data-testid')==='stColumn'){
+        n.classList.add('aics-auth-col');
+        return;
+      }
+    }
+  }
+  markCol();
+})();
+</script>""")
 
     # ── FULL WIDTH: social proof → pricing → footer ───────────────────────────
     st.html(_SOCIAL_PROOF_HTML)
