@@ -60,9 +60,9 @@ _LANDING_CSS = """
 
 /* ── Auth card (floating card effect) ───────────────────── */
 .auth-card-top { background:#0d1421; border:1px solid #2a3d52; border-bottom:none; border-radius:16px 16px 0 0; padding:26px 28px 20px; box-shadow:0 4px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(16,185,129,0.06); }
-.auth-card-brand { font-size:1.5rem; margin-bottom:2px; }
-.auth-card-title { font-size:1.1rem; font-weight:700; color:#f1f5f9; margin-bottom:3px; }
-.auth-card-sub { font-size:0.75rem; color:#64748b; }
+.auth-card-brand { display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+.auth-card-title { font-size:1.25rem; font-weight:800; color:#f1f5f9; margin-bottom:4px; letter-spacing:-0.02em; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+.auth-card-sub { font-size:0.73rem; color:#475569; }
 .auth-notice { background:#0f2027; border:1px solid #10b981; border-radius:8px; padding:10px 14px; font-size:0.79rem; color:#86efac; margin-bottom:16px; line-height:1.55; }
 .auth-card-footer { background:#0d1421; border:1px solid #2a3d52; border-top:none; border-radius:0 0 16px 16px; padding:12px 28px 22px; text-align:center; color:#334155; font-size:0.69rem; line-height:1.75; box-shadow:0 8px 32px rgba(0,0,0,0.5); }
 
@@ -352,16 +352,21 @@ _FEATURES_HTML = """
 
 _AUTH_CARD_TOP = """
 <div class="auth-card-top">
-    <div class="auth-card-brand">🔐</div>
-    <div class="auth-card-title">Sign in to your account</div>
-    <div class="auth-card-sub">New here? Use the <strong>Create Account</strong> tab below.</div>
+  <div class="auth-card-brand">
+    <svg width="28" height="31" viewBox="0 0 28 31" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 1L2 6V16C2 23.2 7.6 29.8 14 31.4C20.4 29.8 26 23.2 26 16V6L14 1Z"
+            fill="#071a10" stroke="#10b981" stroke-width="1.5"/>
+      <path d="M9 15.5L12.5 19L19 12" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div class="auth-card-title">AI Cyber Shield</div>
+  <div class="auth-card-sub">Sign in or create a free account</div>
 </div>
 """
 
 _AUTH_CARD_FOOTER = """
 <div class="auth-card-footer">
-    🛡 Authorized use only<br>
-    Unauthorized scanning violates our Terms of Service
+    🛡 Authorized use only &nbsp;·&nbsp; Unauthorized scanning violates our <a href="#" style="color:#334155;text-decoration:underline">Terms</a>
 </div>
 """
 

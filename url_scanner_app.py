@@ -453,12 +453,16 @@ section[data-testid="stSidebar"] * {
     margin-bottom: 24px;
 }
 .cs-logo {
-    font-size: 2.8rem;
+    font-size: 3.1rem;
     font-weight: 900;
-    color: #10b981;
     letter-spacing: -0.04em;
     line-height: 1;
     font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+.cs-logo-prefix { color: #e2e8f0; }
+.cs-logo-accent {
+    color: #10b981;
+    text-shadow: 0 0 28px rgba(16,185,129,0.35), 0 0 60px rgba(16,185,129,0.12);
 }
 .cs-tagline {
     color: #475569;
@@ -1884,7 +1888,7 @@ _mode_badge_html = (
 )
 st.markdown(f"""
 <div class="cs-header">
-  <div class="cs-logo">⬡ AI CYBER SHIELD</div>
+  <div class="cs-logo"><span class="cs-logo-prefix">⬡ AI CYBER </span><span class="cs-logo-accent">SHIELD</span></div>
   <div class="cs-tagline">Web Application Security Intelligence Platform</div>
   <div>
     <span class="cs-badge">v6.0</span>
