@@ -154,6 +154,73 @@ _LANDING_CSS = """
     text-decoration-color: rgba(52,211,153,0.85) !important;
 }
 
+/* ── Security tool check pills ─────────────────────────── */
+.lp-checks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin: 0 0 14px;
+}
+.lp-check {
+  background: #0d1421;
+  border: 1px solid #1e2d3d;
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.lp-check-warn {
+  border-color: rgba(239,68,68,0.22);
+  color: #fca5a5;
+  background: #130505;
+}
+.lp-check-ok {
+  border-color: rgba(16,185,129,0.18);
+  color: #6ee7b7;
+  background: #030f09;
+}
+.lp-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-bottom: 16px;
+}
+.lp-trust span {
+  color: #2d4056;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.lp-trust span::before {
+  content: "✓";
+  color: #10b981;
+  font-weight: 800;
+  font-size: 0.68rem;
+}
+
+/* ── GitHub button CSS marker trick (:has selector) ─────── */
+[data-testid="stMarkdownContainer"]:has(.lp-gh-marker) + [data-testid="stButton"] button {
+  background: #21262d !important;
+  color: #e6edf3 !important;
+  border: 1px solid #30363d !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+}
+[data-testid="stMarkdownContainer"]:has(.lp-gh-marker) + [data-testid="stButton"] button:hover {
+  background: #2d333b !important;
+  border-color: #8b949e !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.35) !important;
+}
+
 /* ── Hero scan URL label ────────────────────────────────── */
 .lp-scan-label {
   color: #10b981;
@@ -291,8 +358,23 @@ _HERO_HTML = """
     <div class="lp-brand-sub">Web Application Security Intelligence</div>
   </div>
 </div>
-<h1 class="lp-headline">Your website's security score<br>in 90 seconds — <em>free.</em></h1>
-<p class="lp-desc">18 OSINT tools run in parallel: TLS, DNS, CVEs, IP intelligence, WHOIS, headers, CT logs, email spoofability, Shodan &amp; more. No agent installed on your server. Results in under 90 seconds.</p>
+<h1 class="lp-headline">Is your website<br>secure right now? <em>Find out.</em></h1>
+<div class="lp-checks">
+  <div class="lp-check lp-check-warn">🔒 TLS / SSL</div>
+  <div class="lp-check lp-check-warn">📧 Email Spoofability</div>
+  <div class="lp-check lp-check-warn">🔗 CVE Detection</div>
+  <div class="lp-check lp-check-ok">🌐 DNS Deep Scan</div>
+  <div class="lp-check lp-check-ok">🛡 HTTP Headers</div>
+  <div class="lp-check lp-check-ok">☁️ Cloud Buckets</div>
+  <div class="lp-check">🐙 GitHub Leaks</div>
+  <div class="lp-check">📡 IP / Shodan</div>
+  <div class="lp-check">🗂 Exposed Files</div>
+</div>
+<div class="lp-trust">
+  <span>No agent installed on your server</span>
+  <span>Zero network footprint</span>
+  <span>18 tools · results in &lt;90 sec</span>
+</div>
 <div class="lp-scan-label">Enter your website to get started</div>
 """
 
@@ -665,6 +747,7 @@ def show_auth_page() -> None:
         # ── GitHub OAuth (shown for signin + signup) ──────────────────────────
         if _view in ("signin", "signup"):
             st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+            st.markdown('<div class="lp-gh-marker"></div>', unsafe_allow_html=True)
             if st.button(
                 "⬡  Continue with GitHub",
                 use_container_width=True,
