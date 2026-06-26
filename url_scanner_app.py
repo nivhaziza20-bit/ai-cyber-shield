@@ -25,7 +25,7 @@ st.set_page_config(
     page_title="AI Cyber Shield",
     page_icon="🛡",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ enforce_rate_limit()  # Block abusive sessions before auth
 from auth.streamlit_auth import (
     require_auth, get_current_user, sign_out,
     check_quota, increment_quota, supabase_available,
-    TIER_DAILY_LIMITS,
+    TIER_DAILY_LIMITS, sign_in_with_github,
 )
 from audit_log import log_action
 from billing_ui import show_pricing_page, show_upgrade_prompt, PLANS
@@ -111,6 +111,288 @@ if _qp.get("st_at") and _qp.get("st_type") in ("signup", "recovery", "email_chan
         pass
     st.query_params.clear()
     st.rerun()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Guest scan page  (pre-auth, shown before require_auth gate)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _show_guest_scan_page(guest_url: str) -> None:
+    """Public single-URL passive scan — runs all 18 tools, shows top 3 + upgrade wall."""
+    import re as _re
+
+    _GUEST_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+html,body,[data-testid="stAppViewContainer"]{background:#060b14!important}
+[data-testid="stHeader"]{background:transparent}
+.block-container{padding-top:0!important;background:#060b14}
+#MainMenu,footer,header{visibility:hidden}
+.gs-nav{display:flex;align-items:center;justify-content:space-between;padding:13px 4px;border-bottom:1px solid #1e2d3d;margin-bottom:20px}
+.gs-brand{font-family:'JetBrains Mono','Courier New',monospace;font-weight:900;color:#10b981;font-size:1.05rem;letter-spacing:-0.03em}
+.gs-target-bar{background:#0d1421;border:1px solid #1e2d3d;border-radius:10px;padding:13px 18px;margin:0 0 18px;display:flex;align-items:center;gap:12px;font-size:0.86rem}
+.gs-target-label{color:#475569;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.14em;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.gs-target-url{color:#10b981;font-family:'JetBrains Mono',monospace;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-section-label{color:#64748b;font-size:0.67rem;text-transform:uppercase;letter-spacing:0.2em;margin:20px 0 10px;font-family:'JetBrains Mono',monospace}
+.gs-pr-card{background:#0d1421;border:1px solid #1e2d3d;border-left:4px solid #1e2d3d;border-radius:8px;padding:14px 16px;margin-bottom:8px}
+.gs-pr-card-critical{border-left-color:#ef4444;background:linear-gradient(135deg,#1c0000 0%,#0d1117 55%);box-shadow:0 0 28px rgba(239,68,68,0.10)}
+.gs-pr-card-critical .gs-tool-name{color:#fca5a5}
+.gs-pr-card-high{border-left-color:#f97316;background:linear-gradient(135deg,#170900 0%,#0d1117 55%)}
+.gs-pr-card-high .gs-tool-name{color:#fed7aa}
+.gs-pr-card-medium{border-left-color:#f59e0b;background:linear-gradient(135deg,#140c00 0%,#0d1117 55%)}
+.gs-pr-card-info{border-left-color:#1e2d3d}
+.gs-tool-name{font-size:0.83rem;font-weight:700;color:#e2e8f0;margin-bottom:5px;font-family:'JetBrains Mono',monospace}
+.gs-finding{font-size:0.82rem;color:#94a3b8;line-height:1.6}
+.gs-wall{background:linear-gradient(180deg,#0d1117 0%,#060b14 100%);border:1px solid #1e2d3d;border-radius:14px;padding:36px 28px;margin:20px 0;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.gs-wall-lock{font-size:2.4rem;margin-bottom:14px}
+.gs-wall-title{color:#f1f5f9;font-size:1.3rem;font-weight:800;margin-bottom:8px}
+.gs-wall-sub{color:#64748b;font-size:0.88rem;margin-bottom:24px;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.65}
+</style>
+"""
+    st.markdown(_GUEST_CSS, unsafe_allow_html=True)
+
+    # ── Header ────────────────────────────────────────────────────────────────
+    st.markdown("""
+<div class="gs-nav">
+  <div class="gs-brand">🛡 AI Cyber Shield</div>
+  <div style="color:#334155;font-size:0.75rem">Quick Security Check · No account needed</div>
+</div>""", unsafe_allow_html=True)
+
+    target = guest_url.strip()
+    if not target.startswith("http"):
+        target = "https://" + target
+
+    # Clean display URL
+    _disp = target.replace("https://","").replace("http://","").rstrip("/")
+
+    st.markdown(f"""
+<div class="gs-target-bar">
+  <span class="gs-target-label">🎯 Scanning</span>
+  <span class="gs-target-url">{_disp}</span>
+  <span style="margin-left:auto;color:#334155;font-size:0.72rem">18 OSINT tools · passive only</span>
+</div>""", unsafe_allow_html=True)
+
+    # ── Run scan or show cached results ───────────────────────────────────────
+    _done = (
+        st.session_state.get("_guest_scan_done") and
+        st.session_state.get("_guest_scan_url") == target
+    )
+
+    if not _done:
+        _pr_tool_labels = {
+            "ssl_passive":        "🔒 SSL/TLS Certificate",
+            "http_headers":       "🛡️ HTTP Security Headers",
+            "email_spoofability": "📧 Email Spoofability",
+            "dns_deep":           "🌐 DNS Deep Analysis",
+            "cve_correlation":    "🔗 CVE Correlation",
+            "whois":              "📋 WHOIS & Domain Age",
+            "crt_subdomains":     "🔏 CT Log Subdomains",
+            "robots_sitemap":     "🤖 Robots & Sitemap",
+            "js_secrets":         "⚡ JS Secrets",
+            "cloud_buckets":      "☁️ Cloud Bucket Exposure",
+            "wayback":            "🕰️ Wayback Machine",
+            "github_leaks":       "🐙 GitHub Leaks",
+            "exposed_files":      "🗂️ Exposed Files",
+            "meta_leakage":       "🔍 Metadata Leakage",
+            "security_txt":       "📝 Security.txt",
+            "http_methods":       "🌍 HTTP Methods",
+            "urlscan":            "🔎 URLScan.io Fingerprint",
+            "ip_intelligence":    "🖥️ IP Intelligence",
+        }
+        _sev_icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "⚪", "INFO": "✅"}
+
+        _pr_results: dict = {}
+        with st.status("🔵 Running 18-tool passive scan…", expanded=True) as _gs:
+            st.write(f"🎯 **{target}** — OSINT only, zero active probes, safe to run")
+            _prog = st.progress(0, text="Starting up…")
+            try:
+                from tools.passive_recon import run_passive_recon_streaming, _build_passive_result
+                from tools.tech_fingerprinter import fingerprint_technologies
+                _tech = {}
+                try:
+                    _tech = fingerprint_technologies(target)
+                except Exception:
+                    pass
+                _total = 18
+                for _tn, _tr in run_passive_recon_streaming(target, tech_results=_tech):
+                    _pr_results[_tn] = _tr
+                    _sev  = _tr.get("severity", "INFO")
+                    _icon = _sev_icon.get(_sev, "✅")
+                    _lbl  = _pr_tool_labels.get(_tn, _tn)
+                    _n    = len(_pr_results)
+                    _prog.progress(int(_n / _total * 100),
+                                   text=f"✅ {_lbl} — {_total - _n} remaining")
+                    st.write(f"{_icon} **{_lbl}** — {_sev}")
+
+                _pr = _build_passive_result(target, _pr_results)
+                st.session_state["_guest_scan_results"] = _pr
+                st.session_state["_guest_scan_url"]     = target
+                st.session_state["_guest_scan_done"]    = True
+                _c = sum(1 for r in _pr_results.values() if r.get("severity") == "CRITICAL")
+                _h = sum(1 for r in _pr_results.values() if r.get("severity") == "HIGH")
+                _gs.update(label=f"✅ Scan complete — {_c} critical · {_h} high", state="complete")
+                st.rerun()
+            except Exception as _exc:
+                _gs.update(label="❌ Scan failed", state="error")
+                st.error(f"Scan failed: {_exc}")
+        return
+
+    # ── Results ───────────────────────────────────────────────────────────────
+    _pr       = st.session_state.get("_guest_scan_results", {})
+    _pr_tools = _pr.get("tools", {})
+    _sev_ord  = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
+    _sorted   = sorted(_pr_tools.items(),
+                       key=lambda kv: _sev_ord.get(kv[1].get("severity","INFO"), 4))
+
+    _pen  = {"CRITICAL": 25, "HIGH": 15, "MEDIUM": 8, "LOW": 3, "INFO": 0}
+    _scr  = max(0, 100 - sum(_pen.get(v.get("severity","INFO"), 0) for v in _pr_tools.values()))
+    _grd  = "A" if _scr>=90 else "B" if _scr>=75 else "C" if _scr>=60 else "D" if _scr>=45 else "F"
+    _gcol = {"A":"#10b981","B":"#60a5fa","C":"#f59e0b","D":"#f97316","F":"#ef4444"}.get(_grd,"#60a5fa")
+    _ncr  = sum(1 for t in _pr_tools.values() if t.get("severity")=="CRITICAL")
+    _nhi  = sum(1 for t in _pr_tools.values() if t.get("severity")=="HIGH")
+
+    # SVG ring score banner
+    _C    = 326.73
+    _off  = round(_C * (1 - _scr / 100), 2)
+    _uid  = f"gs{_grd}{_scr}"
+    _msg  = ("🔴 Critical vulnerabilities found — immediate action needed."
+             if _ncr > 0 else
+             "🟠 High-severity issues found — should be addressed soon."
+             if _nhi > 0 else
+             "✅ No major issues found in passive scan.")
+
+    st.html(f"""
+<style>
+@keyframes {_uid}ring {{
+  0%   {{ stroke-dashoffset:{_C}; }}
+  100% {{ stroke-dashoffset:{_off}; }}
+}}
+.rng-{_uid} {{
+  stroke-dasharray:{_C};
+  stroke-dashoffset:{_C};
+  animation:{_uid}ring 1.6s cubic-bezier(0.34,1.56,0.64,1) 0.3s forwards;
+}}
+</style>
+<script>
+(function(){{
+  var el=document.getElementById('gsn-{_uid}');
+  if(!el)return;
+  var t={_scr},dur=1350,t0=performance.now();
+  function step(ts){{
+    var p=Math.min((ts-t0)/dur,1);
+    el.textContent=Math.round(t*(1-Math.pow(1-p,3)));
+    if(p<1)requestAnimationFrame(step);else el.textContent=t;
+  }}
+  setTimeout(function(){{requestAnimationFrame(step);}},300);
+}})();
+</script>
+<div style="background:#0d1117;border:1px solid #1f2d3d;border-radius:14px;padding:26px 24px;
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+            box-shadow:0 0 0 1px {_gcol}12,0 4px 40px rgba(0,0,0,0.5)">
+  <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+    <svg width="128" height="128" viewBox="0 0 120 120" style="flex-shrink:0">
+      <circle cx="60" cy="60" r="52" fill="none" stroke="#1e2d3d" stroke-width="9"/>
+      <circle cx="60" cy="60" r="52" fill="none" stroke="{_gcol}" stroke-width="9"
+              stroke-linecap="round" transform="rotate(-90 60 60)" class="rng-{_uid}"/>
+      <text x="60" y="50" text-anchor="middle" dominant-baseline="middle"
+            fill="{_gcol}" font-size="22" font-weight="900"
+            font-family="JetBrains Mono,Courier New,monospace" id="gsn-{_uid}">0</text>
+      <text x="60" y="66" text-anchor="middle" dominant-baseline="middle"
+            fill="#334155" font-size="9">/ 100</text>
+      <text x="60" y="80" text-anchor="middle" dominant-baseline="middle"
+            fill="{_gcol}" font-size="11" font-weight="800" letter-spacing="1">GRADE {_grd}</text>
+    </svg>
+    <div style="flex:1;min-width:180px">
+      <div style="color:#64748b;font-size:0.68rem;text-transform:uppercase;
+                  letter-spacing:0.16em;font-family:'JetBrains Mono',monospace;margin-bottom:6px">
+        Security Score — 18 OSINT Tools
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <span style="background:#3f000099;color:#ef4444;border:1px solid #ef444450;
+                     padding:3px 12px;border-radius:20px;font-size:0.73rem;font-weight:800">
+          {_ncr} CRITICAL
+        </span>
+        <span style="background:#3f1f0099;color:#f97316;border:1px solid #f9731650;
+                     padding:3px 12px;border-radius:20px;font-size:0.73rem;font-weight:800">
+          {_nhi} HIGH
+        </span>
+        <span style="color:#475569;font-size:0.76rem;display:flex;align-items:center;gap:4px">
+          {len(_pr_tools)} tools ran
+        </span>
+      </div>
+      <div style="color:#94a3b8;font-size:0.86rem;line-height:1.6">{_msg}</div>
+    </div>
+  </div>
+</div>""")
+
+    # ── Top 3 findings ────────────────────────────────────────────────────────
+    _preview = _sorted[:3]
+    _locked  = len(_sorted) - 3
+    _sev_cls = {
+        "CRITICAL": "gs-pr-card-critical",
+        "HIGH":     "gs-pr-card-high",
+        "MEDIUM":   "gs-pr-card-medium",
+        "INFO":     "gs-pr-card-info",
+        "LOW":      "gs-pr-card-info",
+    }
+    _sev_col = {"CRITICAL":"#ef4444","HIGH":"#f97316","MEDIUM":"#f59e0b","LOW":"#60a5fa","INFO":"#475569"}
+
+    st.markdown('<div class="gs-section-label">Top findings</div>', unsafe_allow_html=True)
+
+    for _tn, _tr in _preview:
+        _sev    = _tr.get("severity","INFO")
+        _clr    = _sev_col.get(_sev,"#475569")
+        _cls    = _sev_cls.get(_sev,"gs-pr-card-info")
+        _lbl    = _tn.replace("_"," ").title()
+        _find   = (_tr.get("finding") or "No issues detected.")[:220]
+        st.markdown(f"""
+<div class="gs-pr-card {_cls}">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+    <span class="gs-tool-name">{_lbl}</span>
+    <span style="margin-left:auto;background:{_clr}18;color:{_clr};
+                 border:1px solid {_clr}40;border-radius:4px;padding:1px 8px;
+                 font-size:0.68rem;font-weight:800;font-family:'JetBrains Mono',monospace">
+      {_sev}
+    </span>
+  </div>
+  <div class="gs-finding">{_find}</div>
+</div>""", unsafe_allow_html=True)
+
+    # ── Upgrade wall ──────────────────────────────────────────────────────────
+    _hidden_label = f"{_locked} more finding{'s' if _locked != 1 else ''} hidden"
+    st.html(f"""
+<div class="gs-wall">
+  <div class="gs-wall-lock">🔒</div>
+  <div class="gs-wall-title">{_hidden_label}</div>
+  <div class="gs-wall-sub">
+    Create a <strong style="color:#10b981">free account</strong> to see the complete
+    18-tool report — plus step-by-step remediation for every finding.
+    No credit card required.
+  </div>
+  <div style="color:#94a3b8;font-size:0.78rem;margin-bottom:18px">
+    Your URL is saved — click below to pre-fill the scanner.
+  </div>
+</div>""")
+
+    col_a, col_b, col_c = st.columns([1, 2, 1])
+    with col_b:
+        if st.button("Create Free Account →", type="primary",
+                     use_container_width=True, key="gs_signup_btn"):
+            for k in ("_run_guest_scan", "_guest_scan_done",
+                      "_guest_scan_results", "_guest_scan_url"):
+                st.session_state.pop(k, None)
+            st.rerun()
+        if st.button("← Back", use_container_width=True, key="gs_back_btn"):
+            for k in ("_run_guest_scan", "_guest_scan_done",
+                      "_guest_scan_results", "_guest_scan_url"):
+                st.session_state.pop(k, None)
+            st.rerun()
+
+
+# ── Guest scan routing (must come before require_auth) ────────────────────────
+if st.session_state.get("_run_guest_scan") and st.session_state.get("hero_target_url"):
+    _show_guest_scan_page(st.session_state["hero_target_url"])
+    st.stop()
+
 
 if supabase_available():
     _current_user = require_auth()  # shows login page + st.stop() if not authed
@@ -467,9 +749,9 @@ code, pre {
 /* ── Section dividers ─────────────────────────────────────────────────────── */
 .section-label {
     color: #475569;
-    font-size: 0.65rem;
+    font-size: 0.58rem;
     text-transform: uppercase;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.22em;
     font-family: 'JetBrains Mono', 'Courier New', monospace;
     padding: 6px 0 4px;
     border-bottom: 1px solid #1f2d3d;
@@ -647,6 +929,10 @@ code, pre {
 }
 
 /* ── Passive Recon result cards ───────────────────────────────────────────── */
+@keyframes critpulse {
+  0%,100% { box-shadow: 0 0 28px rgba(239,68,68,0.13), inset 0 0 0 1px rgba(239,68,68,0.08); }
+  50%      { box-shadow: 0 0 54px rgba(239,68,68,0.32), inset 0 0 0 1px rgba(239,68,68,0.20); }
+}
 .pr-section-title {
     color: #60a5fa; font-size: 0.68rem; text-transform: uppercase;
     letter-spacing: .16em; font-family: 'JetBrains Mono', 'Courier New', monospace;
@@ -658,14 +944,41 @@ code, pre {
     padding: 14px 18px; margin: 6px 0; border-left: 4px solid #1f2d3d;
     transition: border-color .2s;
 }
-.pr-card-critical { border-left-color: #ef4444; }
-.pr-card-high     { border-left-color: #f97316; }
-.pr-card-medium   { border-left-color: #f59e0b; }
-.pr-card-low      { border-left-color: #60a5fa; }
-.pr-card-info     { border-left-color: #334155; }
-.pr-tool-name  { color: #e2e8f0; font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; }
-.pr-finding    { color: #94a3b8; font-size: 0.8rem; line-height: 1.6; }
+.pr-card-critical {
+    border-left-color: #ef4444;
+    border-left-width: 6px;
+    background: linear-gradient(135deg, #1c0000 0%, #0d1117 55%);
+    animation: critpulse 2.5s ease-in-out infinite;
+}
+.pr-card-critical .pr-tool-name { color: #fca5a5; }
+.pr-card-high {
+    border-left-color: #f97316;
+    background: linear-gradient(135deg, #170900 0%, #0d1117 55%);
+    box-shadow: 0 0 20px rgba(249,115,22,0.10), inset 0 0 0 1px rgba(249,115,22,0.06);
+}
+.pr-card-high .pr-tool-name { color: #fed7aa; }
+.pr-card-medium {
+    border-left-color: #f59e0b;
+    background: linear-gradient(135deg, #140c00 0%, #0d1117 55%);
+}
+.pr-card-low   { border-left-color: #60a5fa; }
+.pr-card-info  { border-left-color: #334155; }
+.pr-tool-name  { color: #e2e8f0; font-weight: 700; font-size: 0.90rem; margin-bottom: 4px; }
+.pr-finding    { color: #94a3b8; font-size: 0.8rem; line-height: 1.6; word-break: break-word; }
 .pr-meta       { color: #475569; font-size: 0.72rem; font-family:'Courier New',monospace; margin-top: 4px; }
+
+/* ── Mobile responsive ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .pr-card { padding: 10px 12px; }
+  .pr-tool-name { font-size: 0.82rem; }
+  .pr-finding { font-size: 0.75rem; }
+  .badge { font-size: 0.62rem !important; padding: 2px 7px !important; }
+}
+@media (max-width: 480px) {
+  .pr-card { padding: 8px 10px; margin: 4px 0; }
+  .pr-tool-name { font-size: 0.78rem; }
+  .pr-finding { font-size: 0.72rem; line-height: 1.5; }
+}
 
 /* ── Bug bounty contact card ───────────────────────────────────────────────── */
 .bb-card {
@@ -934,22 +1247,89 @@ def _grade_color(grade: str) -> str:
 
 
 def _render_grade_banner(grade: str, score: int, url: str) -> None:
-    color = _grade_color(grade)
-    bar_width = score
-    st.markdown(f"""
-<div class="grade-banner">
-  <div class="grade-circle grade-{grade}">{grade}</div>
-  <div class="grade-info">
-    <div class="grade-title">{url}</div>
-    <div class="grade-subtitle">Security Score: <strong style="color:{color}">{score}/100</strong>
-      &nbsp;·&nbsp; Grade: <strong style="color:{color}">{grade}</strong></div>
-    <div class="grade-score-bar-bg">
-      <div class="grade-score-bar-fill"
-           style="width:{bar_width}%; background:{color};"></div>
+    color  = _grade_color(grade)
+    _C     = 326.73          # circumference of r=52 circle
+    _off   = round(_C * (1 - score / 100), 2)
+    _uid   = f"gb{grade}{score}"   # unique per render to avoid anim conflicts
+    st.html(f"""
+<style>
+@keyframes {_uid} {{
+  0%   {{ stroke-dashoffset: {_C}; }}
+  100% {{ stroke-dashoffset: {_off}; }}
+}}
+.rng-{_uid} {{
+  stroke-dasharray: {_C};
+  stroke-dashoffset: {_C};
+  animation: {_uid} 1.5s cubic-bezier(0.34,1.56,0.64,1) 0.25s forwards;
+}}
+</style>
+<script>
+(function(){{
+  var el = document.getElementById('num-{_uid}');
+  if (!el) return;
+  var target = {score};
+  var dur = 1300;
+  var t0 = performance.now();
+  function step(ts) {{
+    var p = Math.min((ts - t0) / dur, 1);
+    var ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(target * ease);
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = target;
+  }}
+  setTimeout(function() {{ requestAnimationFrame(step); }}, 250);
+}})();
+</script>
+<div style="display:flex;align-items:center;gap:24px;
+     background:#0d1117;border:1px solid #1f2d3d;border-radius:14px;
+     padding:22px 28px;margin:16px 0 24px;
+     box-shadow:0 4px 32px rgba(0,0,0,0.45),0 0 0 1px rgba(16,185,129,0.04);
+     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <div style="flex-shrink:0">
+    <svg width="130" height="130" viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r="52" fill="none" stroke="#1e2d3d" stroke-width="9"/>
+      <circle cx="60" cy="60" r="52" fill="none" stroke="{color}" stroke-width="9"
+              stroke-linecap="round" transform="rotate(-90 60 60)"
+              class="rng-{_uid}"/>
+      <text x="60" y="50" text-anchor="middle" dominant-baseline="middle"
+            fill="{color}" font-size="22" font-weight="900"
+            font-family="JetBrains Mono,Courier New,monospace"
+            id="num-{_uid}">0</text>
+      <text x="60" y="66" text-anchor="middle" dominant-baseline="middle"
+            fill="#334155" font-size="9">/ 100</text>
+      <text x="60" y="80" text-anchor="middle" dominant-baseline="middle"
+            fill="{color}" font-size="11" font-weight="800" letter-spacing="1">GRADE {grade}</text>
+    </svg>
+  </div>
+  <div style="flex:1;min-width:0">
+    <div style="color:#94a3b8;font-size:0.68rem;text-transform:uppercase;
+                letter-spacing:0.14em;margin-bottom:6px;font-family:JetBrains Mono,monospace">
+      Security Report
+    </div>
+    <div style="color:#e2e8f0;font-size:1.25rem;font-weight:700;
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{url}</div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <span style="color:{color};font-size:2.4rem;font-weight:900;
+                   font-family:JetBrains Mono,Courier New,monospace;line-height:1">{score}</span>
+      <span style="color:#334155;font-size:1rem">/100</span>
+      <span style="color:#1e2d3d;margin:0 4px">·</span>
+      <span style="background:{color}1a;color:{color};font-size:0.74rem;
+                   font-weight:800;padding:3px 14px;border-radius:20px;
+                   border:1px solid {color}44;letter-spacing:0.06em">Grade {grade}</span>
+    </div>
+    <div style="margin-top:14px;background:#1f2d3d;border-radius:4px;
+                height:5px;overflow:hidden;max-width:400px">
+      <div style="height:5px;width:{score}%;border-radius:4px;
+                  background:linear-gradient(90deg,{color},{color}80);
+                  box-shadow:0 0 10px {color}55"></div>
+    </div>
+    <div style="color:#334155;font-size:0.68rem;margin-top:8px;
+                font-family:JetBrains Mono,Courier New,monospace;letter-spacing:0.04em">
+      Full security analysis · AI Cyber Shield v6.0 · Defensive use only
     </div>
   </div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 
 def _render_score_card(key: str, score: int) -> str:
@@ -1076,40 +1456,52 @@ def _render_inline_findings(findings: list[str]) -> None:
 
 
 def _render_mode_selector(pt_mode_active: bool) -> None:
-    """Big prominent inline mode selector — TraffixNet-style two cards."""
-    mc1, mc2 = st.columns(2, gap="medium")
-
-    std_cls  = "mode-selector-card msc-std" if not pt_mode_active else "mode-selector-card"
-    pt_cls   = "mode-selector-card msc-pt"  if pt_mode_active      else "mode-selector-card"
-    std_tag  = '<span class="msc-tag msc-tag-std">ACTIVE</span>'  if not pt_mode_active else '<span class="msc-tag msc-tag-inactive">OFF</span>'
-    pt_tag   = '<span class="msc-tag msc-tag-pt">ACTIVE</span>'   if pt_mode_active     else '<span class="msc-tag msc-tag-inactive">SELECT IN SIDEBAR</span>'
-
-    mc1.markdown(f"""
-<div class="{std_cls}">
-  <div class="msc-std-color">🟢 STANDARD SCAN{std_tag}</div>
-  <div class="msc-title">Deep Web Analysis + AI</div>
-  <div class="msc-desc">
-    ✅ 18 tools: SSL · Headers · Crawler · CORS · DNS · WAF<br>
-    ✅ LLM threat-narrative report (Groq API key required)<br>
-    ✅ Safe for <b style="color:#e2e8f0">any site worldwide</b><br>
-    ✅ Results in ~30 seconds<br>
-    <span style="color:#60a5fa;font-size:0.78rem">🔵 For OSINT-only: select Passive Recon in sidebar</span>
+    """Compact mode info banner — shows active mode details, one card only."""
+    _sm = st.session_state.get("scan_mode_radio", "passive")
+    _mode_cfg = {
+        "passive": {
+            "color": "#60a5fa", "bg": "#0d1a2e", "border": "#1e3a5f",
+            "icon": "🔵", "label": "PASSIVE RECON",
+            "bullets": "18 OSINT tools · safe on any site · no active probes · ~45 sec",
+            "note": "",
+        },
+        "standard": {
+            "color": "#10b981", "bg": "#061a0d", "border": "#0d3320",
+            "icon": "🟢", "label": "STANDARD SCAN",
+            "bullets": "18 tools + AI narrative · Groq API key required · ~30 sec",
+            "note": "",
+        },
+        "pt": {
+            "color": "#ef4444", "bg": "#1a0606", "border": "#4a0000",
+            "icon": "🔴", "label": "ACTIVE PT MODE",
+            "bullets": "Live canary probes · auto-confirms vulns with curl PoC · authorized targets only",
+            "note": "⚠️ Only scan targets you own or have written permission to test.",
+        },
+    }
+    _cfg = _mode_cfg.get(_sm, _mode_cfg["passive"])
+    _note_html = (
+        f'<div style="color:#fca5a5;font-size:0.74rem;margin-top:6px">{_cfg["note"]}</div>'
+        if _cfg["note"] else ""
+    )
+    st.markdown(f"""
+<div style="background:{_cfg['bg']};border:1px solid {_cfg['border']};border-radius:10px;
+            padding:13px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px;
+            flex-wrap:wrap">
+  <div style="flex:1;min-width:0">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+      <span style="color:{_cfg['color']};font-size:0.68rem;font-weight:800;
+                   font-family:monospace;letter-spacing:0.12em">{_cfg['icon']} {_cfg['label']}</span>
+      <span style="background:{_cfg['color']}22;color:{_cfg['color']};border:1px solid {_cfg['color']}55;
+                   border-radius:4px;padding:1px 7px;font-size:0.6rem;font-weight:800;
+                   font-family:monospace;letter-spacing:0.08em">ACTIVE</span>
+    </div>
+    <div style="color:#64748b;font-size:0.78rem">{_cfg['bullets']}</div>
+    {_note_html}
+  </div>
+  <div style="color:#334155;font-size:0.7rem;white-space:nowrap">
+    ← Change in sidebar
   </div>
 </div>""", unsafe_allow_html=True)
-
-    mc2.markdown(f"""
-<div class="{pt_cls}">
-  <div class="msc-pt-color">🔴 ACTIVE PT MODE{pt_tag}</div>
-  <div class="msc-title">Live Verification + PoC</div>
-  <div class="msc-desc">
-    🔬 Passive scan + live canary probes<br>
-    🔴 Auto-confirms vulnerabilities with <b style="color:#e2e8f0">curl PoC</b><br>
-    ⚠️ Only authorized targets — <b style="color:#fca5a5">own site or written permission</b><br>
-    📋 Enable in sidebar + check ownership box
-  </div>
-</div>""", unsafe_allow_html=True)
-
-    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
 
 def _section_score_from_title(title: str) -> int | None:
@@ -1190,6 +1582,96 @@ def _render_report_sections(report_markdown: str) -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Empty state  — shown before first scan
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _show_empty_state(scan_mode: str = "passive") -> None:
+    """Shown in the URL scanner tab when no scan has been run yet."""
+    _bullets = {
+        "passive":  [("🔒", "SSL & Certificate"),  ("📧", "Email Spoofability"),
+                     ("🌐", "DNS Deep Analysis"),    ("🛡️", "HTTP Headers"),
+                     ("🔗", "CVE Correlation"),      ("🐙", "GitHub Leaks"),
+                     ("☁️", "Cloud Buckets"),        ("🗂️", "Exposed Files"),
+                     ("⚡", "JS Secrets"),            ("🔎", "URLScan Fingerprint"),
+                     ("🕰️", "Wayback History"),      ("🖥️", "IP Intelligence")],
+        "standard": [("🔒", "SSL / TLS"),  ("📋", "Sec Headers"),  ("🌐", "HTML/JS"),
+                     ("⚙️", "Tech Stack"), ("🕷️", "Crawler"),       ("🔀", "CORS/CSP"),
+                     ("🌍", "DNS"),        ("📂", "Exposed Files"), ("📌", "HSTS"),
+                     ("↪️", "Redirects"),  ("🛡", "WAF"),            ("🤖", "AI Report")],
+        "pt":       [("🔬", "Live canary probes"),  ("🔴", "Auto-confirms vulns"),
+                     ("📋", "curl PoC generation"), ("⚠️", "Authorized targets only")],
+    }.get(scan_mode, [])
+
+    pills_html = "".join(
+        f'<span style="display:inline-flex;align-items:center;gap:5px;background:#0d1421;'
+        f'border:1px solid #1e2d3d;border-radius:20px;padding:4px 12px;font-size:0.76rem;'
+        f'color:#64748b;margin:3px">{ico} {lbl}</span>'
+        for ico, lbl in _bullets
+    )
+
+    _mode_copy = {
+        "passive":  ("Is your website leaking secrets right now?",
+                     "18 passive OSINT tools scan your domain in ~60 seconds — "
+                     "no install, no active probes, safe to run on any site."),
+        "standard": ("What vulnerabilities is your site exposing?",
+                     "18 tools + AI-generated threat report. Deep scan of headers, "
+                     "crawled JS, DNS, WAF, CVEs — full picture in ~30 seconds."),
+        "pt":       ("Ready to verify these findings live?",
+                     "Active verification mode sends canary probes to confirm "
+                     "real exploitability. Authorized targets only."),
+    }.get(scan_mode, ("Scan a URL for security issues", "18 tools · results in under 90 seconds."))
+
+    st.html(f"""
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+            max-width:680px;margin:32px auto 0;padding:0 8px">
+
+  <!-- SVG shield illustration -->
+  <div style="text-align:center;margin-bottom:28px">
+    <svg width="80" height="88" viewBox="0 0 80 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M40 4L8 16V44C8 62.4 22.4 79.6 40 84C57.6 79.6 72 62.4 72 44V16L40 4Z"
+            fill="#0d1a2e" stroke="#1e3a5f" stroke-width="2"/>
+      <path d="M40 14L16 24V44C16 58.4 26.8 71.8 40 75.6C53.2 71.8 64 58.4 64 44V24L40 14Z"
+            fill="#0a1525" stroke="#10b98133" stroke-width="1.5"/>
+      <text x="40" y="50" text-anchor="middle" dominant-baseline="middle"
+            fill="#10b981" font-size="26" font-weight="900"
+            font-family="JetBrains Mono,monospace">?</text>
+    </svg>
+  </div>
+
+  <!-- Headline -->
+  <div style="text-align:center;margin-bottom:10px">
+    <div style="color:#f1f5f9;font-size:1.55rem;font-weight:800;letter-spacing:-0.03em;
+                line-height:1.2;margin-bottom:10px">
+      {_mode_copy[0]}
+    </div>
+    <div style="color:#64748b;font-size:0.9rem;line-height:1.7;max-width:500px;
+                margin:0 auto 24px">
+      {_mode_copy[1]}
+    </div>
+  </div>
+
+  <!-- Arrow hint -->
+  <div style="text-align:center;margin-bottom:24px">
+    <div style="display:inline-flex;align-items:center;gap:8px;background:#071a10;
+                border:1px solid #10b981;border-radius:8px;padding:9px 18px;
+                color:#34d399;font-size:0.82rem;font-weight:700">
+      ↑ Paste your URL in the field above and click Scan
+    </div>
+  </div>
+
+  <!-- Tool pills -->
+  <div style="text-align:center;margin-bottom:8px">
+    <div style="color:#334155;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.18em;
+                font-family:'JetBrains Mono',monospace;margin-bottom:10px">
+      Tools included in this scan
+    </div>
+    <div style="line-height:1">{pills_html}</div>
+  </div>
+
+</div>""")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Sidebar  — mode selector + demo toggle
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1233,40 +1715,33 @@ with st.sidebar:
                 st.rerun()
         st.divider()
 
-        # ── Scan history ──────────────────────────────────────────────────────
+        # ── Scan history (primary action — stays visible) ────────────────────
         if st.button("📊 Scan History", use_container_width=True, key="history_btn"):
             st.session_state["_show_history"] = not st.session_state.get("_show_history", False)
 
-        # ── Scheduled scans ───────────────────────────────────────────────────
-        if st.button("🕐 Schedules", use_container_width=True, key="schedule_btn"):
-            st.session_state["_show_schedules"] = not st.session_state.get("_show_schedules", False)
+        # ── Secondary tools — collapsed by default ────────────────────────────
+        with st.expander("⋯ More tools"):
+            if st.button("🕐 Schedules", use_container_width=True, key="schedule_btn"):
+                st.session_state["_show_schedules"] = not st.session_state.get("_show_schedules", False)
+            if st.button("📡 API Docs", use_container_width=True, key="api_docs_btn"):
+                st.session_state["_show_api_docs"] = not st.session_state.get("_show_api_docs", False)
+            if st.button("👥 Team", use_container_width=True, key="team_btn"):
+                st.session_state["_show_team"] = not st.session_state.get("_show_team", False)
+            if _current_user.is_admin:
+                if st.button("🔐 Admin Panel", use_container_width=True, key="admin_panel_btn"):
+                    st.session_state["_show_admin"] = not st.session_state.get("_show_admin", False)
 
-        # ── API docs ──────────────────────────────────────────────────────────
-        if st.button("📡 API Docs", use_container_width=True, key="api_docs_btn"):
-            st.session_state["_show_api_docs"] = not st.session_state.get("_show_api_docs", False)
-
-        # ── Team management ───────────────────────────────────────────────────
-        if st.button("👥 Team", use_container_width=True, key="team_btn"):
-            st.session_state["_show_team"] = not st.session_state.get("_show_team", False)
-
-        # ── Admin panel ───────────────────────────────────────────────────────
-        if _current_user.is_admin:
-            if st.button("🔐 Admin Panel", use_container_width=True, key="admin_panel_btn"):
-                st.session_state["_show_admin"] = not st.session_state.get("_show_admin", False)
-
-    # ── Demo / Live toggle ────────────────────────────────────────────────────
-    st.markdown('<div class="section-label">⚙ Configuration</div>', unsafe_allow_html=True)
-    demo_mode = st.toggle("Demo Mode (no API call)", value=True, key="demo_mode_toggle")
-    if demo_mode:
-        st.success("✅ Demo Mode active — no real requests sent")
-    else:
-        st.info("🔑 Live Mode — Groq API key required in .env")
+    # ── Demo / Live toggle (hidden in dev tools expander) ────────────────────
+    with st.expander("⚙ Dev Tools"):
+        demo_mode = st.toggle("Demo Mode (no API call)", value=False, key="demo_mode_toggle")
+        if demo_mode:
+            st.success("✅ Demo Mode active — no real requests sent")
+        else:
+            st.caption("🔑 Live Mode — Groq API key required")
 
     st.divider()
 
     # ── Scan mode selector ────────────────────────────────────────────────────
-    st.markdown('<div class="section-label">🎯 Scan Mode</div>', unsafe_allow_html=True)
-
     scan_mode = st.radio(
         "Scan mode",
         options=["passive", "standard", "pt"],
@@ -1432,7 +1907,7 @@ tab_url, tab_code, tab_history, tab_diff = st.tabs([
     "🌐  URL Security Scanner",
     "💻  Source Code Scanner",
     "📈  Scan History",
-    "🔄  Differential View",
+    "🔄  Compare Scans",
 ])
 
 
@@ -1442,12 +1917,12 @@ tab_url, tab_code, tab_history, tab_diff = st.tabs([
 
 with tab_url:
     # ── Inline mode selector (TraffixNet-style big cards) ─────────────────────
-    st.markdown('<div class="section-label">SCAN MODE</div>', unsafe_allow_html=True)
     _render_mode_selector(pt_mode_active)
 
     # ── Target URL input ──────────────────────────────────────────────────────
-    st.markdown('<div class="section-label">TARGET URL</div>', unsafe_allow_html=True)
-    _demo_default = _DEMO_TARGET_URL if demo_mode else ""
+    # Pre-fill from landing page hero URL input (one-shot, consumed here)
+    _hero_prefill  = st.session_state.pop("hero_target_url", "")
+    _demo_default  = _hero_prefill or (_DEMO_TARGET_URL if demo_mode else "")
     url_input = st.text_input(
         "Target URL",
         value=_demo_default,
@@ -1772,6 +2247,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
 
                 with st.status("🔵 Running Passive Recon — 18 OSINT tools…", expanded=True) as _ps:
                     st.write(f"🎯 Target: **{target}** — OSINT only, no active probes")
+                    _prog = st.progress(0, text="Starting 18 tools in parallel…")
                     try:
                         from tools.passive_recon import run_passive_recon_streaming, _build_passive_result
                         from tools.tech_fingerprinter import fingerprint_technologies
@@ -1781,12 +2257,19 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                         except Exception:
                             pass
                         _pr_results: dict = {}
-                        _sev_o = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
+                        _sev_o    = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
+                        _pr_total_tools = 18
                         for _tn, _tr in run_passive_recon_streaming(target, tech_results=_tech):
                             _pr_results[_tn] = _tr
                             _sev  = _tr.get("severity", "INFO")
                             _icon = _sev_icon.get(_sev, "✅")
                             _lbl  = _pr_tool_labels.get(_tn, _tn)
+                            _done_n = len(_pr_results)
+                            _rem    = _pr_total_tools - _done_n
+                            _prog.progress(
+                                int(_done_n / _pr_total_tools * 100),
+                                text=f"✅ {_lbl}{' — ' + str(_rem) + ' remaining' if _rem > 0 else ' — finalising…'}",
+                            )
                             st.write(f"{_icon} **{_lbl}** — {_sev}")
                         _pr = _build_passive_result(target, _pr_results)
                         # Clear old 17-tool results so they don't conflict
@@ -1827,6 +2310,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                         _ps.update(label="❌ Passive Recon failed", state="error")
                         st.error("Passive Recon failed — check the target URL and try again. Details logged.")
                 st.session_state["_scanning"] = False
+                st.session_state["_scroll_to_results"] = True
                 st.rerun()
         elif demo_mode:
             # Demo mode — only for Standard / PT modes, not passive
@@ -1932,10 +2416,23 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                         _limiter.release(target)
                         st.session_state["_scanning"] = False
                 if "url_report" in st.session_state:
+                    st.session_state["_scroll_to_results"] = True
                     st.rerun()
+
+    # ── Empty state ───────────────────────────────────────────────────────────
+    if (not st.session_state.get("url_report") and
+            not st.session_state.get("url_passive_recon") and
+            not st.session_state.get("_scanning")):
+        _show_empty_state(scan_mode)
+
+    # ── Auto-scroll to results when scan just completed ───────────────────────
+    if st.session_state.pop("_scroll_to_results", False):
+        st.html('<script>setTimeout(function(){var el=document.getElementById("scan-results-top");'
+                'if(el)el.scrollIntoView({behavior:"smooth",block:"start"});},400);</script>')
 
     # ── Results ───────────────────────────────────────────────────────────────
     if "url_report" in st.session_state:
+        st.html('<div id="scan-results-top" style="scroll-margin-top:60px"></div>')
         meta   = st.session_state["url_meta"]
         grade  = meta["overall_grade"]
         score  = meta["overall_score"]
@@ -2084,6 +2581,7 @@ confirm vulnerabilities with non-destructive canary probes and get curl PoC repr
     # ── Passive Recon Results (shown when passive mode was used) ─────────────
     _pr_data = st.session_state.get("url_passive_recon")
     if _pr_data:
+        st.html('<div id="scan-results-top" style="scroll-margin-top:60px"></div>')
         _pr_target  = st.session_state.get("url_target", "")
         _pr_tools   = _pr_data.get("tools", {})
         _pr_overall = _pr_data.get("overall_severity", "INFO")
@@ -2110,39 +2608,224 @@ confirm vulnerabilities with non-destructive canary probes and get curl PoC repr
         _n_crit = sum(1 for t in _pr_tools.values() if t.get("severity")=="CRITICAL")
         _n_high = sum(1 for t in _pr_tools.values() if t.get("severity")=="HIGH")
         _n_med  = sum(1 for t in _pr_tools.values() if t.get("severity")=="MEDIUM")
+        _n_low  = sum(1 for t in _pr_tools.values() if t.get("severity")=="LOW")
+        _n_info = sum(1 for t in _pr_tools.values()
+                      if t.get("severity","INFO") in ("INFO","") or not t.get("severity"))
+        _pr_total = max(len(_pr_tools), 1)
+        def _pct(n: int) -> str: return f"{n/_pr_total*100:.1f}"
+        # Build score formula string
+        _formula_parts = []
+        if _n_crit: _formula_parts.append(f"{_n_crit}×25")
+        if _n_high: _formula_parts.append(f"{_n_high}×15")
+        if _n_med:  _formula_parts.append(f"{_n_med}×8")
+        if _n_low:  _formula_parts.append(f"{_n_low}×3")
+        _formula = "100 − " + " − ".join(_formula_parts) if _formula_parts else "100"
+        # SVG ring params
+        _C2   = 326.73
+        _off2 = round(_C2 * (1 - _pr_score / 100), 2)
+        _uid2 = f"pr{_pr_grade}{_pr_score}"
+        _ts_display = _pr_data.get("scan_timestamp","")[:16].replace("T"," ")
 
-        st.markdown(f"""
-<div style="background:#0d1117;border:1px solid #1e3a5f;border-left:4px solid {_ov_color};
-            border-radius:10px;padding:18px 24px;margin:20px 0 8px">
-  <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
-    <div style="text-align:center;min-width:70px">
-      <div style="font-size:2.2rem;font-weight:900;color:{_gc};line-height:1">{_pr_score}</div>
-      <div style="font-size:0.7rem;color:#475569;letter-spacing:.05em">SECURITY SCORE</div>
-      <div style="font-size:1.1rem;font-weight:700;color:{_gc}">Grade {_pr_grade}</div>
+        st.html(f"""
+<style>
+@keyframes {_uid2} {{
+  0%   {{ stroke-dashoffset: {_C2}; }}
+  100% {{ stroke-dashoffset: {_off2}; }}
+}}
+.rng-{_uid2} {{
+  stroke-dasharray: {_C2};
+  stroke-dashoffset: {_C2};
+  animation: {_uid2} 1.6s cubic-bezier(0.34,1.56,0.64,1) 0.3s forwards;
+}}
+@keyframes pr-banner-in {{
+  from {{ opacity:0; transform:translateY(12px); }}
+  to   {{ opacity:1; transform:translateY(0); }}
+}}
+.pr-banner {{ animation: pr-banner-in 0.5s ease 0.1s both; }}
+</style>
+<script>
+(function(){{
+  var el = document.getElementById('num-{_uid2}');
+  if (!el) return;
+  var target = {_pr_score};
+  var dur = 1350;
+  var t0 = performance.now();
+  function step(ts) {{
+    var p = Math.min((ts - t0) / dur, 1);
+    var ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(target * ease);
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = target;
+  }}
+  setTimeout(function() {{ requestAnimationFrame(step); }}, 300);
+}})();
+</script>
+<div class="pr-banner" style="background:#0d1117;border:1px solid #1f2d3d;
+     border-radius:14px;padding:22px 24px;margin:20px 0 10px;
+     box-shadow:0 4px 40px rgba(0,0,0,0.5),0 0 0 1px {_gc}0d;
+     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <div style="display:flex;align-items:flex-start;gap:22px;flex-wrap:wrap">
+    <!-- SVG ring -->
+    <div style="flex-shrink:0">
+      <svg width="130" height="130" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="52" fill="none" stroke="#1e2d3d" stroke-width="9"/>
+        <circle cx="60" cy="60" r="52" fill="none" stroke="{_gc}" stroke-width="9"
+                stroke-linecap="round" transform="rotate(-90 60 60)"
+                class="rng-{_uid2}"/>
+        <text x="60" y="50" text-anchor="middle" dominant-baseline="middle"
+              fill="{_gc}" font-size="22" font-weight="900"
+              font-family="JetBrains Mono,Courier New,monospace"
+              id="num-{_uid2}">0</text>
+        <text x="60" y="66" text-anchor="middle" dominant-baseline="middle"
+              fill="#334155" font-size="9">/ 100</text>
+        <text x="60" y="80" text-anchor="middle" dominant-baseline="middle"
+              fill="{_gc}" font-size="11" font-weight="800" letter-spacing="1">
+          GRADE {_pr_grade}
+        </text>
+      </svg>
     </div>
-    <div style="flex:1">
-      <div style="color:#e2e8f0;font-size:1.1rem;font-weight:700">
-        Passive Recon Results — {_pr_target}
+    <!-- Info panel -->
+    <div style="flex:1;min-width:200px">
+      <div style="color:#64748b;font-size:0.67rem;text-transform:uppercase;
+                  letter-spacing:0.16em;font-family:JetBrains Mono,monospace;margin-bottom:5px">
+        Passive OSINT Recon · 18 Tools · {_ts_display} UTC
       </div>
-      <div style="color:#475569;font-size:0.75rem;margin-top:4px;font-family:'JetBrains Mono',monospace">18 OSINT tools · Overall severity: <span style="color:{_ov_color};font-weight:700">{_pr_overall}</span> · <span style="color:#64748b">{_pr_data.get('scan_timestamp','')[:16].replace('T',' ')} UTC</span></div>
-      <div style="color:#64748b;font-size:0.7rem;margin-top:3px">📊 100{f' − {_n_crit}×25(C)' if _n_crit else ''}{f' − {_n_high}×15(H)' if _n_high else ''}{f' − {_n_med}×8(M)' if _n_med else ''} = <b style="color:{_gc}">{_pr_score}/100</b> · {len(_pr_tools)} tools</div>
-      <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
-        <span style="background:#3f0000;color:#ef4444;border:1px solid #ef444440;
-                     padding:2px 10px;border-radius:4px;font-size:0.75rem;font-weight:700">
-          🔴 {_n_crit} CRITICAL
+      <div style="color:#e2e8f0;font-size:1.2rem;font-weight:700;
+                  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+                  margin-bottom:10px">{_pr_target}</div>
+      <!-- Severity pill badges -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <span style="background:#3f000099;color:#ef4444;border:1px solid #ef444450;
+                     padding:3px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;
+                     font-family:JetBrains Mono,monospace">
+          {_n_crit} CRITICAL
         </span>
-        <span style="background:#3f1f00;color:#f97316;border:1px solid #f9731640;
-                     padding:2px 10px;border-radius:4px;font-size:0.75rem;font-weight:700">
-          🟠 {_n_high} HIGH
+        <span style="background:#3f1f0099;color:#f97316;border:1px solid #f9731650;
+                     padding:3px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;
+                     font-family:JetBrains Mono,monospace">
+          {_n_high} HIGH
         </span>
-        <span style="background:#3f2f00;color:#f59e0b;border:1px solid #f59e0b40;
-                     padding:2px 10px;border-radius:4px;font-size:0.75rem;font-weight:700">
-          🟡 {_n_med} MEDIUM
+        <span style="background:#3f2f0099;color:#f59e0b;border:1px solid #f59e0b50;
+                     padding:3px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;
+                     font-family:JetBrains Mono,monospace">
+          {_n_med} MEDIUM
         </span>
+        <span style="background:#0e1e3f99;color:#60a5fa;border:1px solid #60a5fa50;
+                     padding:3px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;
+                     font-family:JetBrains Mono,monospace">
+          {_n_low} LOW
+        </span>
+        <span style="background:#1e2d3d99;color:#475569;border:1px solid #47556950;
+                     padding:3px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;
+                     font-family:JetBrains Mono,monospace">
+          {_n_info} INFO
+        </span>
+      </div>
+      <!-- Stacked severity breakdown bar -->
+      <div style="height:7px;display:flex;border-radius:4px;overflow:hidden;max-width:440px">
+        <div style="width:{_pct(_n_crit)}%;background:#ef4444;flex-shrink:0;
+                    transition:width 1.2s ease 0.6s" title="{_n_crit} Critical"></div>
+        <div style="width:{_pct(_n_high)}%;background:#f97316;flex-shrink:0;
+                    transition:width 1.2s ease 0.7s" title="{_n_high} High"></div>
+        <div style="width:{_pct(_n_med)}%;background:#f59e0b;flex-shrink:0;
+                    transition:width 1.2s ease 0.8s" title="{_n_med} Medium"></div>
+        <div style="width:{_pct(_n_low)}%;background:#60a5fa;flex-shrink:0;
+                    transition:width 1.2s ease 0.9s" title="{_n_low} Low"></div>
+        <div style="flex:1;background:#1e2d3d;min-width:2px"></div>
+      </div>
+      <!-- Bar legend -->
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:7px;font-size:0.67rem;
+                  font-family:JetBrains Mono,monospace">
+        <span style="color:#ef4444">■ {_n_crit} critical</span>
+        <span style="color:#f97316">■ {_n_high} high</span>
+        <span style="color:#f59e0b">■ {_n_med} medium</span>
+        <span style="color:#60a5fa">■ {_n_low} low</span>
+        <span style="color:#475569">■ {_n_info} info</span>
+      </div>
+      <!-- Score formula -->
+      <div style="color:#334155;font-size:0.67rem;margin-top:10px;
+                  font-family:JetBrains Mono,monospace;letter-spacing:0.03em">
+        📊 {_formula} = <span style="color:{_gc};font-weight:700">{_pr_score}/100</span>
+        &nbsp;·&nbsp; {len(_pr_tools)} tools ran
       </div>
     </div>
   </div>
-</div>""", unsafe_allow_html=True)
+</div>""")
+
+        # ── What to do next CTA — shown FIRST, before tool details ────────
+        _tier = _current_user.subscription_tier if _current_user else "free"
+        _is_free = (_tier == "free")
+        _fix_map = {
+            "email_spoofability": ("Add DMARC policy `p=quarantine` + SPF `~all`",           "~10 min"),
+            "http_headers":       ("Add CSP, HSTS, X-Frame-Options headers to your server",  "~15 min"),
+            "ssl_passive":        ("Renew/upgrade your TLS certificate via Let's Encrypt",    "~20 min"),
+            "dns_deep":           ("Close AXFR zone transfer, add CAA records",               "~5 min"),
+            "exposed_files":      ("Block /.env /.git paths in nginx/Apache config",          "~5 min"),
+            "js_secrets":         ("Rotate all exposed API keys immediately, use env vars",   "~30 min"),
+            "cloud_buckets":      ("Set bucket policy to private in AWS/GCS console",         "~5 min"),
+            "cve_correlation":    ("Upgrade detected libraries to patched versions",          "~1 hour"),
+            "http_methods":       ("Disable TRACE/PUT/DELETE in server config",               "~5 min"),
+            "robots_sitemap":     ("Remove sensitive paths from robots.txt",                  "~5 min"),
+        }
+        _top_fixes = []
+        for _tk, _tv in sorted(_pr_tools.items(),
+                                key=lambda kv: _sev_order.get(kv[1].get("severity","INFO"), 99)):
+            if _tv.get("severity") in ("CRITICAL","HIGH") and _tk in _fix_map:
+                _top_fixes.append((_tk, _tv.get("severity"), _fix_map[_tk]))
+            if len(_top_fixes) >= 3:
+                break
+
+        if _top_fixes or _is_free:
+            _fix_items = "".join(
+                f'<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;'
+                f'border-bottom:1px solid #1e2d3d">'
+                f'<span style="background:{"#3f0000" if sv=="CRITICAL" else "#3f1f00"};'
+                f'color:{"#ef4444" if sv=="CRITICAL" else "#f97316"};'
+                f'border:1px solid {"#ef444440" if sv=="CRITICAL" else "#f9731640"};'
+                f'border-radius:4px;padding:2px 8px;font-size:0.68rem;font-weight:800;'
+                f'white-space:nowrap;font-family:monospace">{sv}</span>'
+                f'<div style="flex:1">'
+                f'<div style="color:#e2e8f0;font-size:0.84rem;font-weight:600;margin-bottom:2px">{fix}</div>'
+                f'<div style="color:#475569;font-size:0.76rem">⏱ Estimated: {eta}</div>'
+                f'</div></div>'
+                for _, sv, (fix, eta) in _top_fixes
+            )
+
+            _upgrade_row = ""
+            if _is_free:
+                _upgrade_row = f"""
+<div style="background:#071a10;border:1px solid #10b981;border-radius:10px;
+            padding:16px 18px;margin-top:16px;display:flex;align-items:center;
+            gap:14px;flex-wrap:wrap">
+  <div style="flex:1;min-width:200px">
+    <div style="color:#10b981;font-size:0.82rem;font-weight:700;margin-bottom:3px">
+      🔍 Upgrade to Pro for step-by-step fix guides
+    </div>
+    <div style="color:#475569;font-size:0.78rem;line-height:1.5">
+      Get detailed remediation steps, code examples, and automated re-scan verification for every finding.
+    </div>
+  </div>
+  <div style="background:linear-gradient(135deg,#10b981,#059669);color:#000;font-weight:800;
+              font-size:0.82rem;padding:9px 20px;border-radius:8px;white-space:nowrap;
+              cursor:pointer">Upgrade to Pro →</div>
+</div>"""
+
+            st.html(f"""
+<div style="background:#0d1117;border:1px solid #1f2d3d;border-radius:12px;
+            padding:20px 22px;margin:22px 0 16px;
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <span style="font-size:1.1rem">🛠️</span>
+    <span style="color:#e2e8f0;font-size:1rem;font-weight:700">What to do next</span>
+    <span style="color:#334155;font-size:0.75rem;margin-left:auto">{len(_top_fixes)} quick wins identified</span>
+  </div>
+  {_fix_items if _fix_items else '<div style="color:#475569;font-size:0.84rem">No critical/high findings — your site passed passive checks. 🎉</div>'}
+  {_upgrade_row}
+</div>""")
+            if _is_free and _top_fixes:
+                if st.button("⬆ Upgrade to Pro — get fix guides", key="pr_upgrade_cta"):
+                    st.session_state["_show_pricing"] = True
+                    st.rerun()
 
         # ── Export / Download ──────────────────────────────────────────────
         def _build_html_report(pr_data: dict, target: str, score: int, grade: str) -> str:
@@ -2169,7 +2852,7 @@ th{{background:#1e293b;padding:10px;text-align:left;font-size:.8rem;color:#94a3b
 td{{padding:9px 10px;border-bottom:1px solid #1e293b;font-size:.82rem;vertical-align:top}}
 </style></head><body>
 <h1>⬡ AI Cyber Shield — Passive Recon Report</h1>
-<h2>Target: {target} &nbsp;|&nbsp; Scan: {_ts} UTC &nbsp;|&nbsp; Tools: 17 OSINT</h2>
+<h2>Target: {target} &nbsp;|&nbsp; Scan: {_ts} UTC &nbsp;|&nbsp; Tools: 18 OSINT</h2>
 <div class="score">{score}/100</div>
 <div style="font-size:1.5rem;color:#94a3b8">Grade {grade}</div>
 <table><thead><tr><th>Tool</th><th>Severity</th><th>Finding</th></tr></thead>
@@ -2333,6 +3016,14 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
         )
 
         _unavailable_tools = []
+        _last_sev_group    = None
+        _sev_group_labels  = {
+            "CRITICAL": ("🔴", "CRITICAL — Immediate Action Required",  "#ef4444", "#3f0000"),
+            "HIGH":     ("🟠", "HIGH — Fix Before Next Release",        "#f97316", "#3f1400"),
+            "MEDIUM":   ("🟡", "MEDIUM — Should Be Addressed",          "#f59e0b", "#3a2800"),
+            "LOW":      ("⚪", "LOW — Minor Issues",                    "#60a5fa", "#0e1e3f"),
+            "INFO":     ("✅", "INFORMATIONAL — No Issues Found",       "#475569", "#111827"),
+        }
 
         for tool_key, (icon, label) in _sorted_tools:
             tr = _pr_tools.get(tool_key)
@@ -2363,6 +3054,21 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
                 finding = "ℹ️ Not found on this target."
             else:
                 finding = "ℹ️ No data returned for this target."
+
+            # ── Severity group header (shown once per severity level) ──────────
+            _sev_group = sev if sev in _sev_group_labels else "INFO"
+            if _sev_group != _last_sev_group:
+                _last_sev_group = _sev_group
+                _gi, _gl, _gc, _gb = _sev_group_labels[_sev_group]
+                st.markdown(
+                    f'<div style="display:flex;align-items:center;gap:10px;'
+                    f'margin:20px 0 8px;padding:7px 14px;border-radius:6px;'
+                    f'background:{_gb};border:1px solid {_gc}33">'
+                    f'<span style="color:{_gc};font-size:0.65rem;font-weight:800;'
+                    f'font-family:monospace;text-transform:uppercase;letter-spacing:0.14em">'
+                    f'{_gi} {_gl}</span></div>',
+                    unsafe_allow_html=True,
+                )
 
             cls  = _sev_cls.get(sev, "pr-card-info")
             clr  = _sev_colors.get(sev, "#475569")

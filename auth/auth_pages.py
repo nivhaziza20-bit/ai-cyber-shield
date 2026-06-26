@@ -24,7 +24,7 @@ _LANDING_CSS = """
 #MainMenu, footer, header { visibility: hidden; }
 [data-testid="stAppViewContainer"] { background: #060b14; }
 [data-testid="stHeader"] { background: transparent; }
-.block-container { padding-top: 0 !important; padding-bottom: 0 !important; background: #060b14; }
+.block-container { padding-top: 0 !important; padding-bottom: 0 !important; padding-left: 1rem !important; padding-right: 1rem !important; background: #060b14; }
 
 /* ── Brand ──────────────────────────────────────────────── */
 .lp-brand { display:flex; align-items:center; gap:14px; margin-bottom:24px; margin-top:8px; }
@@ -36,12 +36,12 @@ _LANDING_CSS = """
 .lp-headline { font-size:3.2rem; font-weight:900; color:#f1f5f9; line-height:1.08; margin:0 0 18px; letter-spacing:-0.03em; }
 .lp-headline em { color:#10b981; font-style:normal; background:linear-gradient(90deg,#10b981,#34d399); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 .lp-desc { color:#94a3b8; font-size:0.97rem; line-height:1.72; max-width:520px; margin:0 0 22px; }
-.lp-cta-row { display:flex; align-items:center; gap:16px; margin-bottom:28px; }
+.lp-cta-row { display:flex; align-items:center; gap:16px; margin-bottom:28px; flex-wrap:wrap; }
 .lp-cta-btn { display:inline-flex; align-items:center; gap:8px; background:#10b981; color:#000; font-weight:800; font-size:0.88rem; padding:11px 24px; border-radius:9px; letter-spacing:-0.01em; }
 .lp-cta-note { color:#475569; font-size:0.75rem; }
 
 /* ── Stats ──────────────────────────────────────────────── */
-.lp-stats { display:flex; gap:28px; margin-bottom:32px; padding-bottom:28px; border-bottom:1px solid #1e2d3d; }
+.lp-stats { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:32px; padding-bottom:28px; border-bottom:1px solid #1e2d3d; }
 .lp-stat-val { font-size:1.9rem; font-weight:900; color:#10b981; font-family:'JetBrains Mono',monospace; line-height:1; }
 .lp-stat-lbl { color:#475569; font-size:0.68rem; margin-top:4px; text-transform:uppercase; letter-spacing:0.07em; }
 
@@ -55,7 +55,7 @@ _LANDING_CSS = """
 .lp-feat-desc { font-size:0.8rem; color:#64748b; line-height:1.55; }
 
 /* ── Free badge ─────────────────────────────────────────── */
-.lp-free-badge { display:inline-flex; align-items:center; gap:8px; background:#0a2018; border:1px solid #10b981; border-radius:8px; padding:9px 15px; font-size:0.8rem; color:#86efac; margin-bottom:8px; }
+.lp-free-badge { display:inline-flex; align-items:center; gap:8px; background:#0a2018; border:1px solid #10b981; border-radius:8px; padding:9px 15px; font-size:0.8rem; color:#86efac; margin-bottom:8px; flex-wrap:wrap; }
 .lp-free-badge strong { color:#34d399; }
 
 /* ── Auth card (floating card effect) ───────────────────── */
@@ -65,6 +65,116 @@ _LANDING_CSS = """
 .auth-card-sub { font-size:0.75rem; color:#64748b; }
 .auth-notice { background:#0f2027; border:1px solid #10b981; border-radius:8px; padding:10px 14px; font-size:0.79rem; color:#86efac; margin-bottom:16px; line-height:1.55; }
 .auth-card-footer { background:#0d1421; border:1px solid #2a3d52; border-top:none; border-radius:0 0 16px 16px; padding:12px 28px 22px; text-align:center; color:#334155; font-size:0.69rem; line-height:1.75; box-shadow:0 8px 32px rgba(0,0,0,0.5); }
+
+/* ── Auth card tab strip — blends seamlessly with card ───── */
+.stTabs [data-baseweb="tab-list"] {
+    background: #0d1421 !important;
+    border-bottom: 1px solid #2a3d52 !important;
+    border-left: 1px solid #2a3d52 !important;
+    border-right: 1px solid #2a3d52 !important;
+    gap: 2px !important;
+    padding: 0 8px !important;
+}
+.stTabs [data-baseweb="tab-panel"] {
+    background: #0d1421 !important;
+    border-left: 1px solid #2a3d52 !important;
+    border-right: 1px solid #2a3d52 !important;
+    padding: 0 !important;
+}
+.stTabs [data-baseweb="tab"] {
+    background: transparent !important;
+    color: #64748b !important;
+    border-radius: 6px 6px 0 0 !important;
+    font-size: 0.82rem !important;
+    padding: 9px 14px !important;
+    border: none !important;
+}
+.stTabs [aria-selected="true"] {
+    background: #111d2e !important;
+    color: #10b981 !important;
+    border-bottom: 2px solid #10b981 !important;
+}
+
+/* ── Hero scan URL label ────────────────────────────────── */
+.lp-scan-label {
+  color: #10b981;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin: 18px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lp-scan-label::before {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  background: #10b981;
+  border-radius: 1px;
+}
+
+/* ── Auth buttons (Sign In / Create Account) ────────────── */
+button[kind="primary"] {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #000 !important;
+  font-weight: 800 !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-size: 0.9rem !important;
+  letter-spacing: 0.03em !important;
+  box-shadow: 0 2px 12px rgba(16,185,129,0.25) !important;
+  transition: all 0.18s ease !important;
+}
+button[kind="primary"]:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  box-shadow: 0 4px 20px rgba(16,185,129,0.40) !important;
+  transform: translateY(-1px) !important;
+}
+button[kind="primary"]:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 8px rgba(16,185,129,0.20) !important;
+}
+button[kind="secondary"] {
+  background: #0d1421 !important;
+  color: #64748b !important;
+  border: 1px solid #2a3d52 !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  transition: all 0.18s ease !important;
+}
+button[kind="secondary"]:hover {
+  border-color: #10b981 !important;
+  color: #10b981 !important;
+}
+
+/* ── MOBILE — tablet (≤768px) ───────────────────────────── */
+@media (max-width: 768px) {
+  .lp-headline { font-size: 2.1rem; }
+  .lp-desc { font-size: 0.9rem; }
+  .lp-features { grid-template-columns: 1fr; }
+  .lp-stats { gap: 16px; }
+  .lp-stat-val { font-size: 1.5rem; }
+  .auth-card-top { padding: 18px 16px 14px; border-radius: 12px 12px 0 0; }
+  .auth-card-footer { padding: 10px 16px 16px; border-radius: 0 0 12px 12px; }
+  .lp-free-badge { font-size: 0.74rem; }
+}
+
+/* ── MOBILE — phone (≤480px) ────────────────────────────── */
+@media (max-width: 480px) {
+  .lp-headline { font-size: 1.7rem; letter-spacing: -0.01em; }
+  .lp-desc { font-size: 0.85rem; max-width: 100%; }
+  .lp-cta-btn { padding: 10px 18px; font-size: 0.82rem; width: 100%; justify-content: center; }
+  .lp-cta-note { font-size: 0.7rem; }
+  .lp-stats { gap: 12px; }
+  .lp-stat-val { font-size: 1.3rem; }
+  .lp-stat-lbl { font-size: 0.6rem; }
+  .lp-brand-name { font-size: 1.1rem; }
+  .auth-card-top { padding: 14px 12px; }
+  .auth-card-footer { padding: 8px 12px 14px; }
+}
 </style>
 """
 
@@ -73,17 +183,31 @@ _LANDING_CSS = """
 # ─────────────────────────────────────────────────────────────────────────────
 
 _NAV_HTML = """
-<div style="display:flex;align-items:center;justify-content:space-between;padding:13px 4px 13px;border-bottom:1px solid #1e2d3d;margin-bottom:6px">
-  <div style="display:flex;align-items:center;gap:12px">
+<style>
+.aics-nav{display:flex;align-items:center;justify-content:space-between;padding:13px 4px;border-bottom:1px solid #1e2d3d;margin-bottom:6px;flex-wrap:wrap;gap:10px}
+.aics-nav-brand{display:flex;align-items:center;gap:10px}
+.aics-nav-links{display:flex;align-items:center;gap:20px}
+.aics-nav-link{color:#64748b;font-size:0.76rem;white-space:nowrap}
+.aics-nav-cta{background:#10b981;color:#000;font-weight:800;font-size:0.76rem;padding:6px 16px;border-radius:7px;white-space:nowrap}
+@media(max-width:768px){
+  .aics-nav-links .aics-nav-link{display:none}
+  .aics-nav{padding:10px 4px}
+}
+@media(max-width:480px){
+  .aics-nav-cta{font-size:0.7rem;padding:5px 12px}
+}
+</style>
+<div class="aics-nav">
+  <div class="aics-nav-brand">
     <span style="font-size:1.2rem">🛡</span>
     <span style="font-family:'JetBrains Mono','Courier New',monospace;font-weight:900;color:#10b981;font-size:0.95rem;letter-spacing:-0.03em">AI Cyber Shield</span>
-    <span style="background:#0a2018;border:1px solid #10b981;border-radius:4px;color:#34d399;font-size:0.56rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:2px 7px;margin-left:4px">Beta</span>
+    <span style="background:#0a2018;border:1px solid #10b981;border-radius:4px;color:#34d399;font-size:0.56rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:2px 7px">Beta</span>
   </div>
-  <div style="display:flex;align-items:center;gap:24px">
-    <span style="color:#64748b;font-size:0.76rem">17 scan tools</span>
-    <span style="color:#64748b;font-size:0.76rem">No agent required</span>
-    <span style="color:#64748b;font-size:0.76rem">Free tier available</span>
-    <span style="background:#10b981;color:#000;font-weight:800;font-size:0.76rem;padding:6px 16px;border-radius:7px;white-space:nowrap">Start Free →</span>
+  <div class="aics-nav-links">
+    <span class="aics-nav-link">18 scan tools</span>
+    <span class="aics-nav-link">No agent required</span>
+    <span class="aics-nav-link">Free tier available</span>
+    <span class="aics-nav-cta">Start Free →</span>
   </div>
 </div>
 """
@@ -100,18 +224,83 @@ _HERO_HTML = """
     <div class="lp-brand-sub">Web Application Security Intelligence</div>
   </div>
 </div>
-<h1 class="lp-headline">Scan. Detect.<br><em>Defend.</em></h1>
-<p class="lp-desc">AI-powered web security scanning built for developers and security teams. Runs 17 tools in parallel — TLS analysis, CVE detection, technology fingerprinting, and active vulnerability verification. Full report in under 90 seconds.</p>
-<div class="lp-cta-row">
-  <span class="lp-cta-btn">→&nbsp; Create free account</span>
-  <span class="lp-cta-note">No credit card &nbsp;·&nbsp; 5 free scans / day</span>
+<h1 class="lp-headline">Your website's security score<br>in 90 seconds — <em>free.</em></h1>
+<p class="lp-desc">18 OSINT tools run in parallel: TLS, DNS, CVEs, IP intelligence, WHOIS, headers, CT logs, email spoofability, Shodan &amp; more. No agent installed on your server. Results in under 90 seconds.</p>
+<div class="lp-scan-label">Enter your website to get started</div>
+"""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stats bar  (self-contained → st.html so count-up script runs)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_STATS_HTML = """
+<style>
+.aics-stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 22px 0 24px;
+  border-bottom: 1px solid #1e2d3d;
+  margin-bottom: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.aics-stat-val {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #10b981;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.aics-stat-lbl {
+  color: #475569;
+  font-size: 0.67rem;
+  margin-top: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+@media (max-width: 480px) {
+  .aics-stat-val { font-size: 1.5rem; }
+  .aics-stats    { gap: 14px; }
+}
+</style>
+<div class="aics-stats">
+  <div>
+    <div class="aics-stat-val" id="st-tools">0</div>
+    <div class="aics-stat-lbl">OSINT tools</div>
+  </div>
+  <div>
+    <div class="aics-stat-val" id="st-sigs">0</div>
+    <div class="aics-stat-lbl">Tech signatures</div>
+  </div>
+  <div>
+    <div class="aics-stat-val" id="st-classes">0</div>
+    <div class="aics-stat-lbl">Vuln classes</div>
+  </div>
+  <div>
+    <div class="aics-stat-val">&lt;90s</div>
+    <div class="aics-stat-lbl">Scan time</div>
+  </div>
 </div>
-<div class="lp-stats">
-  <div><div class="lp-stat-val">17</div><div class="lp-stat-lbl">Scan tools</div></div>
-  <div><div class="lp-stat-val">7,537</div><div class="lp-stat-lbl">Tech signatures</div></div>
-  <div><div class="lp-stat-val">8</div><div class="lp-stat-lbl">Vuln classes</div></div>
-  <div><div class="lp-stat-val">&lt;90s</div><div class="lp-stat-lbl">Scan time</div></div>
-</div>
+<script>
+function aicsCU(id, target, dur) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var t0 = performance.now();
+  function step(ts) {
+    var p  = Math.min((ts - t0) / dur, 1);
+    var e  = 1 - Math.pow(1 - p, 3);          /* ease-out cubic */
+    var v  = Math.round(target * e);
+    el.textContent = target > 100 ? v.toLocaleString() : v;
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = target > 100 ? target.toLocaleString() : target;
+  }
+  requestAnimationFrame(step);
+}
+aicsCU('st-tools',   18,   800);
+aicsCU('st-sigs',   7537, 1600);
+aicsCU('st-classes',   8,  500);
+</script>
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -153,7 +342,7 @@ _FEATURES_HTML = """
   </div>
 </div>
 <div class="lp-free-badge">
-  ✅ <strong>Free tier included</strong> — Passive OSINT scan (15 tools), no credit card required. Upgrade for active scanning and PT mode.
+  ✅ <strong>Free tier included</strong> — 18-tool OSINT scan, no credit card required. Upgrade for active scanning and PT mode.
 </div>
 """
 
@@ -181,11 +370,20 @@ _AUTH_CARD_FOOTER = """
 # ─────────────────────────────────────────────────────────────────────────────
 
 _SOCIAL_PROOF_HTML = """
-<div style="text-align:center;padding:18px 0;color:#475569;font-size:0.78rem;border-top:1px solid #1e2d3d;border-bottom:1px solid #1e2d3d;background:#080d17;margin:4px 0 0">
-  <span style="color:#10b981;font-weight:700">17 parallel tools</span>&nbsp;&nbsp;·&nbsp;&nbsp;
-  <span style="color:#10b981;font-weight:700">No agent</span> required on target server&nbsp;&nbsp;·&nbsp;&nbsp;
-  <span style="color:#10b981;font-weight:700">Passive mode</span> — zero network footprint&nbsp;&nbsp;·&nbsp;&nbsp;
-  <span style="color:#10b981;font-weight:700">OWASP Top 10</span> coverage
+<style>
+.sp-bar{text-align:center;padding:14px 8px;color:#475569;font-size:0.78rem;border-top:1px solid #1e2d3d;border-bottom:1px solid #1e2d3d;background:#080d17;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px 16px}
+.sp-item{white-space:nowrap}
+.sp-hl{color:#10b981;font-weight:700}
+@media(max-width:480px){.sp-bar{font-size:0.7rem;padding:10px 6px}.sp-sep{display:none}}
+</style>
+<div class="sp-bar">
+  <span class="sp-item"><span class="sp-hl">18 parallel tools</span></span>
+  <span class="sp-sep">·</span>
+  <span class="sp-item"><span class="sp-hl">No agent</span> on target server</span>
+  <span class="sp-sep">·</span>
+  <span class="sp-item"><span class="sp-hl">Passive mode</span> — zero footprint</span>
+  <span class="sp-sep">·</span>
+  <span class="sp-item"><span class="sp-hl">OWASP Top 10</span> coverage</span>
 </div>
 """
 
@@ -199,10 +397,26 @@ _PRICING_HTML = """
 .aics-pricing-eye{text-align:center;color:#10b981;font-size:.7rem;text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px}
 .aics-pricing-h{text-align:center;font-size:1.9rem;font-weight:800;color:#f8fafc;margin-bottom:6px}
 .aics-pricing-sub{text-align:center;color:#64748b;font-size:.88rem;margin-bottom:36px}
-.aics-plans{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px}
-.aics-plan{background:#0d1421;border:1px solid #1e2d3d;border-radius:14px;padding:24px 20px;position:relative}
-.aics-plan-pro{border-color:#10b981;background:linear-gradient(145deg,#0a1e16,#0d1421);box-shadow:0 0 28px rgba(16,185,129,.13)}
-.aics-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#10b981;color:#000;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:3px 12px;border-radius:99px;white-space:nowrap}
+.aics-plans{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px;align-items:start}
+@media(max-width:900px){.aics-plans{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.aics-plans{grid-template-columns:1fr}.aics-pricing-h{font-size:1.4rem}.aics-price{font-size:1.7rem}}
+.aics-plan{background:#0d1421;border:1px solid #1e2d3d;border-radius:14px;padding:24px 20px;position:relative;transition:border-color 0.2s}
+.aics-plan:hover{border-color:#2a3d52}
+.aics-plan-pro{
+  border-color:#10b981;
+  border-width:2px;
+  background:linear-gradient(160deg,#081a10 0%,#0d1421 50%);
+  box-shadow:0 0 50px rgba(16,185,129,0.22),0 8px 40px rgba(0,0,0,0.55),0 0 0 1px rgba(16,185,129,0.12);
+  transform:translateY(-10px) scale(1.035);
+  z-index:2;
+  padding:28px 22px;
+}
+.aics-plan-pro:hover{border-color:#34d399;box-shadow:0 0 60px rgba(16,185,129,0.30),0 12px 50px rgba(0,0,0,0.6)}
+.aics-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(90deg,#10b981,#34d399);
+  color:#000;font-size:.6rem;font-weight:900;text-transform:uppercase;
+  letter-spacing:.12em;padding:4px 16px;border-radius:99px;white-space:nowrap;
+  box-shadow:0 2px 12px rgba(16,185,129,0.45)}
 .aics-tier{font-size:.7rem;text-transform:uppercase;letter-spacing:.15em;color:#64748b;margin-bottom:10px}
 .aics-price{font-size:2.1rem;font-weight:800;color:#f8fafc;line-height:1;margin-bottom:4px}
 .aics-price sub{font-size:.8rem;font-weight:400;color:#64748b;vertical-align:baseline}
@@ -225,7 +439,7 @@ _PRICING_HTML = """
       <div class="aics-price">€0</div>
       <div class="aics-tagline">Always free, no card needed</div>
       <ul class="aics-features">
-        <li>Passive scan — 15 OSINT tools</li>
+        <li>Passive scan — 18 OSINT tools</li>
         <li>5 scans / day</li>
         <li>Security score A–F</li>
         <li class="off">Active scanning</li>
@@ -239,7 +453,7 @@ _PRICING_HTML = """
       <div class="aics-price">€20<sub>/mo</sub></div>
       <div class="aics-tagline">Full scan suite for developers</div>
       <ul class="aics-features">
-        <li>All 17 scan tools</li>
+        <li>All 18 scan tools</li>
         <li>50 scans / day</li>
         <li>CVE feed + EPSS scoring</li>
         <li>Scan history &amp; comparison</li>
@@ -249,9 +463,9 @@ _PRICING_HTML = """
       <span class="aics-cta">Upgrade</span>
     </div>
     <div class="aics-plan aics-plan-pro">
-      <div class="aics-badge">Most popular</div>
-      <div class="aics-tier" style="color:#86efac">Professional</div>
-      <div class="aics-price" style="color:#34d399">€50<sub>/mo</sub></div>
+      <div class="aics-badge">⭐ Most popular</div>
+      <div class="aics-tier" style="color:#10b981;font-weight:900;letter-spacing:.2em">Professional</div>
+      <div class="aics-price" style="color:#34d399;font-size:2.6rem">€50<sub>/mo</sub></div>
       <div class="aics-tagline">For security engineers &amp; consultants</div>
       <ul class="aics-features">
         <li>Everything in Starter</li>
@@ -332,6 +546,30 @@ def show_auth_page() -> None:
     # ── LEFT: product marketing ───────────────────────────────────────────────
     with col_left:
         st.markdown(_HERO_HTML, unsafe_allow_html=True)
+
+        # ── Hero URL input — stores URL for post-login auto-fill ──────────────
+        _hero_url = st.text_input(
+            "hero_label",
+            placeholder="https://yourwebsite.com",
+            key="hero_scan_url",
+            label_visibility="collapsed",
+        )
+        if st.button(
+            "→  Get your free security score",
+            key="hero_get_score_btn",
+            type="primary",
+            use_container_width=True,
+        ):
+            if _hero_url.strip():
+                st.session_state["hero_target_url"] = _hero_url.strip()
+                st.session_state["_run_guest_scan"]  = True
+                st.rerun()
+            else:
+                st.warning("Enter a URL to get started.")
+
+        # ── Animated stats ────────────────────────────────────────────────────
+        st.html(_STATS_HTML)
+
         st.markdown(_FEATURES_HTML, unsafe_allow_html=True)
 
     # ── RIGHT: auth form ──────────────────────────────────────────────────────
@@ -371,6 +609,20 @@ def show_auth_page() -> None:
                     else:
                         st.error(result.get("error", "Login failed"))
 
+            st.markdown("""
+<div style="display:flex;align-items:center;gap:12px;margin:14px 0 12px">
+  <div style="flex:1;height:1px;background:#1e2d3d"></div>
+  <span style="color:#334155;font-size:0.73rem;white-space:nowrap">or continue with</span>
+  <div style="flex:1;height:1px;background:#1e2d3d"></div>
+</div>""", unsafe_allow_html=True)
+            if st.button("⬡  Continue with GitHub", use_container_width=True, key="li_github"):
+                from auth.streamlit_auth import sign_in_with_github
+                _gh = sign_in_with_github()
+                if "url" in _gh:
+                    st.html(f'<script>window.location.href = "{_gh["url"]}";</script>')
+                else:
+                    st.error(_gh.get("error", "GitHub login is not configured yet."))
+
         # ── Create Account ────────────────────────────────────────────────────
         with tab_register:
             st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
@@ -388,18 +640,39 @@ def show_auth_page() -> None:
             r_pass = st.text_input(
                 "Password", type="password", key="reg_pass",
                 placeholder="Min 8 chars + 1 number/symbol",
-                help="Minimum 8 characters including at least one number or symbol",
             )
-            r_pass2 = st.text_input(
-                "Confirm password", type="password", key="reg_pass2",
-                placeholder="Repeat password",
+            if r_pass:
+                _pw_score = sum([
+                    len(r_pass) >= 8,
+                    len(r_pass) >= 12,
+                    any(c.isdigit() for c in r_pass),
+                    any(not c.isalnum() for c in r_pass),
+                    any(c.isupper() for c in r_pass),
+                ])
+                _pw_labels = ["Too short", "Weak", "Fair", "Good", "Strong"]
+                _pw_colors = ["#ef4444", "#f97316", "#f59e0b", "#60a5fa", "#10b981"]
+                _pw_widths = [16, 32, 52, 75, 100]
+                _pwl = _pw_labels[min(_pw_score, 4)]
+                _pwc = _pw_colors[min(_pw_score, 4)]
+                _pww = _pw_widths[min(_pw_score, 4)]
+                st.markdown(
+                    f'<div style="margin:-4px 0 10px">'
+                    f'<div style="height:3px;background:#1e2d3d;border-radius:2px;overflow:hidden">'
+                    f'<div style="width:{_pww}%;height:100%;background:{_pwc};border-radius:2px"></div>'
+                    f'</div>'
+                    f'<div style="color:{_pwc};font-size:0.7rem;margin-top:3px">{_pwl}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+            st.markdown(
+                '<div style="color:#475569;font-size:0.72rem;margin-top:2px;margin-bottom:10px;line-height:1.6">'
+                'By creating an account you agree to our '
+                '<a href="/?legal=tos" style="color:#64748b;text-decoration:underline">Terms of Service</a>'
+                ' and '
+                '<a href="/?legal=privacy" style="color:#64748b;text-decoration:underline">Privacy Policy</a>.'
+                '</div>',
+                unsafe_allow_html=True,
             )
-            r_tos = st.checkbox(
-                "I agree to the [Terms of Service](/?legal=tos) "
-                "and [Privacy Policy](/?legal=privacy)",
-                key="reg_tos",
-            )
-            st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
             if st.button("Create Free Account →", use_container_width=True,
                          key="reg_btn", type="primary"):
@@ -409,10 +682,6 @@ def show_auth_page() -> None:
                 ok_pw, pw_msg = _valid_password(r_pass)
                 if not ok_pw:
                     errors.append(f"Password: {pw_msg}")
-                if r_pass != r_pass2:
-                    errors.append("Passwords do not match.")
-                if not r_tos:
-                    errors.append("You must agree to the Terms of Service.")
 
                 if errors:
                     for e in errors:
@@ -430,6 +699,20 @@ def show_auth_page() -> None:
                             st.success("Account created! You can now log in.")
                     else:
                         st.error(result.get("error", "Registration failed"))
+
+            st.markdown("""
+<div style="display:flex;align-items:center;gap:12px;margin:14px 0 12px">
+  <div style="flex:1;height:1px;background:#1e2d3d"></div>
+  <span style="color:#334155;font-size:0.73rem;white-space:nowrap">or sign up with</span>
+  <div style="flex:1;height:1px;background:#1e2d3d"></div>
+</div>""", unsafe_allow_html=True)
+            if st.button("⬡  Continue with GitHub", use_container_width=True, key="reg_github"):
+                from auth.streamlit_auth import sign_in_with_github
+                _gh = sign_in_with_github()
+                if "url" in _gh:
+                    st.html(f'<script>window.location.href = "{_gh["url"]}";</script>')
+                else:
+                    st.error(_gh.get("error", "GitHub login is not configured yet."))
 
         # ── Reset Password ────────────────────────────────────────────────────
         with tab_reset:
@@ -449,7 +732,15 @@ def show_auth_page() -> None:
                     with st.spinner("Sending…"):
                         result = request_password_reset(rst_email.strip().lower())
                     if result.get("ok"):
-                        st.success("Reset link sent — check your inbox.")
+                        st.success(
+                            "Reset link sent! Check your inbox — "
+                            "if it doesn't arrive within 2 minutes, check your spam folder."
+                        )
+                        st.info(
+                            "📧 Check spam/junk folder  ·  "
+                            "🔒 Link expires in 24 hours  ·  "
+                            "Return here to sign in after resetting"
+                        )
                     else:
                         st.error(result.get("error", "Failed to send reset email"))
 
