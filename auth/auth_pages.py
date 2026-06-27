@@ -651,147 +651,444 @@ _PRICING_HTML = """
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Scan Showcase  — live-look mock results to prove value before sign-up
+# Scan Showcase  — cinematic, WOW-level design
 # ─────────────────────────────────────────────────────────────────────────────
 
 _SHOWCASE_HTML = """
 <style>
-.sc-wrap{padding:48px 0 20px}
-.sc-label{color:#10b981;font-size:0.68rem;letter-spacing:.18em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;font-weight:700;margin-bottom:14px}
-.sc-title{color:#e2e8f0;font-size:1.55rem;font-weight:800;line-height:1.3;margin-bottom:6px}
-.sc-sub{color:#475569;font-size:0.88rem;margin-bottom:28px}
-.sc-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:640px){.sc-cards{grid-template-columns:1fr}}
-.sc-card{background:#0d1421;border:1px solid #1e2d3d;border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
-.sc-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.sc-site{font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:#64748b}
-.sc-grade{font-size:2rem;font-weight:900;line-height:1}
-.sc-grade-a{color:#10b981}
-.sc-grade-b{color:#f59e0b}
-.sc-grade-f{color:#ef4444}
-.sc-score-bar{height:4px;border-radius:2px;background:#1e2d3d;margin-bottom:14px}
-.sc-score-fill{height:4px;border-radius:2px}
-.sc-findings{display:flex;flex-direction:column;gap:6px}
-.sc-finding{display:flex;align-items:flex-start;gap:8px;font-size:0.76rem;line-height:1.4}
-.sc-sev{font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap;margin-top:1px}
-.sc-sev-c{background:#4a0f0f;color:#fca5a5}
-.sc-sev-h{background:#3d1a00;color:#fb923c}
-.sc-sev-m{background:#2d2200;color:#fbbf24}
-.sc-sev-l{background:#0a2a1a;color:#34d399}
-.sc-finding-txt{color:#94a3b8}
-.sc-card-glow-red{box-shadow:0 0 30px rgba(239,68,68,0.08);border-color:#3d1a1a}
-.sc-card-glow-green{box-shadow:0 0 30px rgba(16,185,129,0.07);border-color:#0a2a1a}
-.sc-tools-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
-.sc-tool{background:#0a1628;border:1px solid #1e2d3d;border-radius:5px;padding:2px 7px;font-size:0.65rem;color:#475569;font-family:'JetBrains Mono',monospace}
-.sc-tool-ok{color:#10b981;border-color:#0a2a1a}
-.sc-tool-warn{color:#f59e0b;border-color:#2d2200}
-.sc-tool-err{color:#ef4444;border-color:#3d1a1a}
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+/* ── Section wrapper ── */
+.sw{padding:60px 0 32px;font-family:'Inter','Segoe UI',sans-serif}
+.sw-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(16,185,129,.08);
+  border:1px solid rgba(16,185,129,.2);border-radius:99px;
+  padding:5px 14px;margin-bottom:18px}
+.sw-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:#10b981;
+  animation:swpulse 1.6s ease-in-out infinite}
+@keyframes swpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.sw-eyebrow-txt{color:#10b981;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.sw-h{font-size:1.7rem;font-weight:900;color:#f1f5f9;line-height:1.25;margin:0 0 8px}
+.sw-h span{background:linear-gradient(90deg,#10b981,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sw-sub{color:#475569;font-size:.88rem;margin:0 0 32px;line-height:1.6}
+
+/* ── Grid ── */
+.sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.sw-grid{grid-template-columns:1fr}}
+
+/* ── Card base ── */
+.sw-card{
+  position:relative;border-radius:18px;padding:22px 22px 18px;overflow:hidden;
+  background:linear-gradient(135deg,rgba(13,20,33,.98) 0%,rgba(9,14,24,.98) 100%);
+  border:1px solid rgba(255,255,255,.06);
+  transition:transform .22s ease,box-shadow .22s ease;
+}
+.sw-card:hover{transform:translateY(-3px)}
+
+/* noise grain overlay */
+.sw-card::before{
+  content:'';position:absolute;inset:0;border-radius:18px;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  opacity:.5;z-index:0;
+}
+.sw-card>*{position:relative;z-index:1}
+
+/* severity tints */
+.sw-card-crit{
+  border-color:rgba(239,68,68,.18);
+  box-shadow:0 0 0 1px rgba(239,68,68,.08),0 24px 48px rgba(0,0,0,.5),inset 0 1px 0 rgba(239,68,68,.06);
+}
+.sw-card-crit::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:18px 18px 0 0;
+  background:linear-gradient(90deg,#ef4444,#dc2626,transparent);
+}
+.sw-card-good{
+  border-color:rgba(16,185,129,.18);
+  box-shadow:0 0 0 1px rgba(16,185,129,.08),0 24px 48px rgba(0,0,0,.5),inset 0 1px 0 rgba(16,185,129,.06);
+}
+.sw-card-good::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:18px 18px 0 0;
+  background:linear-gradient(90deg,#10b981,#34d399,transparent);
+}
+.sw-card-warn{
+  border-color:rgba(245,158,11,.14);
+  box-shadow:0 0 0 1px rgba(245,158,11,.07),0 24px 48px rgba(0,0,0,.5),inset 0 1px 0 rgba(245,158,11,.05);
+}
+.sw-card-warn::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:18px 18px 0 0;
+  background:linear-gradient(90deg,#f59e0b,#fbbf24,transparent);
+}
+.sw-card-ai{
+  border-color:rgba(139,92,246,.2);
+  box-shadow:0 0 0 1px rgba(139,92,246,.08),0 24px 48px rgba(0,0,0,.5),inset 0 1px 0 rgba(139,92,246,.06);
+}
+.sw-card-ai::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:18px 18px 0 0;
+  background:linear-gradient(90deg,#8b5cf6,#a78bfa,#10b981);
+}
+
+/* ── Browser chrome bar ── */
+.sw-chrome{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+  border-radius:8px;padding:7px 12px;margin-bottom:16px;
+}
+.sw-chrome-dots{display:flex;gap:5px}
+.sw-chrome-dot{width:9px;height:9px;border-radius:50%}
+.sw-chrome-url{
+  flex:1;font-family:'JetBrains Mono',monospace;font-size:.72rem;
+  color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.sw-chrome-lock{font-size:.72rem;margin-right:6px}
+
+/* ── Score ring ── */
+.sw-header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.sw-ring-wrap{flex-shrink:0;position:relative;width:68px;height:68px}
+.sw-ring-wrap svg{transform:rotate(-90deg)}
+.sw-ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:7}
+.sw-ring-fill{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset 1.4s ease}
+.sw-ring-label{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;line-height:1;
+}
+.sw-score-num{font-size:1.15rem;font-weight:900;line-height:1}
+.sw-score-grade{font-size:.6rem;font-weight:700;letter-spacing:.06em;margin-top:1px;opacity:.7}
+.sw-meta{flex:1;min-width:0}
+.sw-site-name{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:#94a3b8;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px}
+.sw-scan-stats{display:flex;flex-wrap:wrap;gap:6px}
+.sw-stat{
+  font-size:.65rem;font-family:'JetBrains Mono',monospace;font-weight:700;
+  padding:2px 8px;border-radius:5px;
+}
+.sw-stat-c{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.2)}
+.sw-stat-h{background:rgba(251,146,60,.1);color:#fb923c;border:1px solid rgba(251,146,60,.18)}
+.sw-stat-m{background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.18)}
+.sw-stat-ok{background:rgba(16,185,129,.1);color:#34d399;border:1px solid rgba(16,185,129,.2)}
+
+/* ── Findings ── */
+.sw-findings{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.sw-finding{
+  display:flex;align-items:flex-start;gap:9px;
+  background:rgba(255,255,255,.02);border-radius:8px;
+  padding:8px 10px;border:1px solid rgba(255,255,255,.04);
+}
+.sw-sev{
+  font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;
+  padding:2px 6px;border-radius:4px;white-space:nowrap;margin-top:1px;flex-shrink:0;
+}
+.sw-sev-c{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.25)}
+.sw-sev-h{background:rgba(251,146,60,.12);color:#fb923c;border:1px solid rgba(251,146,60,.2)}
+.sw-sev-m{background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.18)}
+.sw-sev-l{background:rgba(16,185,129,.08);color:#34d399;border:1px solid rgba(16,185,129,.15)}
+.sw-finding-txt{color:#7a8fa6;font-size:.75rem;line-height:1.45}
+.sw-finding-txt strong{color:#cbd5e1;font-weight:600}
+.sw-finding-txt code{
+  font-family:'JetBrains Mono',monospace;font-size:.68rem;
+  background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;
+}
+/* critical pulse on critical finding row */
+.sw-finding-crit{border-color:rgba(239,68,68,.15);animation:critglow 2.5s ease-in-out infinite}
+@keyframes critglow{0%,100%{box-shadow:none}50%{box-shadow:0 0 12px rgba(239,68,68,.12)}}
+
+/* ── Tool pills ── */
+.sw-tools{display:flex;flex-wrap:wrap;gap:5px}
+.sw-tool{
+  font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;
+  padding:3px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;
+}
+.sw-tool-ok{background:rgba(16,185,129,.08);color:#10b981;border:1px solid rgba(16,185,129,.18)}
+.sw-tool-warn{background:rgba(245,158,11,.07);color:#f59e0b;border:1px solid rgba(245,158,11,.16)}
+.sw-tool-err{background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.18)}
+
+/* ── AI card ── */
+.sw-ai-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sw-ai-icon{
+  width:38px;height:38px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,#7c3aed,#4f46e5);
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+}
+.sw-ai-label{color:#a78bfa;font-size:.78rem;font-weight:700;letter-spacing:.04em}
+.sw-ai-sub{color:#475569;font-size:.67rem;margin-top:1px}
+.sw-ai-prompt{
+  font-family:'JetBrains Mono',monospace;font-size:.7rem;
+  color:#334155;background:rgba(255,255,255,.02);
+  border:1px solid rgba(255,255,255,.05);border-radius:8px;
+  padding:8px 12px;margin-bottom:12px;
+}
+.sw-ai-prompt span{color:#10b981}
+.sw-rec{display:flex;gap:10px;padding:9px 11px;border-radius:9px;margin-bottom:6px;
+  background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04)}
+.sw-rec-num{
+  width:20px;height:20px;border-radius:50%;flex-shrink:0;margin-top:1px;
+  background:linear-gradient(135deg,#7c3aed,#4f46e5);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;font-weight:900;color:#fff;
+}
+.sw-rec-txt{color:#7a8fa6;font-size:.74rem;line-height:1.45}
+.sw-rec-txt strong{color:#c4b5fd;font-weight:600}
+.sw-rec-txt code{
+  font-family:'JetBrains Mono',monospace;font-size:.67rem;
+  background:rgba(139,92,246,.1);color:#a78bfa;padding:1px 5px;border-radius:4px;
+}
+.sw-rec-txt em{color:#10b981;font-style:normal;font-weight:600}
+
+/* ── Section CTA ── */
+.sw-cta-row{display:flex;align-items:center;justify-content:center;gap:16px;
+  margin-top:28px;padding:20px;
+  border:1px solid rgba(16,185,129,.12);border-radius:14px;
+  background:linear-gradient(135deg,rgba(16,185,129,.04),rgba(16,185,129,.01));
+}
+.sw-cta-txt{color:#475569;font-size:.84rem}
+.sw-cta-txt strong{color:#10b981}
+.sw-cta-badge{
+  background:linear-gradient(135deg,#10b981,#059669);
+  color:#fff;font-size:.72rem;font-weight:700;
+  padding:6px 16px;border-radius:8px;white-space:nowrap;letter-spacing:.02em;
+}
 </style>
-<div class="sc-wrap">
-  <div class="sc-label">Real results · real sites</div>
-  <div class="sc-title">See what we find in minutes</div>
-  <div class="sc-sub">These are typical findings from real scans — yours could be even more revealing.</div>
-  <div class="sc-cards">
 
-    <!-- Card 1 — Bad score -->
-    <div class="sc-card sc-card-glow-red">
-      <div class="sc-card-top">
-        <div>
-          <div class="sc-site">🔍 example-shop.com</div>
-          <div style="color:#64748b;font-size:0.65rem;margin-top:2px">Scanned 2 min ago · 18 tools</div>
+<div class="sw">
+  <div class="sw-eyebrow">
+    <div class="sw-eyebrow-dot"></div>
+    <span class="sw-eyebrow-txt">Live scan previews</span>
+  </div>
+  <h2 class="sw-h">What we find in <span>under 60 seconds</span></h2>
+  <p class="sw-sub">Real findings. Real sites. Your site probably has several of these right now.</p>
+
+  <div class="sw-grid">
+
+    <!-- ═══ Card 1 — CRITICAL site ═══ -->
+    <div class="sw-card sw-card-crit">
+      <div class="sw-chrome">
+        <div class="sw-chrome-dots">
+          <div class="sw-chrome-dot" style="background:#ff5f57"></div>
+          <div class="sw-chrome-dot" style="background:#febc2e"></div>
+          <div class="sw-chrome-dot" style="background:#28c840"></div>
         </div>
-        <div class="sc-grade sc-grade-f">F<span style="font-size:1rem;color:#475569">/100</span></div>
+        <span class="sw-chrome-lock">🔴</span>
+        <span class="sw-chrome-url">http://example-shop.com/checkout</span>
       </div>
-      <div class="sc-score-bar"><div class="sc-score-fill" style="width:22%;background:linear-gradient(90deg,#ef4444,#dc2626)"></div></div>
-      <div style="color:#64748b;font-size:0.68rem;margin-bottom:8px;font-family:'JetBrains Mono',monospace">Score: 22 · 3 CRITICAL · 5 HIGH</div>
-      <div class="sc-findings">
-        <div class="sc-finding"><span class="sc-sev sc-sev-c">CRIT</span><span class="sc-finding-txt">SSL certificate expired 47 days ago — browsers show red warning to visitors</span></div>
-        <div class="sc-finding"><span class="sc-sev sc-sev-c">CRIT</span><span class="sc-finding-txt">Email spoofable — no SPF/DMARC records, attackers can impersonate your domain</span></div>
-        <div class="sc-finding"><span class="sc-sev sc-sev-h">HIGH</span><span class="sc-finding-txt">AWS S3 bucket publicly readable — 847 files exposed including customer data</span></div>
-        <div class="sc-finding"><span class="sc-sev sc-sev-h">HIGH</span><span class="sc-finding-txt">API keys found in JavaScript source: <code style="color:#fca5a5">sk_live_...</code></span></div>
-        <div class="sc-finding"><span class="sc-sev sc-sev-m">MED</span><span class="sc-finding-txt">Missing security headers: X-Frame-Options, CSP, HSTS</span></div>
+      <div class="sw-header">
+        <div class="sw-ring-wrap">
+          <svg width="68" height="68" viewBox="0 0 68 68">
+            <circle class="sw-ring-bg" cx="34" cy="34" r="28"/>
+            <circle class="sw-ring-fill" cx="34" cy="34" r="28"
+              stroke="#ef4444"
+              stroke-dasharray="175.9"
+              stroke-dashoffset="137"/>
+          </svg>
+          <div class="sw-ring-label">
+            <span class="sw-score-num" style="color:#ef4444">22</span>
+            <span class="sw-score-grade" style="color:#ef4444">F</span>
+          </div>
+        </div>
+        <div class="sw-meta">
+          <div class="sw-site-name">example-shop.com</div>
+          <div class="sw-scan-stats">
+            <span class="sw-stat sw-stat-c">3 CRITICAL</span>
+            <span class="sw-stat sw-stat-h">5 HIGH</span>
+            <span class="sw-stat sw-stat-m">4 MEDIUM</span>
+          </div>
+        </div>
       </div>
-      <div class="sc-tools-row">
-        <span class="sc-tool sc-tool-err">SSL ✗</span>
-        <span class="sc-tool sc-tool-err">Email ✗</span>
-        <span class="sc-tool sc-tool-err">S3 ✗</span>
-        <span class="sc-tool sc-tool-err">JS Secrets ✗</span>
-        <span class="sc-tool sc-tool-warn">Headers ⚠</span>
-        <span class="sc-tool sc-tool-ok">DNS ✓</span>
+      <div class="sw-findings">
+        <div class="sw-finding sw-finding-crit">
+          <span class="sw-sev sw-sev-c">CRIT</span>
+          <span class="sw-finding-txt">SSL certificate <strong>expired 47 days ago</strong> — every visitor sees a red "Not Secure" warning</span>
+        </div>
+        <div class="sw-finding sw-finding-crit">
+          <span class="sw-sev sw-sev-c">CRIT</span>
+          <span class="sw-finding-txt">AWS S3 bucket <strong>publicly readable</strong> — 847 customer files exposed, no auth required</span>
+        </div>
+        <div class="sw-finding">
+          <span class="sw-sev sw-sev-h">HIGH</span>
+          <span class="sw-finding-txt">Live API key in JS: <code>sk_live_4Kx9...</code> — anyone can read your source and steal it</span>
+        </div>
+        <div class="sw-finding">
+          <span class="sw-sev sw-sev-h">HIGH</span>
+          <span class="sw-finding-txt"><strong>Email spoofable</strong> — no SPF/DMARC, attackers can send mail as you@example-shop.com</span>
+        </div>
+      </div>
+      <div class="sw-tools">
+        <span class="sw-tool sw-tool-err">🔒 TLS ✗</span>
+        <span class="sw-tool sw-tool-err">☁️ S3 ✗</span>
+        <span class="sw-tool sw-tool-err">⚡ JS Keys ✗</span>
+        <span class="sw-tool sw-tool-err">📧 SPF ✗</span>
+        <span class="sw-tool sw-tool-warn">📋 Headers ⚠</span>
+        <span class="sw-tool sw-tool-ok">🌍 DNS ✓</span>
       </div>
     </div>
 
-    <!-- Card 2 — Good score -->
-    <div class="sc-card sc-card-glow-green">
-      <div class="sc-card-top">
-        <div>
-          <div class="sc-site">🔍 secure-startup.io</div>
-          <div style="color:#64748b;font-size:0.65rem;margin-top:2px">Scanned 5 min ago · 18 tools</div>
+    <!-- ═══ Card 2 — GOOD site ═══ -->
+    <div class="sw-card sw-card-good">
+      <div class="sw-chrome">
+        <div class="sw-chrome-dots">
+          <div class="sw-chrome-dot" style="background:#ff5f57"></div>
+          <div class="sw-chrome-dot" style="background:#febc2e"></div>
+          <div class="sw-chrome-dot" style="background:#28c840"></div>
         </div>
-        <div class="sc-grade sc-grade-a">A<span style="font-size:1rem;color:#475569">/100</span></div>
+        <span class="sw-chrome-lock">🔒</span>
+        <span class="sw-chrome-url">https://secure-startup.io</span>
       </div>
-      <div class="sc-score-bar"><div class="sc-score-fill" style="width:91%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div>
-      <div style="color:#64748b;font-size:0.68rem;margin-bottom:8px;font-family:'JetBrains Mono',monospace">Score: 91 · 0 CRITICAL · 1 MEDIUM</div>
-      <div class="sc-findings">
-        <div class="sc-finding"><span class="sc-sev sc-sev-l">LOW</span><span class="sc-finding-txt">Permissions-Policy header missing — minor information disclosure risk</span></div>
-        <div class="sc-finding"><span class="sc-sev sc-sev-l">INFO</span><span class="sc-finding-txt">Server version disclosed in headers (Apache/2.4.54) — consider hiding</span></div>
+      <div class="sw-header">
+        <div class="sw-ring-wrap">
+          <svg width="68" height="68" viewBox="0 0 68 68">
+            <circle class="sw-ring-bg" cx="34" cy="34" r="28"/>
+            <circle class="sw-ring-fill" cx="34" cy="34" r="28"
+              stroke="#10b981"
+              stroke-dasharray="175.9"
+              stroke-dashoffset="16"/>
+          </svg>
+          <div class="sw-ring-label">
+            <span class="sw-score-num" style="color:#10b981">91</span>
+            <span class="sw-score-grade" style="color:#10b981">A</span>
+          </div>
+        </div>
+        <div class="sw-meta">
+          <div class="sw-site-name">secure-startup.io</div>
+          <div class="sw-scan-stats">
+            <span class="sw-stat sw-stat-ok">0 CRITICAL</span>
+            <span class="sw-stat sw-stat-m">1 MEDIUM</span>
+            <span class="sw-stat sw-stat-ok">15 PASSED</span>
+          </div>
+        </div>
       </div>
-      <div class="sc-tools-row">
-        <span class="sc-tool sc-tool-ok">SSL ✓</span>
-        <span class="sc-tool sc-tool-ok">Email ✓</span>
-        <span class="sc-tool sc-tool-ok">Headers ✓</span>
-        <span class="sc-tool sc-tool-ok">DNS ✓</span>
-        <span class="sc-tool sc-tool-ok">DNSSEC ✓</span>
-        <span class="sc-tool sc-tool-ok">Wayback ✓</span>
-        <span class="sc-tool sc-tool-warn">Perms ⚠</span>
+      <div class="sw-findings">
+        <div class="sw-finding">
+          <span class="sw-sev sw-sev-m">MED</span>
+          <span class="sw-finding-txt"><strong>Permissions-Policy</strong> header missing — camera/microphone access not restricted</span>
+        </div>
+        <div class="sw-finding">
+          <span class="sw-sev sw-sev-l">LOW</span>
+          <span class="sw-finding-txt">Server version disclosed: <code>Apache/2.4.54</code> — consider hiding for stealth</span>
+        </div>
+        <div class="sw-finding">
+          <span class="sw-sev sw-sev-l">INFO</span>
+          <span class="sw-finding-txt">Wayback Machine shows 3 old endpoints still cached — verify they're intentional</span>
+        </div>
+      </div>
+      <div class="sw-tools">
+        <span class="sw-tool sw-tool-ok">🔒 TLS ✓</span>
+        <span class="sw-tool sw-tool-ok">📧 SPF ✓</span>
+        <span class="sw-tool sw-tool-ok">📋 Headers ✓</span>
+        <span class="sw-tool sw-tool-ok">🌍 DNSSEC ✓</span>
+        <span class="sw-tool sw-tool-ok">🍪 Cookies ✓</span>
+        <span class="sw-tool sw-tool-ok">🔀 CORS ✓</span>
+        <span class="sw-tool sw-tool-warn">🛡 Perms ⚠</span>
       </div>
     </div>
 
-    <!-- Card 3 — Medium -->
-    <div class="sc-card">
-      <div class="sc-card-top">
-        <div>
-          <div class="sc-site">🔍 mybusiness.co.il</div>
-          <div style="color:#64748b;font-size:0.65rem;margin-top:2px">Scanned 12 min ago · 18 tools</div>
+    <!-- ═══ Card 3 — MEDIUM WordPress ═══ -->
+    <div class="sw-card sw-card-warn">
+      <div class="sw-chrome">
+        <div class="sw-chrome-dots">
+          <div class="sw-chrome-dot" style="background:#ff5f57"></div>
+          <div class="sw-chrome-dot" style="background:#febc2e"></div>
+          <div class="sw-chrome-dot" style="background:#28c840"></div>
         </div>
-        <div class="sc-grade sc-grade-b">B<span style="font-size:1rem;color:#475569">/100</span></div>
+        <span class="sw-chrome-lock">🔒</span>
+        <span class="sw-chrome-url">https://mybusiness.co.il</span>
       </div>
-      <div class="sc-score-bar"><div class="sc-score-fill" style="width:74%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
-      <div style="color:#64748b;font-size:0.68rem;margin-bottom:8px;font-family:'JetBrains Mono',monospace">Score: 74 · 0 CRITICAL · 2 HIGH</div>
-      <div class="sc-findings">
-        <div class="sc-finding"><span class="sc-sev sc-sev-h">HIGH</span><span class="sc-finding-txt">WordPress 6.1.3 — 12 known CVEs, update to 6.5+ immediately</span></div>
-        <div class="sc-finding"><span class="sc-sev sc-sev-h">HIGH</span><span class="sc-finding-txt">Admin panel exposed at /wp-admin with no brute-force protection</span></div>
-        <div class="sc-finding"><span class="sc-sev sc-sev-m">MED</span><span class="sc-finding-txt">CORS misconfiguration allows any origin to read API responses</span></div>
-        <div class="sc-finding"><span class="sc-sev sc-sev-l">LOW</span><span class="sc-finding-txt">HTTP Strict Transport Security max-age only 30 days (recommend 1 year)</span></div>
+      <div class="sw-header">
+        <div class="sw-ring-wrap">
+          <svg width="68" height="68" viewBox="0 0 68 68">
+            <circle class="sw-ring-bg" cx="34" cy="34" r="28"/>
+            <circle class="sw-ring-fill" cx="34" cy="34" r="28"
+              stroke="#f59e0b"
+              stroke-dasharray="175.9"
+              stroke-dashoffset="45"/>
+          </svg>
+          <div class="sw-ring-label">
+            <span class="sw-score-num" style="color:#f59e0b">74</span>
+            <span class="sw-score-grade" style="color:#f59e0b">B</span>
+          </div>
+        </div>
+        <div class="sw-meta">
+          <div class="sw-site-name">mybusiness.co.il</div>
+          <div class="sw-scan-stats">
+            <span class="sw-stat sw-stat-h">2 HIGH</span>
+            <span class="sw-stat sw-stat-m">3 MEDIUM</span>
+            <span class="sw-stat sw-stat-ok">12 PASSED</span>
+          </div>
+        </div>
       </div>
-      <div class="sc-tools-row">
-        <span class="sc-tool sc-tool-ok">SSL ✓</span>
-        <span class="sc-tool sc-tool-err">CVE ✗</span>
-        <span class="sc-tool sc-tool-err">Admin ✗</span>
-        <span class="sc-tool sc-tool-warn">CORS ⚠</span>
-        <span class="sc-tool sc-tool-ok">Email ✓</span>
-        <span class="sc-tool sc-tool-warn">HSTS ⚠</span>
+      <div class="sw-findings">
+        <div class="sw-finding">
+          <span class="sw-sev sw-sev-h">HIGH</span>
+          <span class="sw-finding-txt"><strong>WordPress 6.1.3</strong> — 12 known CVEs (CVSS up to 8.8). Latest is 6.5.4</span>
+        </div>
+        <div class="sw-finding">
+          <span class="sw-sev sw-sev-h">HIGH</span>
+          <span class="sw-finding-txt"><strong>/wp-admin exposed</strong> — no rate limiting, brute-force attack possible in minutes</span>
+        </div>
+        <div class="sw-finding">
+          <span class="sw-sev sw-sev-m">MED</span>
+          <span class="sw-finding-txt">CORS: <code>Access-Control-Allow-Origin: *</code> — any website can read your API responses</span>
+        </div>
+        <div class="sw-finding">
+          <span class="sw-sev sw-sev-m">MED</span>
+          <span class="sw-finding-txt">HSTS <code>max-age=2592000</code> (30 days) — too short, attackers can downgrade to HTTP</span>
+        </div>
+      </div>
+      <div class="sw-tools">
+        <span class="sw-tool sw-tool-ok">🔒 TLS ✓</span>
+        <span class="sw-tool sw-tool-err">🛡 CVE ✗</span>
+        <span class="sw-tool sw-tool-err">🔑 Admin ✗</span>
+        <span class="sw-tool sw-tool-warn">🔀 CORS ⚠</span>
+        <span class="sw-tool sw-tool-warn">📌 HSTS ⚠</span>
+        <span class="sw-tool sw-tool-ok">📧 Email ✓</span>
       </div>
     </div>
 
-    <!-- Card 4 — AI recommendations -->
-    <div class="sc-card">
-      <div class="sc-card-top">
+    <!-- ═══ Card 4 — AI Recommendations ═══ -->
+    <div class="sw-card sw-card-ai">
+      <div class="sw-ai-header">
+        <div class="sw-ai-icon">✨</div>
         <div>
-          <div class="sc-site">🤖 AI Recommendations</div>
-          <div style="color:#64748b;font-size:0.65rem;margin-top:2px">Generated in 8 seconds</div>
+          <div class="sw-ai-label">AI Security Report</div>
+          <div class="sw-ai-sub">Generated in 9 seconds · mybusiness.co.il</div>
         </div>
-        <div style="font-size:1.4rem">✨</div>
       </div>
-      <div style="color:#10b981;font-size:0.72rem;font-family:'JetBrains Mono',monospace;margin-bottom:10px">mybusiness.co.il · Priority fixes</div>
-      <div class="sc-findings">
-        <div class="sc-finding"><span style="color:#10b981;font-size:1rem">1.</span><span class="sc-finding-txt"><strong style="color:#e2e8f0">Update WordPress immediately.</strong> Run: <code style="color:#10b981">wp core update</code> then <code style="color:#10b981">wp plugin update --all</code></span></div>
-        <div class="sc-finding"><span style="color:#10b981;font-size:1rem">2.</span><span class="sc-finding-txt"><strong style="color:#e2e8f0">Protect /wp-admin</strong> — enable 2FA + limit login attempts with Wordfence or Limit Login Attempts plugin</span></div>
-        <div class="sc-finding"><span style="color:#10b981;font-size:1rem">3.</span><span class="sc-finding-txt"><strong style="color:#e2e8f0">Fix CORS header</strong> — replace <code style="color:#fbbf24">Access-Control-Allow-Origin: *</code> with your specific domain</span></div>
-        <div class="sc-finding"><span style="color:#10b981;font-size:1rem">4.</span><span class="sc-finding-txt"><strong style="color:#e2e8f0">Extend HSTS</strong> — set <code style="color:#fbbf24">max-age=31536000; includeSubDomains; preload</code></span></div>
+      <div class="sw-ai-prompt">
+        <span style="color:#475569">$ </span><span>Analyzing 18 tool results · generating priority fix plan…</span><span style="color:#10b981"> ▋</span>
+      </div>
+      <div class="sw-rec">
+        <div class="sw-rec-num">1</div>
+        <div class="sw-rec-txt">
+          <strong>Update WordPress NOW.</strong> Run <code>wp core update && wp plugin update --all</code>
+          — patches 12 CVEs including one rated <em>CVSS 8.8</em>
+        </div>
+      </div>
+      <div class="sw-rec">
+        <div class="sw-rec-num">2</div>
+        <div class="sw-rec-txt">
+          <strong>Lock down /wp-admin.</strong> Install Wordfence, enable 2FA, whitelist your IP.
+          Default config allows unlimited login attempts — trivially brute-forceable.
+        </div>
+      </div>
+      <div class="sw-rec">
+        <div class="sw-rec-num">3</div>
+        <div class="sw-rec-txt">
+          <strong>Fix CORS header:</strong> replace <code>Allow-Origin: *</code> with
+          <code>Allow-Origin: https://mybusiness.co.il</code> — takes 2 minutes in nginx/Apache.
+        </div>
+      </div>
+      <div class="sw-rec">
+        <div class="sw-rec-num">4</div>
+        <div class="sw-rec-txt">
+          <strong>Extend HSTS:</strong> set <code>max-age=31536000; includeSubDomains; preload</code>
+          then submit to Chrome's <em>HSTS preload list</em> for permanent protection.
+        </div>
       </div>
     </div>
 
+  </div>
+
+  <div class="sw-cta-row">
+    <div class="sw-cta-txt">
+      <strong>Is your site on this list?</strong> Create a free account and scan it in 60 seconds.
+    </div>
+    <div class="sw-cta-badge">↑ Sign up free above</div>
   </div>
 </div>
 """
