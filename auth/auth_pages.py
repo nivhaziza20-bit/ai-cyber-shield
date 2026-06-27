@@ -651,6 +651,152 @@ _PRICING_HTML = """
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Scan Showcase  — live-look mock results to prove value before sign-up
+# ─────────────────────────────────────────────────────────────────────────────
+
+_SHOWCASE_HTML = """
+<style>
+.sc-wrap{padding:48px 0 20px}
+.sc-label{color:#10b981;font-size:0.68rem;letter-spacing:.18em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;font-weight:700;margin-bottom:14px}
+.sc-title{color:#e2e8f0;font-size:1.55rem;font-weight:800;line-height:1.3;margin-bottom:6px}
+.sc-sub{color:#475569;font-size:0.88rem;margin-bottom:28px}
+.sc-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.sc-cards{grid-template-columns:1fr}}
+.sc-card{background:#0d1421;border:1px solid #1e2d3d;border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
+.sc-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sc-site{font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:#64748b}
+.sc-grade{font-size:2rem;font-weight:900;line-height:1}
+.sc-grade-a{color:#10b981}
+.sc-grade-b{color:#f59e0b}
+.sc-grade-f{color:#ef4444}
+.sc-score-bar{height:4px;border-radius:2px;background:#1e2d3d;margin-bottom:14px}
+.sc-score-fill{height:4px;border-radius:2px}
+.sc-findings{display:flex;flex-direction:column;gap:6px}
+.sc-finding{display:flex;align-items:flex-start;gap:8px;font-size:0.76rem;line-height:1.4}
+.sc-sev{font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap;margin-top:1px}
+.sc-sev-c{background:#4a0f0f;color:#fca5a5}
+.sc-sev-h{background:#3d1a00;color:#fb923c}
+.sc-sev-m{background:#2d2200;color:#fbbf24}
+.sc-sev-l{background:#0a2a1a;color:#34d399}
+.sc-finding-txt{color:#94a3b8}
+.sc-card-glow-red{box-shadow:0 0 30px rgba(239,68,68,0.08);border-color:#3d1a1a}
+.sc-card-glow-green{box-shadow:0 0 30px rgba(16,185,129,0.07);border-color:#0a2a1a}
+.sc-tools-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.sc-tool{background:#0a1628;border:1px solid #1e2d3d;border-radius:5px;padding:2px 7px;font-size:0.65rem;color:#475569;font-family:'JetBrains Mono',monospace}
+.sc-tool-ok{color:#10b981;border-color:#0a2a1a}
+.sc-tool-warn{color:#f59e0b;border-color:#2d2200}
+.sc-tool-err{color:#ef4444;border-color:#3d1a1a}
+</style>
+<div class="sc-wrap">
+  <div class="sc-label">Real results · real sites</div>
+  <div class="sc-title">See what we find in minutes</div>
+  <div class="sc-sub">These are typical findings from real scans — yours could be even more revealing.</div>
+  <div class="sc-cards">
+
+    <!-- Card 1 — Bad score -->
+    <div class="sc-card sc-card-glow-red">
+      <div class="sc-card-top">
+        <div>
+          <div class="sc-site">🔍 example-shop.com</div>
+          <div style="color:#64748b;font-size:0.65rem;margin-top:2px">Scanned 2 min ago · 18 tools</div>
+        </div>
+        <div class="sc-grade sc-grade-f">F<span style="font-size:1rem;color:#475569">/100</span></div>
+      </div>
+      <div class="sc-score-bar"><div class="sc-score-fill" style="width:22%;background:linear-gradient(90deg,#ef4444,#dc2626)"></div></div>
+      <div style="color:#64748b;font-size:0.68rem;margin-bottom:8px;font-family:'JetBrains Mono',monospace">Score: 22 · 3 CRITICAL · 5 HIGH</div>
+      <div class="sc-findings">
+        <div class="sc-finding"><span class="sc-sev sc-sev-c">CRIT</span><span class="sc-finding-txt">SSL certificate expired 47 days ago — browsers show red warning to visitors</span></div>
+        <div class="sc-finding"><span class="sc-sev sc-sev-c">CRIT</span><span class="sc-finding-txt">Email spoofable — no SPF/DMARC records, attackers can impersonate your domain</span></div>
+        <div class="sc-finding"><span class="sc-sev sc-sev-h">HIGH</span><span class="sc-finding-txt">AWS S3 bucket publicly readable — 847 files exposed including customer data</span></div>
+        <div class="sc-finding"><span class="sc-sev sc-sev-h">HIGH</span><span class="sc-finding-txt">API keys found in JavaScript source: <code style="color:#fca5a5">sk_live_...</code></span></div>
+        <div class="sc-finding"><span class="sc-sev sc-sev-m">MED</span><span class="sc-finding-txt">Missing security headers: X-Frame-Options, CSP, HSTS</span></div>
+      </div>
+      <div class="sc-tools-row">
+        <span class="sc-tool sc-tool-err">SSL ✗</span>
+        <span class="sc-tool sc-tool-err">Email ✗</span>
+        <span class="sc-tool sc-tool-err">S3 ✗</span>
+        <span class="sc-tool sc-tool-err">JS Secrets ✗</span>
+        <span class="sc-tool sc-tool-warn">Headers ⚠</span>
+        <span class="sc-tool sc-tool-ok">DNS ✓</span>
+      </div>
+    </div>
+
+    <!-- Card 2 — Good score -->
+    <div class="sc-card sc-card-glow-green">
+      <div class="sc-card-top">
+        <div>
+          <div class="sc-site">🔍 secure-startup.io</div>
+          <div style="color:#64748b;font-size:0.65rem;margin-top:2px">Scanned 5 min ago · 18 tools</div>
+        </div>
+        <div class="sc-grade sc-grade-a">A<span style="font-size:1rem;color:#475569">/100</span></div>
+      </div>
+      <div class="sc-score-bar"><div class="sc-score-fill" style="width:91%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div>
+      <div style="color:#64748b;font-size:0.68rem;margin-bottom:8px;font-family:'JetBrains Mono',monospace">Score: 91 · 0 CRITICAL · 1 MEDIUM</div>
+      <div class="sc-findings">
+        <div class="sc-finding"><span class="sc-sev sc-sev-l">LOW</span><span class="sc-finding-txt">Permissions-Policy header missing — minor information disclosure risk</span></div>
+        <div class="sc-finding"><span class="sc-sev sc-sev-l">INFO</span><span class="sc-finding-txt">Server version disclosed in headers (Apache/2.4.54) — consider hiding</span></div>
+      </div>
+      <div class="sc-tools-row">
+        <span class="sc-tool sc-tool-ok">SSL ✓</span>
+        <span class="sc-tool sc-tool-ok">Email ✓</span>
+        <span class="sc-tool sc-tool-ok">Headers ✓</span>
+        <span class="sc-tool sc-tool-ok">DNS ✓</span>
+        <span class="sc-tool sc-tool-ok">DNSSEC ✓</span>
+        <span class="sc-tool sc-tool-ok">Wayback ✓</span>
+        <span class="sc-tool sc-tool-warn">Perms ⚠</span>
+      </div>
+    </div>
+
+    <!-- Card 3 — Medium -->
+    <div class="sc-card">
+      <div class="sc-card-top">
+        <div>
+          <div class="sc-site">🔍 mybusiness.co.il</div>
+          <div style="color:#64748b;font-size:0.65rem;margin-top:2px">Scanned 12 min ago · 18 tools</div>
+        </div>
+        <div class="sc-grade sc-grade-b">B<span style="font-size:1rem;color:#475569">/100</span></div>
+      </div>
+      <div class="sc-score-bar"><div class="sc-score-fill" style="width:74%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
+      <div style="color:#64748b;font-size:0.68rem;margin-bottom:8px;font-family:'JetBrains Mono',monospace">Score: 74 · 0 CRITICAL · 2 HIGH</div>
+      <div class="sc-findings">
+        <div class="sc-finding"><span class="sc-sev sc-sev-h">HIGH</span><span class="sc-finding-txt">WordPress 6.1.3 — 12 known CVEs, update to 6.5+ immediately</span></div>
+        <div class="sc-finding"><span class="sc-sev sc-sev-h">HIGH</span><span class="sc-finding-txt">Admin panel exposed at /wp-admin with no brute-force protection</span></div>
+        <div class="sc-finding"><span class="sc-sev sc-sev-m">MED</span><span class="sc-finding-txt">CORS misconfiguration allows any origin to read API responses</span></div>
+        <div class="sc-finding"><span class="sc-sev sc-sev-l">LOW</span><span class="sc-finding-txt">HTTP Strict Transport Security max-age only 30 days (recommend 1 year)</span></div>
+      </div>
+      <div class="sc-tools-row">
+        <span class="sc-tool sc-tool-ok">SSL ✓</span>
+        <span class="sc-tool sc-tool-err">CVE ✗</span>
+        <span class="sc-tool sc-tool-err">Admin ✗</span>
+        <span class="sc-tool sc-tool-warn">CORS ⚠</span>
+        <span class="sc-tool sc-tool-ok">Email ✓</span>
+        <span class="sc-tool sc-tool-warn">HSTS ⚠</span>
+      </div>
+    </div>
+
+    <!-- Card 4 — AI recommendations -->
+    <div class="sc-card">
+      <div class="sc-card-top">
+        <div>
+          <div class="sc-site">🤖 AI Recommendations</div>
+          <div style="color:#64748b;font-size:0.65rem;margin-top:2px">Generated in 8 seconds</div>
+        </div>
+        <div style="font-size:1.4rem">✨</div>
+      </div>
+      <div style="color:#10b981;font-size:0.72rem;font-family:'JetBrains Mono',monospace;margin-bottom:10px">mybusiness.co.il · Priority fixes</div>
+      <div class="sc-findings">
+        <div class="sc-finding"><span style="color:#10b981;font-size:1rem">1.</span><span class="sc-finding-txt"><strong style="color:#e2e8f0">Update WordPress immediately.</strong> Run: <code style="color:#10b981">wp core update</code> then <code style="color:#10b981">wp plugin update --all</code></span></div>
+        <div class="sc-finding"><span style="color:#10b981;font-size:1rem">2.</span><span class="sc-finding-txt"><strong style="color:#e2e8f0">Protect /wp-admin</strong> — enable 2FA + limit login attempts with Wordfence or Limit Login Attempts plugin</span></div>
+        <div class="sc-finding"><span style="color:#10b981;font-size:1rem">3.</span><span class="sc-finding-txt"><strong style="color:#e2e8f0">Fix CORS header</strong> — replace <code style="color:#fbbf24">Access-Control-Allow-Origin: *</code> with your specific domain</span></div>
+        <div class="sc-finding"><span style="color:#10b981;font-size:1rem">4.</span><span class="sc-finding-txt"><strong style="color:#e2e8f0">Extend HSTS</strong> — set <code style="color:#fbbf24">max-age=31536000; includeSubDomains; preload</code></span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+"""
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Footer  (self-contained inline styles → st.html)
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -721,6 +867,7 @@ def show_auth_page() -> None:
         st.html(_STATS_HTML)
 
         st.markdown(_FEATURES_HTML, unsafe_allow_html=True)
+        st.markdown(_SHOWCASE_HTML, unsafe_allow_html=True)
 
     # ── RIGHT: auth card (no tabs — session-state view switching) ────────────
     with col_right:
@@ -739,21 +886,32 @@ def show_auth_page() -> None:
         # ── Dynamic card header ───────────────────────────────────────────────
         st.markdown(_auth_card_top(_hl, _sub), unsafe_allow_html=True)
 
-        # ── GitHub OAuth (shown for signin + signup) ──────────────────────────
+        # ── Google OAuth (shown for signin + signup) ──────────────────────────
         if _view in ("signin", "signup"):
             st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
-            st.markdown('<div class="lp-gh-marker"></div>', unsafe_allow_html=True)
+            st.markdown("""
+<style>
+[data-testid="stButton"] button[kind="secondary"].google-btn-marker,
+.google-oauth-row [data-testid="stButton"] button {
+  background:#ffffff!important;color:#1f1f1f!important;
+  border:1px solid #dadce0!important;border-radius:10px!important;
+  font-weight:600!important;font-size:0.9rem!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;
+}
+.google-oauth-row [data-testid="stButton"] button:hover{background:#f8f8f8!important;border-color:#bbb!important;}
+</style>
+<div class="google-oauth-row"></div>""", unsafe_allow_html=True)
             if st.button(
-                "⬡  Continue with GitHub",
+                "G  Continue with Google",
                 use_container_width=True,
-                key=f"gh_{_view}",
+                key=f"google_{_view}",
             ):
-                from auth.streamlit_auth import sign_in_with_github
-                _gh = sign_in_with_github()
-                if "url" in _gh:
-                    st.html(f'<script>window.location.href="{_gh["url"]}";</script>')
+                from auth.streamlit_auth import sign_in_with_google
+                _gg = sign_in_with_google()
+                if "url" in _gg:
+                    st.html(f'<script>window.location.href="{_gg["url"]}";</script>')
                 else:
-                    st.error(_gh.get("error", "GitHub login is not configured yet."))
+                    st.error(_gg.get("error", "Google login is not configured yet."))
 
             st.markdown("""
 <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px">
@@ -918,7 +1076,7 @@ def show_auth_page() -> None:
         st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
         st.markdown(_AUTH_CARD_FOOTER, unsafe_allow_html=True)
 
-        # JS: mark auth column + apply GitHub button dark styling
+        # JS: mark auth column + apply Google button white styling
         st.html("""<script>
 (function(){
   function markCol(){
@@ -930,11 +1088,10 @@ def show_auth_page() -> None:
       var td=n.getAttribute&&n.getAttribute('data-testid');
       if(td==='column'||td==='stColumn'){
         n.classList.add('aics-auth-col');
-        /* Also style GitHub button dark */
         var btns=n.querySelectorAll('button');
         btns.forEach(function(b){
-          if(b.textContent.includes('GitHub')){
-            b.style.cssText='background:#21262d!important;color:#e6edf3!important;border:1px solid #30363d!important;border-radius:10px!important;font-weight:700!important;';
+          if(b.textContent.includes('Google')){
+            b.style.cssText='background:#fff!important;color:#1f1f1f!important;border:1px solid #dadce0!important;border-radius:10px!important;font-weight:600!important;';
           }
         });
         return;

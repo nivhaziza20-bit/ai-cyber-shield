@@ -184,6 +184,25 @@ def request_password_reset(email: str) -> dict:
         return {"error": str(exc)}
 
 
+def sign_in_with_google() -> dict:
+    """Initiate Google OAuth via Supabase. Returns {"url": redirect_url} or {"error": ...}."""
+    c = _client()
+    if c is None:
+        return {"error": "Supabase not configured"}
+    try:
+        site_url = st.secrets.get("SITE_URL", "")
+        opts: dict = {"redirect_to": site_url} if site_url else {}
+        resp = c.auth.sign_in_with_oauth({"provider": "google", "options": opts})
+        if hasattr(resp, "url") and resp.url:
+            return {"url": resp.url}
+        return {"error": "Google OAuth is not enabled — configure it in Supabase → Auth → Providers → Google"}
+    except Exception as exc:
+        msg = str(exc)
+        if "provider" in msg.lower() or "oauth" in msg.lower():
+            return {"error": "Google OAuth is not enabled in Supabase yet. Enable it under Authentication → Providers."}
+        return {"error": msg}
+
+
 def sign_in_with_github() -> dict:
     """Initiate GitHub OAuth via Supabase. Returns {"url": redirect_url} or {"error": ...}."""
     c = _client()
