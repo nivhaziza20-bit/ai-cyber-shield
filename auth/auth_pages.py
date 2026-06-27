@@ -1164,7 +1164,7 @@ def show_auth_page() -> None:
         st.html(_STATS_HTML)
 
         st.markdown(_FEATURES_HTML, unsafe_allow_html=True)
-        st.markdown(_SHOWCASE_HTML, unsafe_allow_html=True)
+        st.html(_SHOWCASE_HTML)
 
     # ── RIGHT: auth card (no tabs — session-state view switching) ────────────
     with col_right:
