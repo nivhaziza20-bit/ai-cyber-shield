@@ -203,10 +203,10 @@ html,body,[data-testid="stAppViewContainer"]{background:#060b14!important}
 .block-container{padding-top:0!important;background:#060b14}
 #MainMenu,footer,header{visibility:hidden}
 .gs-nav{display:flex;align-items:center;justify-content:space-between;padding:13px 4px;border-bottom:1px solid #1e2d3d;margin-bottom:20px}
-.gs-brand{font-family:'JetBrains Mono','Courier New',monospace;font-weight:900;color:#10b981;font-size:1.05rem;letter-spacing:-0.03em}
+.gs-brand{font-family:'JetBrains Mono','Courier New',monospace;font-weight:900;color:#22d3ee;font-size:1.05rem;letter-spacing:-0.03em}
 .gs-target-bar{background:#0d1421;border:1px solid #1e2d3d;border-radius:10px;padding:13px 18px;margin:0 0 18px;display:flex;align-items:center;gap:12px;font-size:0.86rem}
 .gs-target-label{color:#475569;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.14em;font-family:'JetBrains Mono',monospace;white-space:nowrap}
-.gs-target-url{color:#10b981;font-family:'JetBrains Mono',monospace;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-target-url{color:#22d3ee;font-family:'JetBrains Mono',monospace;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gs-section-label{color:#64748b;font-size:0.67rem;text-transform:uppercase;letter-spacing:0.2em;margin:20px 0 10px;font-family:'JetBrains Mono',monospace}
 .gs-pr-card{background:#0d1421;border:1px solid #1e2d3d;border-left:4px solid #1e2d3d;border-radius:8px;padding:14px 16px;margin-bottom:8px}
 .gs-pr-card-critical{border-left-color:#ef4444;background:linear-gradient(135deg,#1c0000 0%,#0d1117 55%);box-shadow:0 0 28px rgba(239,68,68,0.10)}
@@ -321,7 +321,7 @@ html,body,[data-testid="stAppViewContainer"]{background:#060b14!important}
     _pen  = {"CRITICAL": 25, "HIGH": 15, "MEDIUM": 8, "LOW": 3, "INFO": 0}
     _scr  = max(0, 100 - sum(_pen.get(v.get("severity","INFO"), 0) for v in _pr_tools.values()))
     _grd  = "A" if _scr>=90 else "B" if _scr>=75 else "C" if _scr>=60 else "D" if _scr>=45 else "F"
-    _gcol = {"A":"#10b981","B":"#60a5fa","C":"#f59e0b","D":"#f97316","F":"#ef4444"}.get(_grd,"#60a5fa")
+    _gcol = {"A":"#22d3ee","B":"#60a5fa","C":"#f59e0b","D":"#f97316","F":"#ef4444"}.get(_grd,"#60a5fa")
     _ncr  = sum(1 for t in _pr_tools.values() if t.get("severity")=="CRITICAL")
     _nhi  = sum(1 for t in _pr_tools.values() if t.get("severity")=="HIGH")
 
@@ -439,7 +439,7 @@ html,body,[data-testid="stAppViewContainer"]{background:#060b14!important}
   <div class="gs-wall-lock">🔒</div>
   <div class="gs-wall-title">{_hidden_label}</div>
   <div class="gs-wall-sub">
-    Create a <strong style="color:#10b981">free account</strong> to see the complete
+    Create a <strong style="color:#22d3ee">free account</strong> to see the complete
     18-tool report — plus step-by-step remediation for every finding.
     No credit card required.
   </div>
@@ -481,7 +481,7 @@ else:
         st.markdown(
             "<div style='max-width:400px;margin:80px auto 0;text-align:center'>"
             "<div style='font-size:3rem'>🛡</div>"
-            "<h2 style='color:#10b981;font-family:monospace'>AI Cyber Shield</h2>"
+            "<h2 style='color:#22d3ee;font-family:monospace'>AI Cyber Shield</h2>"
             "<p style='color:#475569;font-size:0.8rem;letter-spacing:0.1em'>AUTHORIZED ACCESS ONLY</p>"
             "</div>",
             unsafe_allow_html=True,
@@ -504,7 +504,40 @@ else:
 
 _CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ── CSS variables ────────────────────────────────────────────────────────── */
+:root {
+  --primary:      #22d3ee;
+  --primary-dark: #0891b2;
+  --primary-glow: rgba(34,211,238,0.25);
+  --primary-tint: rgba(34,211,238,0.08);
+  --bg-base:      #060b14;
+  --bg-card:      #0d1117;
+  --border:       #1f2d3d;
+}
+
+/* ── Hebrew font ──────────────────────────────────────────────────────────── */
+html[lang="he"] body,html[lang="he"] .stMarkdown,
+html[lang="he"] button,html[lang="he"] label,
+html[lang="he"] input,html[lang="he"] textarea,
+html[lang="he"] p,html[lang="he"] li,
+html[lang="he"] span:not([class*="badge"]):not([class*="tag"]) {
+  font-family: 'Heebo', 'Segoe UI', sans-serif !important;
+}
+
+/* ── Glow animation ───────────────────────────────────────────────────────── */
+@keyframes cyanPulse {
+  0%,100% { box-shadow: 0 0 18px rgba(34,211,238,0.15); }
+  50%     { box-shadow: 0 0 38px rgba(34,211,238,0.40); }
+}
+
+/* ── Gradient text ────────────────────────────────────────────────────────── */
+.text-gradient-cyber {
+  background: linear-gradient(90deg,#22d3ee,#6366f1,#8b5cf6);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+
 /* ── Base ─────────────────────────────────────────────────────────────────── */
 html, body, .stApp {
     background-color: #0a0e1a !important;
@@ -536,8 +569,9 @@ section[data-testid="stSidebar"] * {
 }
 .cs-logo-prefix { color: #e2e8f0; }
 .cs-logo-accent {
-    color: #10b981;
-    text-shadow: 0 0 28px rgba(16,185,129,0.35), 0 0 60px rgba(16,185,129,0.12);
+    background: linear-gradient(90deg,#22d3ee,#6366f1);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    filter: drop-shadow(0 0 18px rgba(34,211,238,0.45));
 }
 .cs-tagline {
     color: #475569;
@@ -549,10 +583,10 @@ section[data-testid="stSidebar"] * {
 }
 .cs-badge {
     display: inline-block;
-    background: #0f2027;
-    border: 1px solid #10b981;
+    background: #0c2835;
+    border: 1px solid #22d3ee;
     border-radius: 4px;
-    color: #10b981;
+    color: #22d3ee;
     font-size: 0.65rem;
     font-family: 'JetBrains Mono', 'Courier New', monospace;
     letter-spacing: 0.1em;
@@ -572,31 +606,38 @@ section[data-testid="stSidebar"] * {
     padding: 12px 14px !important;
 }
 .stTextInput > div > div > input:focus {
-    border-color: #10b981 !important;
-    box-shadow: 0 0 0 2px rgba(16,185,129,0.15) !important;
+    border-color: #22d3ee !important;
+    box-shadow: 0 0 0 2px rgba(34,211,238,0.15) !important;
 }
 .stTextInput > div > div > input::placeholder { color: #334155 !important; }
 
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
 button[kind="primary"] {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
-    color: #000 !important;
-    font-weight: 700 !important;
+    background: linear-gradient(135deg, #22d3ee, #0891b2) !important;
+    color: #000d1a !important;
+    font-weight: 800 !important;
     border: none !important;
-    border-radius: 6px !important;
+    border-radius: 8px !important;
     font-size: 0.9rem !important;
-    letter-spacing: 0.05em !important;
+    letter-spacing: 0.04em !important;
+    box-shadow: 0 0 18px rgba(34,211,238,0.20) !important;
+    transition: all .2s ease !important;
 }
 button[kind="primary"]:hover {
-    background: linear-gradient(135deg, #059669, #047857) !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(16,185,129,0.3) !important;
+    background: linear-gradient(135deg, #38e4f8, #22d3ee) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 24px rgba(34,211,238,0.45) !important;
 }
 button[kind="secondary"] {
     background: #111827 !important;
     color: #94a3b8 !important;
     border: 1px solid #1f2d3d !important;
-    border-radius: 6px !important;
+    border-radius: 8px !important;
+    transition: all .2s ease !important;
+}
+button[kind="secondary"]:hover {
+    border-color: #22d3ee44 !important;
+    color: #22d3ee !important;
 }
 
 /* ── Grade banner ─────────────────────────────────────────────────────────── */
@@ -618,7 +659,7 @@ button[kind="secondary"] {
     flex-shrink: 0;
     font-family: 'JetBrains Mono', 'Courier New', monospace;
 }
-.grade-A { background: #064e3b; color: #10b981; border: 3px solid #10b981; }
+.grade-A { background: #0c4a6e; color: #22d3ee; border: 3px solid #22d3ee; }
 .grade-B { background: #1e3a5f; color: #3b82f6; border: 3px solid #3b82f6; }
 .grade-C { background: #4a2800; color: #f59e0b; border: 3px solid #f59e0b; }
 .grade-D { background: #3b0a0a; color: #ef4444; border: 3px solid #ef4444; }
@@ -664,11 +705,11 @@ button[kind="secondary"] {
     font-family: 'JetBrains Mono', 'Courier New', monospace;
     line-height: 1;
 }
-.score-val-good  { color: #10b981; }
+.score-val-good  { color: #22d3ee; }
 .score-val-ok    { color: #f59e0b; }
 .score-val-bad   { color: #ef4444; }
 .score-bar-bg    { background: #1f2d3d; border-radius: 3px; height: 4px; margin-top: 8px; overflow: hidden; }
-.score-bar-good  { height: 4px; border-radius: 3px; background: #10b981; }
+.score-bar-good  { height: 4px; border-radius: 3px; background: #22d3ee; }
 .score-bar-ok    { height: 4px; border-radius: 3px; background: #f59e0b; }
 .score-bar-bad   { height: 4px; border-radius: 3px; background: #ef4444; }
 
@@ -754,8 +795,8 @@ button[kind="secondary"] {
 }
 .stTabs [aria-selected="true"] {
     background: #111827 !important;
-    color: #10b981 !important;
-    border-bottom: 2px solid #10b981 !important;
+    color: #22d3ee !important;
+    border-bottom: 2px solid #22d3ee !important;
 }
 
 /* ── Expanders ────────────────────────────────────────────────────────────── */
@@ -790,7 +831,7 @@ button[kind="secondary"] {
 hr { border-color: #1f2d3d !important; }
 
 /* ── Spinner text ─────────────────────────────────────────────────────────── */
-.stSpinner > div { color: #10b981 !important; }
+.stSpinner > div { color: #22d3ee !important; }
 
 /* ── Code / pre ───────────────────────────────────────────────────────────── */
 code, pre {
@@ -804,13 +845,13 @@ code, pre {
 /* ── Download button ──────────────────────────────────────────────────────── */
 .stDownloadButton > button {
     background: #111827 !important;
-    color: #10b981 !important;
-    border: 1px solid #10b981 !important;
+    color: #22d3ee !important;
+    border: 1px solid #22d3ee !important;
     border-radius: 6px !important;
     font-weight: 600 !important;
 }
 .stDownloadButton > button:hover {
-    background: #064e3b !important;
+    background: #0c4a6e !important;
 }
 
 /* ── Scrollbar ────────────────────────────────────────────────────────────── */
@@ -840,13 +881,13 @@ code, pre {
 /* ── Markdown inside report ───────────────────────────────────────────────── */
 .report-body h1, .report-body h2 { color: #e2e8f0; border-bottom: 1px solid #1f2d3d; padding-bottom: 6px; }
 .report-body h3 { color: #94a3b8; }
-.report-body h4 { color: #10b981; }
+.report-body h4 { color: #22d3ee; }
 .report-body table { background: #111827; border-collapse: collapse; width: 100%; border-radius: 6px; overflow: hidden; }
 .report-body th { background: #1f2d3d; color: #94a3b8; padding: 8px 12px; font-size: 0.8rem; text-align: left; }
 .report-body td { color: #c9d1d9; padding: 8px 12px; border-bottom: 1px solid #1a2535; font-size: 0.85rem; }
 .report-body li { color: #c9d1d9; margin: 4px 0; }
 .report-body strong { color: #e2e8f0; }
-.report-body blockquote { border-left: 3px solid #10b981; padding-left: 12px; color: #94a3b8; }
+.report-body blockquote { border-left: 3px solid #22d3ee; padding-left: 12px; color: #94a3b8; }
 
 /* ── History / Diff cards ─────────────────────────────────────────────────── */
 .hist-card {
@@ -867,11 +908,11 @@ code, pre {
     flex-shrink: 0;
     font-family: 'JetBrains Mono', 'Courier New', monospace;
 }
-.delta-improved { color: #10b981; font-weight: 700; }
+.delta-improved { color: #22d3ee; font-weight: 700; }
 .delta-regressed { color: #ef4444; font-weight: 700; }
 .delta-unchanged { color: #475569; }
 .new-finding { color: #ef4444; }
-.resolved-finding { color: #10b981; }
+.resolved-finding { color: #22d3ee; }
 
 /* ── Verification result rows ─────────────────────────────────────────────── */
 .verify-row {
@@ -897,19 +938,19 @@ code, pre {
     transition: all .2s;
     height: 100%;
 }
-.mode-selector-card.msc-std { border-color: #10b981; background: #061a0d; }
+.mode-selector-card.msc-std { border-color: #22d3ee; background: #062035; }
 .mode-selector-card.msc-pt  { border-color: #ef4444; background: #1a0606; }
 .msc-tag {
     display: inline-block; border-radius: 4px; padding: 2px 7px;
     font-size: 0.6rem; font-weight: 800; font-family:'Courier New',monospace;
     letter-spacing: .08em; margin-left: 6px; vertical-align: middle;
 }
-.msc-tag-std { background:#0a1f0f; border:1px solid #10b981; color:#10b981; }
+.msc-tag-std { background:#0a1f0f; border:1px solid #22d3ee; color:#22d3ee; }
 .msc-tag-pt  { background:#1a0606; border:1px solid #ef4444; color:#ef4444; }
 .msc-tag-inactive { background:#111827; border:1px solid #374151; color:#6b7280; font-size:0.55rem; }
 .msc-title { font-size:1rem; font-weight:700; color:#e2e8f0; margin:6px 0 2px; }
 .msc-desc  { font-size:0.77rem; color:#64748b; line-height:1.75; }
-.msc-std-color { color: #10b981; font-size:0.72rem; font-weight:800;
+.msc-std-color { color: #22d3ee; font-size:0.72rem; font-weight:800;
                   font-family:'Courier New',monospace; letter-spacing:.1em; }
 .msc-pt-color  { color: #ef4444; font-size:0.72rem; font-weight:800;
                   font-family:'Courier New',monospace; letter-spacing:.1em; }
@@ -955,11 +996,11 @@ code, pre {
 
 /* ── Scan mode indicator ──────────────────────────────────────────────────── */
 .mode-badge-standard {
-    background: #0f2027;
-    border: 1px solid #10b981;
+    background: #0c2835;
+    border: 1px solid #22d3ee;
     border-radius: 6px;
     padding: 10px 14px;
-    color: #10b981;
+    color: #22d3ee;
     font-family: 'JetBrains Mono', 'Courier New', monospace;
     font-size: 0.78rem;
     font-weight: 700;
@@ -1061,11 +1102,11 @@ code, pre {
 
 /* ── Bug bounty contact card ───────────────────────────────────────────────── */
 .bb-card {
-    background: #061a0d; border: 1px solid #10b981; border-radius: 8px;
+    background: #062035; border: 1px solid #22d3ee; border-radius: 8px;
     padding: 16px 20px; margin: 8px 0;
 }
-.bb-card-title { color: #10b981; font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; }
-.bb-card-item  { color: #6ee7b7; font-size: 0.82rem; margin: 3px 0; font-family:'Courier New',monospace; }
+.bb-card-title { color: #22d3ee; font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; }
+.bb-card-item  { color: #67e8f9; font-size: 0.82rem; margin: 3px 0; font-family:'Courier New',monospace; }
 
 /* ── Responsible disclosure email template ────────────────────────────────── */
 .rd-email {
@@ -1086,7 +1127,7 @@ code, pre {
     letter-spacing: 0.05em;
     margin-bottom: 12px;
 }
-.scan-mode-banner-std { background:#0f2027; border:1px solid #10b981; color:#10b981; }
+.scan-mode-banner-std { background:#0c2835; border:1px solid #22d3ee; color:#22d3ee; }
 .scan-mode-banner-pt  { background:#1a0a00; border:1px solid #ef4444; color:#ef4444; }
 .poc-box {
     background: #0d0000;
@@ -1322,7 +1363,7 @@ def _score_class(score: int) -> str:
 
 
 def _grade_color(grade: str) -> str:
-    return {"A": "#10b981", "B": "#3b82f6", "C": "#f59e0b", "D": "#ef4444"}.get(grade, "#dc2626")
+    return {"A": "#22d3ee", "B": "#3b82f6", "C": "#f59e0b", "D": "#ef4444"}.get(grade, "#dc2626")
 
 
 def _render_grade_banner(grade: str, score: int, url: str) -> None:
@@ -1362,7 +1403,7 @@ def _render_grade_banner(grade: str, score: int, url: str) -> None:
 <div style="display:flex;align-items:center;gap:24px;
      background:#0d1117;border:1px solid #1f2d3d;border-radius:14px;
      padding:22px 28px;margin:16px 0 24px;
-     box-shadow:0 4px 32px rgba(0,0,0,0.45),0 0 0 1px rgba(16,185,129,0.04);
+     box-shadow:0 4px 32px rgba(0,0,0,0.45),0 0 0 1px rgba(34,211,238,0.04);
      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
   <div style="flex-shrink:0">
     <svg width="130" height="130" viewBox="0 0 120 120">
@@ -1545,7 +1586,7 @@ def _render_mode_selector(pt_mode_active: bool) -> None:
             "note": "",
         },
         "standard": {
-            "color": "#10b981", "bg": "#061a0d", "border": "#0d3320",
+            "color": "#22d3ee", "bg": "#062035", "border": "#0d3320",
             "icon": "🟢", "label": "STANDARD SCAN",
             "bullets": "18 tools + AI narrative · Groq API key required · ~30 sec",
             "note": "",
@@ -1710,9 +1751,9 @@ def _show_empty_state(scan_mode: str = "passive") -> None:
       <path d="M40 4L8 16V44C8 62.4 22.4 79.6 40 84C57.6 79.6 72 62.4 72 44V16L40 4Z"
             fill="#0d1a2e" stroke="#1e3a5f" stroke-width="2"/>
       <path d="M40 14L16 24V44C16 58.4 26.8 71.8 40 75.6C53.2 71.8 64 58.4 64 44V24L40 14Z"
-            fill="#0a1525" stroke="#10b98133" stroke-width="1.5"/>
+            fill="#0a1525" stroke="#22d3ee33" stroke-width="1.5"/>
       <text x="40" y="50" text-anchor="middle" dominant-baseline="middle"
-            fill="#10b981" font-size="26" font-weight="900"
+            fill="#22d3ee" font-size="26" font-weight="900"
             font-family="JetBrains Mono,monospace">?</text>
     </svg>
   </div>
@@ -1732,7 +1773,7 @@ def _show_empty_state(scan_mode: str = "passive") -> None:
   <!-- Arrow hint -->
   <div style="text-align:center;margin-bottom:24px">
     <div style="display:inline-flex;align-items:center;gap:8px;background:#071a10;
-                border:1px solid #10b981;border-radius:8px;padding:9px 18px;
+                border:1px solid #22d3ee;border-radius:8px;padding:9px 18px;
                 color:#34d399;font-size:0.82rem;font-weight:700">
       ↑ Paste your URL in the field above and click Scan
     </div>
@@ -1760,14 +1801,14 @@ with st.sidebar:
     # ── User info + logout ────────────────────────────────────────────────────
     if _current_user:
         # Tier badge colors
-        _tier_colors = {"free":"#475569","starter":"#10b981","professional":"#6366f1","enterprise":"#f59e0b"}
+        _tier_colors = {"free":"#475569","starter":"#22d3ee","professional":"#6366f1","enterprise":"#f59e0b"}
         _tc = _tier_colors.get(_current_user.subscription_tier, "#475569")
         _tier_label = _current_user.subscription_tier.title()
         _admin_badge = '<span style="color:#475569;font-size:0.7rem">  🔑 Admin</span>' if _current_user.is_admin else ''
-        _pt_badge    = '<span style="color:#10b981;font-size:0.7rem">  ✅ PT</span>' if _current_user.pt_approved else ''
+        _pt_badge    = '<span style="color:#22d3ee;font-size:0.7rem">  ✅ PT</span>' if _current_user.pt_approved else ''
         st.markdown(
             f"<div style='padding:10px 0 4px;'>"
-            f"<span style='color:#10b981;font-size:0.78rem;font-family:monospace'>👤 {_current_user.email}</span><br>"
+            f"<span style='color:#22d3ee;font-size:0.78rem;font-family:monospace'>👤 {_current_user.email}</span><br>"
             f"<span style='color:{_tc};font-size:0.72rem;font-weight:700'>● {_tier_label}</span>"
             f"{_admin_badge}{_pt_badge}"
             f"</div>",
@@ -1924,7 +1965,7 @@ with st.sidebar:
     st.markdown('<div class="section-label">ℹ About</div>', unsafe_allow_html=True)
     st.markdown("""
 <small style="color:#475569;line-height:1.7">
-<b style="color:#10b981">17 security tools</b> run in parallel:<br>
+<b style="color:#22d3ee">17 security tools</b> run in parallel:<br>
 🔒 SSL/TLS · 📋 Headers · 🌐 HTML/JS<br>
 ⚙️ Tech Stack · 🕷️ Crawler · 🔀 CORS<br>
 🌍 DNS · 📂 Exposure · 📌 HSTS<br>
@@ -1940,12 +1981,12 @@ with st.sidebar:
     st.markdown('<div class="section-label">⚡ Engine Capabilities</div>', unsafe_allow_html=True)
     st.markdown("""
 <small style="color:#475569;line-height:2">
-<span style="color:#10b981;font-weight:700">✓</span> WAF Stealth Bypass — browser TLS fingerprint<br>
-<span style="color:#10b981;font-weight:700">✓</span> SSRF guard on every redirect hop<br>
-<span style="color:#10b981;font-weight:700">✓</span> IPv4-mapped IPv6 SSRF detection<br>
-<span style="color:#10b981;font-weight:700">✓</span> ReDoS-safe regex patterns<br>
-<span style="color:#10b981;font-weight:700">✓</span> 49 DKIM selectors · 38 exposed file probes<br>
-<span style="color:#10b981;font-weight:700">✓</span> CNAME takeover · CORS cache poison check
+<span style="color:#22d3ee;font-weight:700">✓</span> WAF Stealth Bypass — browser TLS fingerprint<br>
+<span style="color:#22d3ee;font-weight:700">✓</span> SSRF guard on every redirect hop<br>
+<span style="color:#22d3ee;font-weight:700">✓</span> IPv4-mapped IPv6 SSRF detection<br>
+<span style="color:#22d3ee;font-weight:700">✓</span> ReDoS-safe regex patterns<br>
+<span style="color:#22d3ee;font-weight:700">✓</span> 49 DKIM selectors · 38 exposed file probes<br>
+<span style="color:#22d3ee;font-weight:700">✓</span> CNAME takeover · CORS cache poison check
 </small>
 """, unsafe_allow_html=True)
 
@@ -2560,12 +2601,12 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                 _waf_data = {}
             if _waf_data.get("stealth_used"):
                 st.markdown("""
-<div style="background:#071a10;border:1px solid #10b981;border-left:4px solid #10b981;
+<div style="background:#071a10;border:1px solid #22d3ee;border-left:4px solid #22d3ee;
             border-radius:6px;padding:10px 16px;margin:12px 0;display:flex;
             align-items:center;gap:10px">
   <span style="font-size:1.1rem">🕵️</span>
   <div>
-    <span style="color:#10b981;font-weight:700;font-size:0.8rem;
+    <span style="color:#22d3ee;font-weight:700;font-size:0.8rem;
                  font-family:'Courier New',monospace;letter-spacing:.08em">
       STEALTH MODE ACTIVATED
     </span>
@@ -2694,7 +2735,7 @@ confirm vulnerabilities with non-destructive canary probes and get curl PoC repr
         _pr_score = max(0, _pr_score)
         _pr_grade = ("A" if _pr_score>=90 else "B" if _pr_score>=75 else
                      "C" if _pr_score>=60 else "D" if _pr_score>=45 else "F")
-        _grade_color = {"A":"#10b981","B":"#60a5fa","C":"#f59e0b","D":"#f97316","F":"#ef4444"}
+        _grade_color = {"A":"#22d3ee","B":"#60a5fa","C":"#f59e0b","D":"#f97316","F":"#ef4444"}
         _gc = _grade_color.get(_pr_grade,"#60a5fa")
         _ov_color = _sev_colors.get(_pr_overall, "#60a5fa")
 
@@ -2887,18 +2928,18 @@ confirm vulnerabilities with non-destructive canary probes and get curl PoC repr
             _upgrade_row = ""
             if _is_free:
                 _upgrade_row = f"""
-<div style="background:#071a10;border:1px solid #10b981;border-radius:10px;
+<div style="background:#071a10;border:1px solid #22d3ee;border-radius:10px;
             padding:16px 18px;margin-top:16px;display:flex;align-items:center;
             gap:14px;flex-wrap:wrap">
   <div style="flex:1;min-width:200px">
-    <div style="color:#10b981;font-size:0.82rem;font-weight:700;margin-bottom:3px">
+    <div style="color:#22d3ee;font-size:0.82rem;font-weight:700;margin-bottom:3px">
       🔍 Upgrade to Pro for step-by-step fix guides
     </div>
     <div style="color:#475569;font-size:0.78rem;line-height:1.5">
       Get detailed remediation steps, code examples, and automated re-scan verification for every finding.
     </div>
   </div>
-  <div style="background:linear-gradient(135deg,#10b981,#059669);color:#000;font-weight:800;
+  <div style="background:linear-gradient(135deg,#22d3ee,#0891b2);color:#000;font-weight:800;
               font-size:0.82rem;padding:9px 20px;border-radius:8px;white-space:nowrap;
               cursor:pointer">Upgrade to Pro →</div>
 </div>"""
@@ -3754,7 +3795,7 @@ with tab_history:
                 })
                 # Streamlit's line_chart needs index as date
                 chart_data = chart_data.set_index("Date")
-                st.line_chart(chart_data["Score"], color="#10b981", height=220)
+                st.line_chart(chart_data["Score"], color="#22d3ee", height=220)
 
                 # ── History entries ───────────────────────────────────────────
                 st.markdown('<div class="section-label">SCAN HISTORY</div>',
@@ -3763,14 +3804,14 @@ with tab_history:
                 for rec in history:
                     g = rec.overall_grade
                     g_colors = {
-                        "A": ("#064e3b", "#10b981"),
+                        "A": ("#0c4a6e", "#22d3ee"),
                         "B": ("#1e3a5f", "#3b82f6"),
                         "C": ("#4a2800", "#f59e0b"),
                         "D": ("#3b0a0a", "#ef4444"),
                     }
                     bg, fg = g_colors.get(g, ("#1a0000", "#dc2626"))
                     ts_display = rec.scan_timestamp[:16].replace("T", " ")
-                    bar_color = {"A": "#10b981", "B": "#3b82f6", "C": "#f59e0b"}.get(g, "#ef4444")
+                    bar_color = {"A": "#22d3ee", "B": "#3b82f6", "C": "#f59e0b"}.get(g, "#ef4444")
                     st.markdown(f"""
 <div class="hist-card">
   <div class="hist-grade-dot" style="background:{bg};color:{fg};border:2px solid {fg}">{g}</div>
@@ -3835,7 +3876,7 @@ with tab_diff:
                 # ── Overall delta ─────────────────────────────────────────────
                 delta_score = scan_b.overall_score - scan_a.overall_score
                 delta_sign  = "+" if delta_score >= 0 else ""
-                delta_color = "#10b981" if delta_score > 0 else "#ef4444" if delta_score < 0 else "#475569"
+                delta_color = "#22d3ee" if delta_score > 0 else "#ef4444" if delta_score < 0 else "#475569"
                 mc1, mc2, mc3 = st.columns(3)
                 mc1.metric("Scan A Score", f"{scan_a.overall_score}/100 ({scan_a.overall_grade})")
                 mc2.metric("Scan B Score", f"{scan_b.overall_score}/100 ({scan_b.overall_grade})")
@@ -3893,7 +3934,7 @@ with tab_diff:
                 if resolved_findings:
                     st.markdown("**Resolved since Scan A:**")
                     for f in resolved_findings:
-                        st.markdown(f'<div class="verify-row verify-unknown" style="border-left-color:#10b981">✅ RESOLVED: {f}</div>',
+                        st.markdown(f'<div class="verify-row verify-unknown" style="border-left-color:#22d3ee">✅ RESOLVED: {f}</div>',
                                     unsafe_allow_html=True)
 
 
