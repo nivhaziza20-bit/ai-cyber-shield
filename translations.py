@@ -123,18 +123,35 @@ def inject_rtl_css() -> None:
     if is_rtl():
         st.markdown("""
 <style>
-html, body, [data-testid="stAppViewContainer"], .block-container,
-[data-testid="stSidebar"] { direction: rtl !important; text-align: right !important; }
-[data-testid="stButton"] button { direction: rtl !important; }
-.stTextInput input, .stTextArea textarea { direction: rtl !important; text-align: right !important; }
-/* Hebrew font override */
-html, body, .block-container, [data-testid="stSidebar"],
-.stTextInput input, .stTextArea textarea, .stMarkdown,
-button, label, p, span, div { font-family: 'Heebo', 'Segoe UI', sans-serif !important; }
-/* Keep scan results LTR (English technical content) */
+/* RTL: text direction only — do NOT flip Streamlit layout containers */
+.block-container p, .block-container span, .block-container label,
+.block-container h1, .block-container h2, .block-container h3,
+.block-container li, .stMarkdown, .stMarkdown p {
+    direction: rtl !important;
+    text-align: right !important;
+}
+/* Input fields — RTL text entry */
+.stTextInput input, .stTextArea textarea {
+    direction: rtl !important;
+    text-align: right !important;
+}
+/* Buttons — text alignment only */
+[data-testid="stButton"] button {
+    text-align: center !important;
+}
+/* Hebrew font for UI text */
+.block-container, [data-testid="stSidebar"],
+.stTextInput input, .stTextArea textarea,
+.stMarkdown, button, label {
+    font-family: 'Heebo', 'Segoe UI', sans-serif !important;
+}
+/* Keep scan result cards LTR — technical English content */
 .finding-card, .result-block, pre, code,
-[data-testid="stExpander"] { direction: ltr !important; text-align: left !important;
-  font-family: 'JetBrains Mono', 'Courier New', monospace !important; }
+[data-testid="stExpander"] .stMarkdown {
+    direction: ltr !important;
+    text-align: left !important;
+    font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+}
 </style>""", unsafe_allow_html=True)
 
 
