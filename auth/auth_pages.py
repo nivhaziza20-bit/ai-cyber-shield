@@ -21,49 +21,66 @@ _PW_MIN = 8
 
 _LANDING_CSS = """
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Inter:wght@400;600;700;900&display=swap');
+
 #MainMenu, footer, header { visibility: hidden; }
 [data-testid="stAppViewContainer"] { background: #060b14; }
 [data-testid="stHeader"] { background: transparent; }
+
+/* Hebrew font */
+body, .block-container, button, label, p, span, div, input {
+  font-family: 'Heebo', 'Inter', 'Segoe UI', sans-serif !important;
+}
+
+/* Glow animation on primary accent */
+@keyframes cyanGlow {
+  0%,100% { text-shadow: 0 0 18px rgba(34,211,238,0.3); }
+  50%      { text-shadow: 0 0 38px rgba(34,211,238,0.7), 0 0 6px #22d3ee; }
+}
+@keyframes borderPulse {
+  0%,100% { box-shadow: 0 0 0 1px rgba(34,211,238,0.15), 0 24px 80px rgba(0,0,0,0.55); }
+  50%      { box-shadow: 0 0 0 1px rgba(34,211,238,0.45), 0 24px 80px rgba(0,0,0,0.55), 0 0 30px rgba(34,211,238,0.1); }
+}
 .block-container { padding-top: 0 !important; padding-bottom: 0 !important; padding-left: 1rem !important; padding-right: 1rem !important; background: #060b14; }
 
 /* ── Brand ──────────────────────────────────────────────── */
 .lp-brand { display:flex; align-items:center; gap:14px; margin-bottom:24px; margin-top:8px; }
 .lp-brand-icon { font-size:1.8rem; line-height:1; }
-.lp-brand-name { font-family:'JetBrains Mono','Courier New',monospace; font-size:1.3rem; font-weight:900; color:#10b981; letter-spacing:-0.04em; line-height:1.1; }
-.lp-brand-sub { color:#334155; font-size:0.58rem; letter-spacing:0.2em; text-transform:uppercase; margin-top:2px; }
+.lp-brand-name { font-family:'JetBrains Mono','Courier New',monospace; font-size:1.3rem; font-weight:900; background:linear-gradient(90deg,#22d3ee,#818cf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; letter-spacing:-0.04em; line-height:1.1; filter:drop-shadow(0 0 12px rgba(34,211,238,0.35)); }
+.lp-brand-sub { color:#475569; font-size:0.58rem; letter-spacing:0.2em; text-transform:uppercase; margin-top:2px; }
 
 /* ── Hero ───────────────────────────────────────────────── */
-.lp-headline { font-size:3.2rem; font-weight:900; color:#f1f5f9; line-height:1.08; margin:0 0 18px; letter-spacing:-0.03em; }
-.lp-headline em { color:#10b981; font-style:normal; background:linear-gradient(90deg,#10b981,#34d399); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.lp-headline { font-size:3.2rem; font-weight:900; color:#f1f5f9; line-height:1.08; margin:0 0 18px; letter-spacing:-0.03em; font-family:'Heebo','Inter',sans-serif; }
+.lp-headline em { font-style:normal; background:linear-gradient(90deg,#22d3ee,#818cf8,#c084fc); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; filter:drop-shadow(0 0 20px rgba(34,211,238,0.40)); animation:cyanGlow 3s ease-in-out infinite; }
 .lp-desc { color:#94a3b8; font-size:0.97rem; line-height:1.72; max-width:520px; margin:0 0 22px; }
 .lp-cta-row { display:flex; align-items:center; gap:16px; margin-bottom:28px; flex-wrap:wrap; }
-.lp-cta-btn { display:inline-flex; align-items:center; gap:8px; background:#10b981; color:#000; font-weight:800; font-size:0.88rem; padding:11px 24px; border-radius:9px; letter-spacing:-0.01em; }
+.lp-cta-btn { display:inline-flex; align-items:center; gap:8px; background:#22d3ee; color:#000; font-weight:800; font-size:0.88rem; padding:11px 24px; border-radius:9px; letter-spacing:-0.01em; }
 .lp-cta-note { color:#475569; font-size:0.75rem; }
 
 /* ── Stats ──────────────────────────────────────────────── */
 .lp-stats { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:32px; padding-bottom:28px; border-bottom:1px solid #1e2d3d; }
-.lp-stat-val { font-size:1.9rem; font-weight:900; color:#10b981; font-family:'JetBrains Mono',monospace; line-height:1; }
+.lp-stat-val { font-size:1.9rem; font-weight:900; color:#22d3ee; font-family:'JetBrains Mono',monospace; line-height:1; }
 .lp-stat-lbl { color:#475569; font-size:0.68rem; margin-top:4px; text-transform:uppercase; letter-spacing:0.07em; }
 
 /* ── Features grid ──────────────────────────────────────── */
 .lp-features-label { color:#64748b; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.22em; margin-bottom:12px; }
 .lp-features { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:24px; }
 .lp-feat { background:#0d1421; border:1px solid #1e2d3d; border-radius:10px; padding:15px 15px 14px; transition:border-color 0.18s,background 0.18s; }
-.lp-feat:hover { border-color:#10b981; background:#0a1e16; }
-.lp-feat-icon { color:#10b981; margin-bottom:8px; display:block; line-height:0; }
+.lp-feat:hover { border-color:#22d3ee; background:#061828; }
+.lp-feat-icon { color:#22d3ee; margin-bottom:8px; display:block; line-height:0; }
 .lp-feat-name { font-size:0.86rem; font-weight:700; color:#e2e8f0; margin-bottom:4px; }
 .lp-feat-desc { font-size:0.8rem; color:#64748b; line-height:1.55; }
 
 /* ── Free badge ─────────────────────────────────────────── */
-.lp-free-badge { display:inline-flex; align-items:center; gap:8px; background:#0a2018; border:1px solid #10b981; border-radius:8px; padding:9px 15px; font-size:0.8rem; color:#86efac; margin-bottom:8px; flex-wrap:wrap; }
-.lp-free-badge strong { color:#34d399; }
+.lp-free-badge { display:inline-flex; align-items:center; gap:8px; background:#061a2e; border:1px solid #22d3ee; border-radius:8px; padding:9px 15px; font-size:0.8rem; color:#a5f3fc; margin-bottom:8px; flex-wrap:wrap; }
+.lp-free-badge strong { color:#67e8f9; }
 
 /* ── Auth card (floating card effect) ───────────────────── */
-.auth-card-top { background:#0d1421; border:1px solid #2a3d52; border-bottom:none; border-radius:16px 16px 0 0; padding:26px 28px 20px; box-shadow:0 4px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(16,185,129,0.06); }
+.auth-card-top { background:#0d1421; border:1px solid #22d3ee33; border-bottom:none; border-radius:16px 16px 0 0; padding:26px 28px 20px; box-shadow:0 4px 32px rgba(0,0,0,0.5), 0 0 30px rgba(34,211,238,0.06); animation:borderPulse 4s ease-in-out infinite; }
 .auth-card-brand { display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
-.auth-card-title { font-size:1.25rem; font-weight:800; color:#f1f5f9; margin-bottom:4px; letter-spacing:-0.02em; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+.auth-card-title { font-size:1.25rem; font-weight:800; color:#f1f5f9; margin-bottom:4px; letter-spacing:-0.02em; font-family:'Heebo','Inter',sans-serif; }
 .auth-card-sub { font-size:0.73rem; color:#475569; }
-.auth-notice { background:#0f2027; border:1px solid #10b981; border-radius:8px; padding:10px 14px; font-size:0.79rem; color:#86efac; margin-bottom:16px; line-height:1.55; }
+.auth-notice { background:#0c2835; border:1px solid #22d3ee; border-radius:8px; padding:10px 14px; font-size:0.79rem; color:#a5f3fc; margin-bottom:16px; line-height:1.55; }
 .auth-card-footer { background:#0d1421; border:1px solid #2a3d52; border-top:none; border-radius:0 0 16px 16px; padding:12px 28px 22px; text-align:center; color:#334155; font-size:0.69rem; line-height:1.75; box-shadow:0 8px 32px rgba(0,0,0,0.5); }
 
 /* ── Auth column card (JS-injected .aics-auth-col on the right column) ── */
@@ -74,7 +91,7 @@ _LANDING_CSS = """
     box-shadow:
         0 1px 0 rgba(255,255,255,0.04) inset,
         0 24px 80px rgba(0,0,0,0.55),
-        0 0 0 1px rgba(16,185,129,0.10) !important;
+        0 0 0 1px rgba(34,211,238,0.10) !important;
 }
 .aics-auth-col .auth-card-top {
     border: none !important;
@@ -100,8 +117,8 @@ _LANDING_CSS = """
     transition: border-color 0.18s, box-shadow 0.18s !important;
 }
 [data-testid="stTextInput"] input:focus {
-    border-color: #10b981 !important;
-    box-shadow: 0 0 0 3px rgba(16,185,129,0.12) !important;
+    border-color: #22d3ee !important;
+    box-shadow: 0 0 0 3px rgba(34,211,238,0.12) !important;
     outline: none !important;
 }
 [data-testid="stTextInput"] input::placeholder { color: #2a3d52 !important; }
@@ -136,7 +153,7 @@ _LANDING_CSS = """
 /* ── Toggle link buttons ─────────────────────────────────── */
 .auth-toggle-row [data-testid="stButton"] button {
     background: transparent !important;
-    color: #10b981 !important;
+    color: #22d3ee !important;
     border: none !important;
     box-shadow: none !important;
     padding: 0 2px !important;
@@ -146,10 +163,10 @@ _LANDING_CSS = """
     letter-spacing: 0 !important;
     text-decoration: underline !important;
     text-underline-offset: 2px !important;
-    text-decoration-color: rgba(16,185,129,0.4) !important;
+    text-decoration-color: rgba(34,211,238,0.4) !important;
 }
 .auth-toggle-row [data-testid="stButton"] button:hover {
-    color: #34d399 !important;
+    color: #67e8f9 !important;
     transform: none !important;
     text-decoration-color: rgba(52,211,153,0.85) !important;
 }
@@ -180,9 +197,9 @@ _LANDING_CSS = """
   background: #130505;
 }
 .lp-check-ok {
-  border-color: rgba(16,185,129,0.18);
-  color: #6ee7b7;
-  background: #030f09;
+  border-color: rgba(34,211,238,0.18);
+  color: #a5f3fc;
+  background: #03101a;
 }
 .lp-trust {
   display: flex;
@@ -199,7 +216,7 @@ _LANDING_CSS = """
 }
 .lp-trust span::before {
   content: "✓";
-  color: #10b981;
+  color: #22d3ee;
   font-weight: 800;
   font-size: 0.68rem;
 }
@@ -223,7 +240,7 @@ _LANDING_CSS = """
 
 /* ── Hero scan URL label ────────────────────────────────── */
 .lp-scan-label {
-  color: #10b981;
+  color: #22d3ee;
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -238,35 +255,35 @@ _LANDING_CSS = """
   display: inline-block;
   width: 18px;
   height: 2px;
-  background: #10b981;
+  background: #22d3ee;
   border-radius: 1px;
 }
 
 /* ── Auth buttons (Sign In / Create Account) ────────────── */
 button[kind="primary"] {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  background: linear-gradient(135deg, #22d3ee 0%, #0891b2 100%) !important;
   color: #000 !important;
   font-weight: 800 !important;
   border: none !important;
   border-radius: 10px !important;
   font-size: 0.9rem !important;
   letter-spacing: 0.03em !important;
-  box-shadow: 0 2px 12px rgba(16,185,129,0.25) !important;
+  box-shadow: 0 2px 12px rgba(34,211,238,0.25) !important;
   transition: all 0.18s ease !important;
 }
 button[kind="primary"]:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-  box-shadow: 0 4px 20px rgba(16,185,129,0.40) !important;
+  background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%) !important;
+  box-shadow: 0 4px 20px rgba(34,211,238,0.40) !important;
   transform: translateY(-1px) !important;
 }
 button[kind="primary"]:active {
   transform: translateY(0) !important;
-  box-shadow: 0 1px 8px rgba(16,185,129,0.20) !important;
+  box-shadow: 0 1px 8px rgba(34,211,238,0.20) !important;
 }
 /* Secondary buttons on landing page are always toggle/link actions */
 button[kind="secondary"] {
   background: transparent !important;
-  color: #10b981 !important;
+  color: #22d3ee !important;
   border: none !important;
   box-shadow: none !important;
   padding: 0 2px !important;
@@ -276,10 +293,10 @@ button[kind="secondary"] {
   line-height: 1 !important;
   text-decoration: underline !important;
   text-underline-offset: 2px !important;
-  text-decoration-color: rgba(16,185,129,0.4) !important;
+  text-decoration-color: rgba(34,211,238,0.4) !important;
 }
 button[kind="secondary"]:hover {
-  color: #34d399 !important;
+  color: #67e8f9 !important;
   transform: none !important;
   text-decoration-color: rgba(52,211,153,0.85) !important;
 }
@@ -322,7 +339,7 @@ _NAV_HTML = """
 .aics-nav-brand{display:flex;align-items:center;gap:10px}
 .aics-nav-links{display:flex;align-items:center;gap:20px}
 .aics-nav-link{color:#64748b;font-size:0.76rem;white-space:nowrap}
-.aics-nav-cta{background:#10b981;color:#000;font-weight:800;font-size:0.76rem;padding:6px 16px;border-radius:7px;white-space:nowrap}
+.aics-nav-cta{background:#22d3ee;color:#000;font-weight:800;font-size:0.76rem;padding:6px 16px;border-radius:7px;white-space:nowrap}
 @media(max-width:768px){
   .aics-nav-links .aics-nav-link{display:none}
   .aics-nav{padding:10px 4px}
@@ -334,8 +351,8 @@ _NAV_HTML = """
 <div class="aics-nav">
   <div class="aics-nav-brand">
     <span style="font-size:1.2rem">🛡</span>
-    <span style="font-family:'JetBrains Mono','Courier New',monospace;font-weight:900;color:#10b981;font-size:0.95rem;letter-spacing:-0.03em">AI Cyber Shield</span>
-    <span style="background:#0a2018;border:1px solid #10b981;border-radius:4px;color:#34d399;font-size:0.56rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:2px 7px">Beta</span>
+    <span style="font-family:'JetBrains Mono','Courier New',monospace;font-weight:900;color:#22d3ee;font-size:0.95rem;letter-spacing:-0.03em">AI Cyber Shield</span>
+    <span style="background:#061a2e;border:1px solid #22d3ee;border-radius:4px;color:#67e8f9;font-size:0.56rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:2px 7px">Beta</span>
   </div>
   <div class="aics-nav-links">
     <span class="aics-nav-link">18 scan tools</span>
@@ -350,15 +367,27 @@ _NAV_HTML = """
 # Hero HTML  (inside left column → st.markdown, no blank lines)
 # ─────────────────────────────────────────────────────────────────────────────
 
-_HERO_HTML = """
-<div class="lp-brand">
+def _get_hero_html(lang: str = "he") -> str:
+    _headlines = {
+        "he": ("האתר שלך מאובטח<br>עכשיו?", "גלה עכשיו.", "rtl"),
+        "en": ("Is your website<br>secure right now?", "Find out.", "ltr"),
+    }
+    h, em, direction = _headlines.get(lang, _headlines["en"])
+    _trust = {
+        "he": ["ללא agent בשרת שלך", "Zero network footprint", "18 כלים · תוצאות תוך 90 שניות"],
+        "en": ["No agent on your server", "Zero network footprint", "18 tools · results in <90 sec"],
+    }.get(lang, ["No agent on your server", "Zero network footprint", "18 tools · results in <90 sec"])
+    _scan_label = "הכנס את כתובת האתר שלך" if lang == "he" else "Enter your website to get started"
+    _sub = "פלטפורמת מודיעין אבטחה לאפליקציות ווב" if lang == "he" else "Web Application Security Intelligence"
+    return f"""
+<div class="lp-brand" dir="{direction}">
   <div class="lp-brand-icon">🛡</div>
   <div>
     <div class="lp-brand-name">AI Cyber Shield</div>
-    <div class="lp-brand-sub">Web Application Security Intelligence</div>
+    <div class="lp-brand-sub">{_sub}</div>
   </div>
 </div>
-<h1 class="lp-headline">Is your website<br>secure right now? <em>Find out.</em></h1>
+<h1 class="lp-headline" dir="{direction}">{h} <em>{em}</em></h1>
 <div class="lp-checks">
   <div class="lp-check lp-check-warn">🔒 TLS / SSL</div>
   <div class="lp-check lp-check-warn">📧 Email Spoofability</div>
@@ -371,11 +400,9 @@ _HERO_HTML = """
   <div class="lp-check">🗂 Exposed Files</div>
 </div>
 <div class="lp-trust">
-  <span>No agent installed on your server</span>
-  <span>Zero network footprint</span>
-  <span>18 tools · results in &lt;90 sec</span>
+  {''.join(f'<span>{s}</span>' for s in _trust)}
 </div>
-<div class="lp-scan-label">Enter your website to get started</div>
+<div class="lp-scan-label">{_scan_label}</div>
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -396,7 +423,7 @@ _STATS_HTML = """
 .aics-stat-val {
   font-size: 2rem;
   font-weight: 900;
-  color: #10b981;
+  color: #22d3ee;
   font-family: 'JetBrains Mono', 'Courier New', monospace;
   line-height: 1;
   letter-spacing: -0.03em;
@@ -460,32 +487,32 @@ _FEATURES_HTML = """
 <div class="lp-features-label">What we scan</div>
 <div class="lp-features">
   <div class="lp-feat">
-    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
     <div class="lp-feat-name">TLS / SSL</div>
     <div class="lp-feat-desc">Protocol version, cipher suites, certificate validity &amp; HSTS preload status</div>
   </div>
   <div class="lp-feat">
-    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
     <div class="lp-feat-name">Technology Stack</div>
     <div class="lp-feat-desc">7,537 Wappalyzer signatures with version extraction and CVE mapping</div>
   </div>
   <div class="lp-feat">
-    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
     <div class="lp-feat-name">CVE Detection</div>
     <div class="lp-feat-desc">NVD + GitHub + OSV multi-source feed with EPSS exploit probability scoring</div>
   </div>
   <div class="lp-feat">
-    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
+    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
     <div class="lp-feat-name">Active Verification</div>
     <div class="lp-feat-desc">Non-destructive canary probes confirm Open Redirect, XSS, CORS, SSTI &amp; more</div>
   </div>
   <div class="lp-feat">
-    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
     <div class="lp-feat-name">Deep JS Crawling</div>
     <div class="lp-feat-desc">Headless Chromium intercepts XHR, discovers hidden API endpoints &amp; secrets</div>
   </div>
   <div class="lp-feat">
-    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
+    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
     <div class="lp-feat-name">API &amp; DNS</div>
     <div class="lp-feat-desc">Swagger / GraphQL exposure, SPF / DMARC records, subdomain takeover detection</div>
   </div>
@@ -501,8 +528,8 @@ _FEATURES_HTML = """
 
 _SVG_SHIELD = """<svg width="26" height="29" viewBox="0 0 28 31" fill="none">
   <path d="M14 1L2 6V16C2 23.2 7.6 29.8 14 31.4C20.4 29.8 26 23.2 26 16V6L14 1Z"
-        fill="#071a10" stroke="#10b981" stroke-width="1.5"/>
-  <path d="M9 15.5L12.5 19L19 12" stroke="#10b981" stroke-width="2"
+        fill="#071a10" stroke="#22d3ee" stroke-width="1.5"/>
+  <path d="M9 15.5L12.5 19L19 12" stroke="#22d3ee" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round"/>
 </svg>"""
 
@@ -528,7 +555,7 @@ _SOCIAL_PROOF_HTML = """
 <style>
 .sp-bar{text-align:center;padding:14px 8px;color:#475569;font-size:0.78rem;border-top:1px solid #1e2d3d;border-bottom:1px solid #1e2d3d;background:#080d17;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px 16px}
 .sp-item{white-space:nowrap}
-.sp-hl{color:#10b981;font-weight:700}
+.sp-hl{color:#22d3ee;font-weight:700}
 @media(max-width:480px){.sp-bar{font-size:0.7rem;padding:10px 6px}.sp-sep{display:none}}
 </style>
 <div class="sp-bar">
@@ -549,7 +576,7 @@ _SOCIAL_PROOF_HTML = """
 _PRICING_HTML = """
 <style>
 .aics-pricing{padding:48px 0 20px;margin-top:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-.aics-pricing-eye{text-align:center;color:#10b981;font-size:.7rem;text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px}
+.aics-pricing-eye{text-align:center;color:#22d3ee;font-size:.7rem;text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px}
 .aics-pricing-h{text-align:center;font-size:1.9rem;font-weight:800;color:#f8fafc;margin-bottom:6px}
 .aics-pricing-sub{text-align:center;color:#64748b;font-size:.88rem;margin-bottom:36px}
 .aics-plans{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px;align-items:start}
@@ -558,31 +585,31 @@ _PRICING_HTML = """
 .aics-plan{background:#0d1421;border:1px solid #1e2d3d;border-radius:14px;padding:24px 20px;position:relative;transition:border-color 0.2s}
 .aics-plan:hover{border-color:#2a3d52}
 .aics-plan-pro{
-  border-color:#10b981;
+  border-color:#22d3ee;
   border-width:2px;
   background:linear-gradient(160deg,#081a10 0%,#0d1421 50%);
-  box-shadow:0 0 50px rgba(16,185,129,0.22),0 8px 40px rgba(0,0,0,0.55),0 0 0 1px rgba(16,185,129,0.12);
+  box-shadow:0 0 50px rgba(34,211,238,0.22),0 8px 40px rgba(0,0,0,0.55),0 0 0 1px rgba(34,211,238,0.12);
   transform:translateY(-10px) scale(1.035);
   z-index:2;
   padding:28px 22px;
 }
-.aics-plan-pro:hover{border-color:#34d399;box-shadow:0 0 60px rgba(16,185,129,0.30),0 12px 50px rgba(0,0,0,0.6)}
+.aics-plan-pro:hover{border-color:#67e8f9;box-shadow:0 0 60px rgba(34,211,238,0.30),0 12px 50px rgba(0,0,0,0.6)}
 .aics-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);
-  background:linear-gradient(90deg,#10b981,#34d399);
+  background:linear-gradient(90deg,#22d3ee,#67e8f9);
   color:#000;font-size:.6rem;font-weight:900;text-transform:uppercase;
   letter-spacing:.12em;padding:4px 16px;border-radius:99px;white-space:nowrap;
-  box-shadow:0 2px 12px rgba(16,185,129,0.45)}
+  box-shadow:0 2px 12px rgba(34,211,238,0.45)}
 .aics-tier{font-size:.7rem;text-transform:uppercase;letter-spacing:.15em;color:#64748b;margin-bottom:10px}
 .aics-price{font-size:2.1rem;font-weight:800;color:#f8fafc;line-height:1;margin-bottom:4px}
 .aics-price sub{font-size:.8rem;font-weight:400;color:#64748b;vertical-align:baseline}
 .aics-tagline{font-size:.72rem;color:#475569;margin-bottom:18px;min-height:30px}
 .aics-features{list-style:none;padding:0;margin:0 0 20px}
 .aics-features li{font-size:.74rem;color:#94a3b8;padding:4px 0;display:flex;gap:8px;align-items:flex-start}
-.aics-features li::before{content:"✓";color:#10b981;font-weight:700;flex-shrink:0}
+.aics-features li::before{content:"✓";color:#22d3ee;font-weight:700;flex-shrink:0}
 .aics-features li.off{color:#334155}
 .aics-features li.off::before{content:"—";color:#334155}
 .aics-cta{display:block;width:100%;padding:9px 0;border-radius:8px;font-size:.8rem;font-weight:700;text-align:center;border:1px solid #1e2d3d;background:transparent;color:#64748b;cursor:default}
-.aics-cta-pro{background:#10b981;color:#000;border-color:#10b981}
+.aics-cta-pro{background:#22d3ee;color:#000;border-color:#22d3ee}
 </style>
 <div class="aics-pricing">
   <div class="aics-pricing-eye">Simple pricing</div>
@@ -619,8 +646,8 @@ _PRICING_HTML = """
     </div>
     <div class="aics-plan aics-plan-pro">
       <div class="aics-badge">⭐ Most popular</div>
-      <div class="aics-tier" style="color:#10b981;font-weight:900;letter-spacing:.2em">Professional</div>
-      <div class="aics-price" style="color:#34d399;font-size:2.6rem">€50<sub>/mo</sub></div>
+      <div class="aics-tier" style="color:#22d3ee;font-weight:900;letter-spacing:.2em">Professional</div>
+      <div class="aics-price" style="color:#67e8f9;font-size:2.6rem">€50<sub>/mo</sub></div>
       <div class="aics-tagline">For security engineers &amp; consultants</div>
       <ul class="aics-features">
         <li>Everything in Starter</li>
@@ -660,15 +687,15 @@ _SHOWCASE_HTML = """
 
 /* ── Section wrapper ── */
 .sw{padding:60px 0 32px;font-family:'Inter','Segoe UI',sans-serif}
-.sw-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(16,185,129,.08);
-  border:1px solid rgba(16,185,129,.2);border-radius:99px;
+.sw-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(34,211,238,.08);
+  border:1px solid rgba(34,211,238,.2);border-radius:99px;
   padding:5px 14px;margin-bottom:18px}
-.sw-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:#10b981;
+.sw-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:#22d3ee;
   animation:swpulse 1.6s ease-in-out infinite}
 @keyframes swpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-.sw-eyebrow-txt{color:#10b981;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.sw-eyebrow-txt{color:#22d3ee;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
 .sw-h{font-size:1.7rem;font-weight:900;color:#f1f5f9;line-height:1.25;margin:0 0 8px}
-.sw-h span{background:linear-gradient(90deg,#10b981,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sw-h span{background:linear-gradient(90deg,#22d3ee,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .sw-sub{color:#475569;font-size:.88rem;margin:0 0 32px;line-height:1.6}
 
 /* ── Grid ── */
@@ -702,12 +729,12 @@ _SHOWCASE_HTML = """
   background:linear-gradient(90deg,#ef4444,#dc2626,transparent);
 }
 .sw-card-good{
-  border-color:rgba(16,185,129,.18);
-  box-shadow:0 0 0 1px rgba(16,185,129,.08),0 24px 48px rgba(0,0,0,.5),inset 0 1px 0 rgba(16,185,129,.06);
+  border-color:rgba(34,211,238,.18);
+  box-shadow:0 0 0 1px rgba(34,211,238,.08),0 24px 48px rgba(0,0,0,.5),inset 0 1px 0 rgba(34,211,238,.06);
 }
 .sw-card-good::after{
   content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:18px 18px 0 0;
-  background:linear-gradient(90deg,#10b981,#34d399,transparent);
+  background:linear-gradient(90deg,#22d3ee,#67e8f9,transparent);
 }
 .sw-card-warn{
   border-color:rgba(245,158,11,.14);
@@ -723,7 +750,7 @@ _SHOWCASE_HTML = """
 }
 .sw-card-ai::after{
   content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:18px 18px 0 0;
-  background:linear-gradient(90deg,#8b5cf6,#a78bfa,#10b981);
+  background:linear-gradient(90deg,#8b5cf6,#a78bfa,#22d3ee);
 }
 
 /* ── Browser chrome bar ── */
@@ -763,7 +790,7 @@ _SHOWCASE_HTML = """
 .sw-stat-c{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.2)}
 .sw-stat-h{background:rgba(251,146,60,.1);color:#fb923c;border:1px solid rgba(251,146,60,.18)}
 .sw-stat-m{background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.18)}
-.sw-stat-ok{background:rgba(16,185,129,.1);color:#34d399;border:1px solid rgba(16,185,129,.2)}
+.sw-stat-ok{background:rgba(34,211,238,.1);color:#67e8f9;border:1px solid rgba(34,211,238,.2)}
 
 /* ── Findings ── */
 .sw-findings{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
@@ -779,7 +806,7 @@ _SHOWCASE_HTML = """
 .sw-sev-c{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.25)}
 .sw-sev-h{background:rgba(251,146,60,.12);color:#fb923c;border:1px solid rgba(251,146,60,.2)}
 .sw-sev-m{background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.18)}
-.sw-sev-l{background:rgba(16,185,129,.08);color:#34d399;border:1px solid rgba(16,185,129,.15)}
+.sw-sev-l{background:rgba(34,211,238,.08);color:#67e8f9;border:1px solid rgba(34,211,238,.15)}
 .sw-finding-txt{color:#7a8fa6;font-size:.75rem;line-height:1.45}
 .sw-finding-txt strong{color:#cbd5e1;font-weight:600}
 .sw-finding-txt code{
@@ -796,7 +823,7 @@ _SHOWCASE_HTML = """
   font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;
   padding:3px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;
 }
-.sw-tool-ok{background:rgba(16,185,129,.08);color:#10b981;border:1px solid rgba(16,185,129,.18)}
+.sw-tool-ok{background:rgba(34,211,238,.08);color:#22d3ee;border:1px solid rgba(34,211,238,.18)}
 .sw-tool-warn{background:rgba(245,158,11,.07);color:#f59e0b;border:1px solid rgba(245,158,11,.16)}
 .sw-tool-err{background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.18)}
 
@@ -815,7 +842,7 @@ _SHOWCASE_HTML = """
   border:1px solid rgba(255,255,255,.05);border-radius:8px;
   padding:8px 12px;margin-bottom:12px;
 }
-.sw-ai-prompt span{color:#10b981}
+.sw-ai-prompt span{color:#22d3ee}
 .sw-rec{display:flex;gap:10px;padding:9px 11px;border-radius:9px;margin-bottom:6px;
   background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04)}
 .sw-rec-num{
@@ -830,18 +857,18 @@ _SHOWCASE_HTML = """
   font-family:'JetBrains Mono',monospace;font-size:.67rem;
   background:rgba(139,92,246,.1);color:#a78bfa;padding:1px 5px;border-radius:4px;
 }
-.sw-rec-txt em{color:#10b981;font-style:normal;font-weight:600}
+.sw-rec-txt em{color:#22d3ee;font-style:normal;font-weight:600}
 
 /* ── Section CTA ── */
 .sw-cta-row{display:flex;align-items:center;justify-content:center;gap:16px;
   margin-top:28px;padding:20px;
-  border:1px solid rgba(16,185,129,.12);border-radius:14px;
-  background:linear-gradient(135deg,rgba(16,185,129,.04),rgba(16,185,129,.01));
+  border:1px solid rgba(34,211,238,.12);border-radius:14px;
+  background:linear-gradient(135deg,rgba(34,211,238,.04),rgba(34,211,238,.01));
 }
 .sw-cta-txt{color:#475569;font-size:.84rem}
-.sw-cta-txt strong{color:#10b981}
+.sw-cta-txt strong{color:#22d3ee}
 .sw-cta-badge{
-  background:linear-gradient(135deg,#10b981,#059669);
+  background:linear-gradient(135deg,#22d3ee,#0891b2);
   color:#fff;font-size:.72rem;font-weight:700;
   padding:6px 16px;border-radius:8px;white-space:nowrap;letter-spacing:.02em;
 }
@@ -935,13 +962,13 @@ _SHOWCASE_HTML = """
           <svg width="68" height="68" viewBox="0 0 68 68">
             <circle class="sw-ring-bg" cx="34" cy="34" r="28"/>
             <circle class="sw-ring-fill" cx="34" cy="34" r="28"
-              stroke="#10b981"
+              stroke="#22d3ee"
               stroke-dasharray="175.9"
               stroke-dashoffset="16"/>
           </svg>
           <div class="sw-ring-label">
-            <span class="sw-score-num" style="color:#10b981">91</span>
-            <span class="sw-score-grade" style="color:#10b981">A</span>
+            <span class="sw-score-num" style="color:#22d3ee">91</span>
+            <span class="sw-score-grade" style="color:#22d3ee">A</span>
           </div>
         </div>
         <div class="sw-meta">
@@ -1050,7 +1077,7 @@ _SHOWCASE_HTML = """
         </div>
       </div>
       <div class="sw-ai-prompt">
-        <span style="color:#475569">$ </span><span>Analyzing 18 tool results · generating priority fix plan…</span><span style="color:#10b981"> ▋</span>
+        <span style="color:#475569">$ </span><span>Analyzing 18 tool results · generating priority fix plan…</span><span style="color:#22d3ee"> ▋</span>
       </div>
       <div class="sw-rec">
         <div class="sw-rec-num">1</div>
@@ -1169,7 +1196,8 @@ def show_auth_page() -> None:
 
     # ── LEFT: product marketing ───────────────────────────────────────────────
     with col_left:
-        st.markdown(_HERO_HTML, unsafe_allow_html=True)
+        from translations import get_lang as _get_lang
+        st.markdown(_get_hero_html(_get_lang()), unsafe_allow_html=True)
 
         # ── Animated stats ────────────────────────────────────────────────────
         st.html(_STATS_HTML)
@@ -1302,7 +1330,7 @@ def show_auth_page() -> None:
                     any(c.isupper() for c in _r_pass),
                 ])
                 _pwl = ["Too short", "Weak", "Fair", "Good", "Strong"][min(_pw_score, 4)]
-                _pwc = ["#ef4444", "#f97316", "#f59e0b", "#60a5fa", "#10b981"][min(_pw_score, 4)]
+                _pwc = ["#ef4444", "#f97316", "#f59e0b", "#60a5fa", "#22d3ee"][min(_pw_score, 4)]
                 _pww = [16, 32, 52, 75, 100][min(_pw_score, 4)]
                 st.markdown(
                     f'<div style="margin:-4px 0 10px">'
