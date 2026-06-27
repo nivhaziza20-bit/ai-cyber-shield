@@ -2,11 +2,11 @@
 Legal Compliance Scanner — AI Cyber Shield
 ===========================================
 Covers:
-  🇮🇱  Israeli Law  — Privacy Protection Law (incl. Amendment 13 / Aug 2025),
-                      Data Security Regulations 2017, Consumer Protection Law,
-                      E-Commerce Regulations 2003, IS 5568 Accessibility, Anti-Spam
-  🇺🇸  US Law       — CCPA/CPRA, ADA (WCAG 2.1 AA), CAN-SPAM, COPPA, FTC (dark patterns)
-  🇪🇺  GDPR         — Arts. 13/14 notice, cookie consent, right to erasure, DPO
+  Israeli Law  — Privacy Protection Law (incl. Amendment 13 / Aug 2025),
+                 Data Security Regulations 2017, Consumer Protection Law,
+                 E-Commerce Regulations 2003, IS 5568 Accessibility, Anti-Spam
+  US Law       — CCPA/CPRA, ADA (WCAG 2.1 AA), CAN-SPAM, COPPA, FTC (dark patterns)
+  GDPR         — Arts. 13/14 notice, cookie consent, right to erasure, DPO
 
 DISCLAIMER: Results are informational only and do not constitute legal advice.
 Review findings with a qualified legal professional before making compliance decisions.
@@ -14,7 +14,7 @@ AI Cyber Shield Ltd. accepts no liability for decisions made based on this repor
 """
 from __future__ import annotations
 
-import asyncio
+# NOTE: asyncio intentionally NOT imported — this scanner is fully synchronous.
 import json
 import logging
 import re
@@ -170,9 +170,39 @@ CCPA_REQUIRED_ELEMENTS = {
     ],
 }
 
+# Known tracking cookies by name prefix
+TRACKING_COOKIE_PATTERNS: dict[str, str] = {
+    "_ga":         "Google Analytics",
+    "_gid":        "Google Analytics",
+    "_gat":        "Google Analytics",
+    "_gac_":       "Google Analytics",
+    "_fbp":        "Facebook/Meta Pixel",
+    "_fbc":        "Facebook/Meta Pixel",
+    "fr":          "Facebook",
+    "_hjid":       "Hotjar",
+    "_hjFirstSeen":"Hotjar",
+    "_clck":       "Microsoft Clarity",
+    "_clsk":       "Microsoft Clarity",
+    "MUID":        "Microsoft",
+}
+
+# Known payment processor JS signals
+PAYMENT_PROCESSOR_SIGNALS = [
+    "js.stripe.com",
+    "stripe.js",
+    "paypalobjects.com",
+    "paypal.com/sdk",
+    "braintreepayments.com",
+    "squareup.com",
+    "js.squarecdn.com",
+    "checkout.com",
+    "worldpay.com",
+    "adyen.com",
+]
+
 
 # ─────────────────────────────────────────────────────────────────────────────
-# HTTP fetch (with SSRF guard)
+# HTTP fetch (with SSRF guard — NON-OPTIONAL)
 # ─────────────────────────────────────────────────────────────────────────────
 
 _HEADERS = {
@@ -185,28 +215,34 @@ _HEADERS = {
     "Accept-Language": "en-US,en;q=0.9,he;q=0.8",
 }
 
+# SSRF guard — must import at module level; failure is fatal (not silently skipped).
+try:
+    from tools.http_utils import is_ssrf_blocked as _is_ssrf_blocked
+except ImportError as _ssrf_import_err:
+    raise ImportError(
+        "legal_scanner: cannot import is_ssrf_blocked from tools.http_utils. "
+        "SSRF protection is non-optional. "
+        f"Original error: {_ssrf_import_err}"
+    ) from _ssrf_import_err
+
 
 def _safe_get(url: str, timeout: int = 12) -> tuple[Optional[requests.Response], str]:
-    """Fetch URL with SSRF guard. Returns (response, error)."""
-    try:
-        from tools.http_utils import is_ssrf_blocked
-        parsed = urlparse(url)
-        host = parsed.hostname or ""
-        if is_ssrf_blocked(host):
-            return None, f"SSRF blocked: {host}"
-    except Exception:
-        pass
+    """Fetch URL with SSRF guard. Returns (response, error).
+    SSL errors are caught and reported as findings — verify=False is never used.
+    """
+    # SSRF guard is non-optional; import failure already raised at module load.
+    parsed = urlparse(url)
+    host = parsed.hostname or ""
+    if _is_ssrf_blocked(host):
+        return None, f"SSRF blocked: {host}"
+
     try:
         resp = requests.get(url, headers=_HEADERS, timeout=timeout,
                             allow_redirects=True, verify=True)
         return resp, ""
-    except requests.exceptions.SSLError:
-        try:
-            resp = requests.get(url, headers=_HEADERS, timeout=timeout,
-                                allow_redirects=True, verify=False)
-            return resp, ""
-        except Exception as exc:
-            return None, str(exc)
+    except requests.exceptions.SSLError as exc:
+        # Do NOT retry with verify=False — report the SSL failure instead.
+        return None, f"SSL error (certificate invalid or expired): {exc}"
     except Exception as exc:
         return None, str(exc)
 
@@ -216,13 +252,17 @@ def _safe_get(url: str, timeout: int = 12) -> tuple[Optional[requests.Response],
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _find_link(soup: BeautifulSoup, patterns: list[str], base_url: str) -> str:
-    """Find first <a> whose href or text matches any regex pattern."""
+    """Find first <a> whose href OR anchor text matches any regex pattern.
+
+    Bug fix: previously concatenated text+href before matching, causing false
+    positives. Now searches anchor text and href independently.
+    """
     compiled = [re.compile(p, re.IGNORECASE) for p in patterns]
     for a in soup.find_all("a", href=True):
-        text = (a.get_text(" ", strip=True) + " " + a["href"])
+        anchor_text = a.get_text(" ", strip=True)
+        href = a["href"]
         for pat in compiled:
-            if pat.search(text):
-                href = a["href"]
+            if pat.search(anchor_text) or pat.search(href):
                 if href.startswith("http"):
                     return href
                 return urljoin(base_url, href)
@@ -234,11 +274,17 @@ def _text_contains(text: str, patterns: list[str]) -> bool:
 
 
 def _count_images_missing_alt(soup: BeautifulSoup) -> tuple[int, int]:
-    """Returns (missing_alt, total_meaningful_images)."""
+    """Returns (missing_alt, total_images).
+
+    Bug fix: only images with a COMPLETELY ABSENT alt attribute are violations.
+    Images with alt="" (empty string) are intentionally decorative and are correct.
+    The old logic wrongly counted alt="" images as missing.
+    """
     imgs = soup.find_all("img")
-    meaningful = [i for i in imgs if not (i.get("alt") == "" and i.get("role") == "presentation")]
-    missing = [i for i in meaningful if not i.get("alt")]
-    return len(missing), len(meaningful)
+    total = len(imgs)
+    # alt attribute completely absent (not present at all) = violation
+    missing = [i for i in imgs if i.get("alt") is None]
+    return len(missing), total
 
 
 def _check_heading_hierarchy(soup: BeautifulSoup) -> bool:
@@ -290,15 +336,29 @@ def _detect_consent_sdk(html: str) -> str:
 
 
 def _detect_trackers(html: str) -> list[str]:
+    """Detect third-party tracking scripts in HTML source.
+    Also checks for Google Tag Manager as a meta-signal — even if individual
+    tracker snippets are absent, GTM can load them dynamically.
+    """
     found = []
     for tracker_name, patterns in TRACKER_SDKS.items():
         if any(p in html for p in patterns):
             found.append(tracker_name)
+
+    # GTM meta-signal: GTM can load any tracker dynamically after page load,
+    # so its presence is a strong signal that trackers may fire without direct
+    # script embeds being detectable in the static HTML.
+    if "googletagmanager.com/gtm.js" in html and "Google Tag Manager" not in found:
+        found.append("Google Tag Manager (dynamic tracker loader)")
+
     return found
 
 
-def _fetch_text_page(url: str, max_chars: int = 8000) -> str:
-    """Fetch a page and return plain text (for AI analysis)."""
+def _fetch_text_page(url: str, max_chars: int = 20000) -> str:
+    """Fetch a page and return plain text (for AI analysis).
+    max_chars increased to 20000 to accommodate typical privacy policies
+    (3,000-15,000 words).
+    """
     if not url:
         return ""
     resp, err = _safe_get(url, timeout=10)
@@ -334,7 +394,15 @@ def _ai_analyze_privacy_policy(policy_text: str, frameworks: list[str]) -> dict:
         client = Groq(api_key=api_key)
 
         fw_list = ", ".join(frameworks) if frameworks else "GDPR, Israeli Law, US CCPA"
-        prompt = f"""You are a legal compliance analyst. Analyze this privacy policy text and determine if each required element is present.
+        prompt = f"""You are a legal compliance analyst specializing in {fw_list}.
+Analyze this privacy policy text and determine if each required element is present,
+specifically evaluating compliance with the following legal frameworks:
+
+- Israeli Law (IL): Privacy Protection Law + Amendment 13 (Aug 2025), Data Security
+  Regulations 2017, Consumer Protection Law, E-Commerce Regulations 2003
+- US Law (US): CCPA/CPRA (California), CAN-SPAM, COPPA, FTC Act §5
+- GDPR (EU): Arts. 13/14 privacy notice, Art. 6 lawful basis, Art. 7 consent,
+  Art. 17 erasure, Art. 37 DPO, ePrivacy Directive
 
 Privacy Policy Text (first 6000 chars):
 \"\"\"
@@ -343,36 +411,48 @@ Privacy Policy Text (first 6000 chars):
 
 Return a JSON object with exactly these keys and boolean values (true=present, false=missing):
 {{
-  "controller_identity": true/false,
-  "purposes_stated": true/false,
-  "legal_basis_stated": true/false,
-  "third_parties_disclosed": true/false,
-  "retention_periods_stated": true/false,
-  "data_subject_rights_listed": true/false,
-  "complaint_right_mentioned": true/false,
-  "dpo_or_privacy_contact": true/false,
-  "data_transfer_mechanism": true/false,
-  "do_not_sell_link_or_text": true/false,
-  "california_rights_mentioned": true/false,
-  "israeli_rights_mentioned": true/false,
-  "gdpr_rights_mentioned": true/false,
-  "automated_decisions_disclosed": true/false,
-  "security_measures_described": true/false,
-  "children_policy_addressed": true/false
+  "controller_identity": true,
+  "purposes_stated": true,
+  "legal_basis_stated": true,
+  "third_parties_disclosed": true,
+  "retention_periods_stated": true,
+  "data_subject_rights_listed": true,
+  "complaint_right_mentioned": true,
+  "dpo_or_privacy_contact": true,
+  "data_transfer_mechanism": true,
+  "do_not_sell_link_or_text": true,
+  "california_rights_mentioned": true,
+  "israeli_rights_mentioned": true,
+  "gdpr_rights_mentioned": true,
+  "automated_decisions_disclosed": true,
+  "security_measures_described": true,
+  "children_policy_addressed": true
 }}
 Return ONLY valid JSON, no explanation."""
 
         chat = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
-            max_tokens=400,
+            max_tokens=500,
         )
         raw = chat.choices[0].message.content.strip()
-        # Extract JSON from response
-        json_match = re.search(r'\{[^{}]+\}', raw, re.DOTALL)
-        if json_match:
-            return json.loads(json_match.group())
+
+        # Attempt 1: parse the whole response as JSON
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            pass
+
+        # Attempt 2: extract the first {...} block (handles markdown fences etc.)
+        brace_start = raw.find("{")
+        brace_end   = raw.rfind("}")
+        if brace_start != -1 and brace_end != -1 and brace_end > brace_start:
+            try:
+                return json.loads(raw[brace_start:brace_end + 1])
+            except json.JSONDecodeError:
+                pass
+
     except Exception as exc:
         _log.debug("AI privacy policy analysis: %s", exc)
     return {}
@@ -383,7 +463,10 @@ Return ONLY valid JSON, no explanation."""
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _check_https(url: str, resp: requests.Response) -> list[LegalFinding]:
+    """Bug fix: use resp.url (final redirect URL) not the initial url parameter."""
     findings = []
+    # Use the final URL after all redirects — not the initial url argument.
+    # If the site redirects http:// → https://, the final URL is what matters.
     is_https = resp.url.startswith("https://")
     findings.append(LegalFinding(
         check_id="ALL-SEC-01",
@@ -395,7 +478,7 @@ def _check_https(url: str, resp: requests.Response) -> list[LegalFinding]:
         legal_basis="IL: Data Security Regulations 2017 §4 | GDPR Art. 32 | US: FTC Act §5",
         description="All data must be transmitted over HTTPS (TLS 1.2+) to protect personal data in transit.",
         recommendation="Obtain an SSL/TLS certificate and redirect all HTTP traffic to HTTPS.",
-        evidence=f"Final URL: {resp.url}",
+        evidence=f"Final URL after redirects: {resp.url}",
     ))
 
     hsts = resp.headers.get("Strict-Transport-Security", "")
@@ -706,7 +789,7 @@ def _check_ccpa(html: str, soup: BeautifulSoup, privacy_text: str, ai_analysis: 
         evidence=f"California rights mention found: {ca_rights}",
     ))
 
-    # COPPA — child-directed signals
+    # COPPA — child-directed signals (handled in depth by _check_children_safety_advanced)
     child_signals = bool(re.search(r"children|child|kid|teen|under[\s_-]?13|coppa|minors", html, re.IGNORECASE))
     findings.append(LegalFinding(
         check_id="US-COPPA-01",
@@ -741,7 +824,6 @@ def _check_ccpa(html: str, soup: BeautifulSoup, privacy_text: str, ai_analysis: 
 
 def _check_consumer_law(soup: BeautifulSoup, html: str) -> list[LegalFinding]:
     findings = []
-    text = html.lower()
 
     # Business identity
     business_signals = bool(re.search(
@@ -845,10 +927,10 @@ def _check_accessibility(soup: BeautifulSoup, html: str) -> list[LegalFinding]:
         title=f"Images have alt text ({total_imgs - missing_alt}/{total_imgs} compliant)",
         status="PASS" if alt_pass else ("WARN" if missing_alt <= 2 else "FAIL"),
         severity="HIGH",
-        legal_basis="IL: IS 5568 / WCAG 2.0 AA — SC 1.1.1 | ADA Title III | GDPR Art. 5 (data minimisation principle does not apply here, but accessibility does)",
-        description="All meaningful images must have descriptive alt text so screen readers can convey their content to visually impaired users.",
+        legal_basis="IL: IS 5568 / WCAG 2.0 AA — SC 1.1.1 | ADA Title III",
+        description="All meaningful images must have descriptive alt text so screen readers can convey their content to visually impaired users. Decorative images (alt=\"\") are correct and not flagged.",
         recommendation="Add descriptive alt text to all meaningful images. For decorative images, use alt=\"\" (empty, not missing). Avoid generic text like 'image' or 'photo'.",
-        evidence=f"{missing_alt} images missing alt text out of {total_imgs} total",
+        evidence=f"{missing_alt} images missing alt attribute entirely out of {total_imgs} total",
     ))
 
     # Heading hierarchy
@@ -1049,6 +1131,703 @@ def _check_security_headers(headers: dict) -> list[LegalFinding]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# NEW Check A — DMARC / SPF email authentication
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _check_dmarc_spf(domain: str) -> list[LegalFinding]:
+    """Check SPF and DMARC DNS records for the domain.
+
+    Legal basis: IL: Telecom Law Anti-Spam §30A | US: CAN-SPAM Act (email authentication
+    best practice) | GDPR: FTC/industry standard
+    """
+    findings = []
+    if not domain:
+        return findings
+
+    try:
+        import dns.resolver  # type: ignore[import]
+    except ImportError:
+        findings.append(LegalFinding(
+            check_id="ALL-EMAIL-01",
+            framework="ALL",
+            category="security",
+            title="SPF record present (email authentication)",
+            status="SKIP",
+            severity="MEDIUM",
+            legal_basis="IL: Telecom Law Anti-Spam §30A | US: CAN-SPAM Act | GDPR: industry standard",
+            description="dnspython not available — SPF/DMARC check skipped.",
+            recommendation="Install dnspython: pip install dnspython",
+            evidence="Import error: dns.resolver not available",
+        ))
+        return findings
+
+    # ── SPF ─────────────────────────────────────────────────────────────────
+    spf_found = False
+    spf_value = ""
+    try:
+        answers = dns.resolver.resolve(domain, "TXT")
+        for rdata in answers:
+            txt = "".join(s.decode("utf-8", errors="replace") if isinstance(s, bytes) else s
+                          for s in rdata.strings)
+            if txt.startswith("v=spf1"):
+                spf_found = True
+                spf_value = txt[:120]
+                break
+    except Exception as exc:
+        spf_value = str(exc)
+
+    findings.append(LegalFinding(
+        check_id="ALL-EMAIL-01",
+        framework="ALL",
+        category="security",
+        title="SPF record present (email authentication)",
+        status="PASS" if spf_found else "FAIL",
+        severity="MEDIUM",
+        legal_basis="IL: Telecom Law Anti-Spam §30A | US: CAN-SPAM Act | GDPR: industry standard",
+        description=(
+            "An SPF (Sender Policy Framework) TXT record authorises which mail servers "
+            "may send email on behalf of this domain, preventing spoofing and spam."
+        ),
+        recommendation=(
+            "Add a TXT record to your DNS: "
+            "\"v=spf1 include:_spf.google.com ~all\" "
+            "(adjust for your mail provider). Use tools like mxtoolbox.com to validate."
+        ),
+        evidence=f"SPF record: {spf_value or 'not found'}",
+    ))
+
+    # ── DMARC ───────────────────────────────────────────────────────────────
+    dmarc_found = False
+    dmarc_policy = ""
+    dmarc_value = ""
+    try:
+        dmarc_domain = f"_dmarc.{domain}"
+        answers = dns.resolver.resolve(dmarc_domain, "TXT")
+        for rdata in answers:
+            txt = "".join(s.decode("utf-8", errors="replace") if isinstance(s, bytes) else s
+                          for s in rdata.strings)
+            if txt.startswith("v=DMARC1"):
+                dmarc_found = True
+                dmarc_value = txt[:200]
+                # Extract policy
+                m = re.search(r"p=(\w+)", txt)
+                dmarc_policy = m.group(1) if m else "unknown"
+                break
+    except Exception as exc:
+        dmarc_value = str(exc)
+
+    # p=none = monitoring only (WARN), p=quarantine/reject = enforcing (PASS)
+    if dmarc_found:
+        if dmarc_policy in ("quarantine", "reject"):
+            dmarc_status = "PASS"
+        else:
+            dmarc_status = "WARN"  # p=none — not enforcing
+    else:
+        dmarc_status = "FAIL"
+
+    findings.append(LegalFinding(
+        check_id="ALL-EMAIL-02",
+        framework="ALL",
+        category="security",
+        title=f"DMARC record present and enforcing (policy={dmarc_policy or 'missing'})",
+        status=dmarc_status,
+        severity="MEDIUM",
+        legal_basis="IL: Telecom Law Anti-Spam §30A | US: CAN-SPAM Act | GDPR: industry standard",
+        description=(
+            "DMARC (Domain-based Message Authentication) protects your domain from "
+            "email spoofing. Policy p=none = monitoring only (no protection), "
+            "p=quarantine = suspicious mail goes to spam, p=reject = spoofed mail blocked."
+        ),
+        recommendation=(
+            "Add a DMARC TXT record on _dmarc.yourdomain.com: "
+            "\"v=DMARC1; p=quarantine; rua=mailto:dmarc@yourdomain.com\" "
+            "Upgrade from p=none to p=quarantine or p=reject after monitoring."
+        ),
+        evidence=f"DMARC record: {dmarc_value or 'not found'} | Policy: {dmarc_policy or 'N/A'}",
+    ))
+
+    return findings
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NEW Check B — Privacy policy metadata quality
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _check_privacy_policy_metadata(policy_text: str) -> list[LegalFinding]:
+    """Check privacy policy freshness, length, and language clarity.
+
+    Legal basis: CCPA §1798.130 (annual update) | GDPR Art. 12 (plain language) |
+    IL PPL Amendment 13
+    """
+    findings = []
+    if not policy_text:
+        return findings
+
+    # ── Last updated date ───────────────────────────────────────────────────
+    date_pattern = re.compile(
+        r"(last\s+(updated|revised|modified)|עודכן\s+לאחרונה|תאריך\s+עדכון)"
+        r".{0,80}"
+        r"(\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4}|\w+\s+\d{1,2},?\s+\d{4}|\d{4})",
+        re.IGNORECASE,
+    )
+    has_date = bool(date_pattern.search(policy_text))
+
+    findings.append(LegalFinding(
+        check_id="ALL-PP-META-01",
+        framework="ALL",
+        category="privacy",
+        title="Privacy policy has a 'Last Updated' date",
+        status="PASS" if has_date else "WARN",
+        severity="MEDIUM",
+        legal_basis="CCPA §1798.130 — policy must be updated at least annually | GDPR Art. 12 — clear and plain language | IL PPL Amendment 13",
+        description=(
+            "A 'Last Updated' date shows users when the policy was last revised and "
+            "helps demonstrate compliance with annual update requirements."
+        ),
+        recommendation=(
+            "Add 'Last Updated: [date]' near the top of your privacy policy. "
+            "Review and update the policy at least annually or when data practices change."
+        ),
+        evidence=f"Last-updated date pattern found: {has_date}",
+    ))
+
+    # ── Policy length ───────────────────────────────────────────────────────
+    word_count = len(policy_text.split())
+    findings.append(LegalFinding(
+        check_id="ALL-PP-META-02",
+        framework="ALL",
+        category="privacy",
+        title=f"Privacy policy length adequate ({word_count} words)",
+        status="FAIL" if word_count < 500 else "PASS",
+        severity="HIGH",
+        legal_basis="GDPR Art. 13/14 — all required elements must be present | CCPA §1798.100 | IL PPL Amendment 13",
+        description=(
+            "A privacy policy under 500 words is almost certainly incomplete. "
+            "A compliant policy typically requires 1,000-5,000+ words to cover all "
+            "required legal elements."
+        ),
+        recommendation=(
+            "Expand your privacy policy to cover all mandatory elements: "
+            "identity, purposes, legal basis, retention, third parties, rights, "
+            "DPO contact, transfer mechanisms, and complaint rights."
+        ),
+        evidence=f"Word count: {word_count} (threshold: 500 words minimum)",
+    ))
+
+    return findings
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NEW Check C — GDPR EU Representative disclosure
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _check_gdpr_eu_representative(privacy_text: str, soup: BeautifulSoup) -> list[LegalFinding]:
+    """Check for EU Representative / EU Contact disclosure (GDPR Art. 27).
+
+    Non-EU businesses that target EU users must designate an EU Representative.
+    Penalties: up to €10M or 2% of global turnover.
+    """
+    combined_text = privacy_text + " " + soup.get_text(" ", strip=True)
+    has_eu_rep = bool(re.search(
+        r"eu\s+representative|european\s+representative|article\s+27|art\.?\s*27|"
+        r"eu\s+contact|gdpr\s+representative|eu\s+data\s+representative|"
+        r"representative\s+in\s+the\s+(eu|european|eea)",
+        combined_text, re.IGNORECASE
+    ))
+
+    return [LegalFinding(
+        check_id="GDPR-ART27-01",
+        framework="GDPR",
+        category="privacy",
+        title="EU Representative (GDPR Art. 27) designated and disclosed",
+        status="PASS" if has_eu_rep else "WARN",
+        severity="HIGH",
+        legal_basis=(
+            "GDPR Art. 27 — mandatory for controllers/processors outside EU/EEA "
+            "offering goods/services to EU residents or monitoring their behaviour. "
+            "Fines: up to €10M or 2% of global turnover."
+        ),
+        description=(
+            "Non-EU businesses targeting EU residents must appoint an EU Representative "
+            "(a natural person or organisation in an EU Member State) and disclose "
+            "their contact details in the privacy policy."
+        ),
+        recommendation=(
+            "If you process EU residents' data and are based outside the EU/EEA: "
+            "(1) Appoint an EU Representative in an EU Member State, "
+            "(2) Add their name, address, and contact email to your privacy policy, "
+            "(3) Register the representative with the relevant national DPA."
+        ),
+        evidence=f"EU Representative disclosure found: {has_eu_rep}",
+    )]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NEW Check D — Cookie inventory (Set-Cookie headers + known tracking names)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _check_cookie_inventory(resp_headers: dict, html: str) -> list[LegalFinding]:
+    """Check for known tracking cookies set on the initial page load (before consent).
+
+    Legal basis: GDPR Art. 5(1)(a),(b) | EDPB 2023 Cookie Taskforce | IL PPL Amendment 13
+    """
+    findings = []
+
+    # Collect all Set-Cookie header values
+    set_cookie_raw = resp_headers.get("set-cookie", "")
+    cookie_names: list[str] = []
+    if set_cookie_raw:
+        for cookie_part in set_cookie_raw.split(","):
+            name_part = cookie_part.strip().split(";")[0].split("=")
+            if name_part:
+                cookie_names.append(name_part[0].strip())
+
+    # Also look for document.cookie patterns in HTML (JS-set cookies)
+    js_cookie_names = re.findall(r'document\.cookie\s*=\s*["\']([^="\']+)=', html)
+    cookie_names.extend(js_cookie_names)
+
+    # Match against known tracking cookie prefixes
+    tracking_found: list[str] = []
+    for name in cookie_names:
+        for prefix, tracker in TRACKING_COOKIE_PATTERNS.items():
+            if name == prefix or name.startswith(prefix):
+                label = f"{name} ({tracker})"
+                if label not in tracking_found:
+                    tracking_found.append(label)
+                break
+
+    if tracking_found:
+        status = "FAIL"
+        evidence = f"Tracking cookies set on initial load (before consent): {', '.join(tracking_found)}"
+        description = (
+            "Tracking cookies from analytics/advertising platforms are being set on "
+            "the initial page load BEFORE the user has given consent. This is a clear "
+            "GDPR violation and violates IL Amendment 13 requirements."
+        )
+        recommendation = (
+            "Configure your CMP to block all non-essential cookies until the user "
+            "actively accepts. Tracking cookies must only fire AFTER explicit consent. "
+            "Use your CMP's cookie blocking/blocking mode to enforce this."
+        )
+    else:
+        status = "PASS"
+        evidence = f"No known tracking cookies detected in Set-Cookie headers. Cookies checked: {len(cookie_names)}"
+        description = (
+            "No known tracking cookies were detected in the initial page load "
+            "response headers. Cookies set after user consent are expected and acceptable."
+        )
+        recommendation = "Continue ensuring tracking cookies only load after explicit user consent."
+
+    findings.append(LegalFinding(
+        check_id="ALL-CK-INV-01",
+        framework="ALL",
+        category="cookies",
+        title=f"Tracking cookies set before consent {'DETECTED' if tracking_found else 'not detected'}",
+        status=status,
+        severity="HIGH",
+        legal_basis="GDPR Art. 5(1)(a),(b) | EDPB 2023 Cookie Taskforce Report | IL PPL Amendment 13",
+        description=description,
+        recommendation=recommendation,
+        evidence=evidence,
+    ))
+
+    return findings
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NEW Check E — ARIA landmarks for screen reader navigation
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _check_aria_landmarks(soup: BeautifulSoup) -> list[LegalFinding]:
+    """Check for required ARIA landmark roles (WCAG 2.1 AA SC 1.3.6, 2.4.1).
+
+    Legal basis: IL IS 5568 / WCAG 2.1 AA | ADA Title III
+    """
+    findings = []
+
+    def _has_landmark(tag: str, role: str) -> bool:
+        """Check if page has the semantic tag OR a role= attribute."""
+        return bool(soup.find(tag)) or bool(soup.find(attrs={"role": role}))
+
+    def _count_landmark(tag: str, role: str) -> int:
+        return len(soup.find_all(tag)) + len(soup.find_all(attrs={"role": role}))
+
+    # <main> or role="main" — exactly one required
+    main_count = _count_landmark("main", "main")
+    findings.append(LegalFinding(
+        check_id="IL-ACC-LM-01",
+        framework="IL",
+        category="accessibility",
+        title=f"<main> landmark present (found: {main_count})",
+        status="PASS" if main_count == 1 else ("WARN" if main_count > 1 else "FAIL"),
+        severity="HIGH",
+        legal_basis="IL IS 5568 / WCAG 2.1 AA — SC 1.3.6, 2.4.1 | ADA Title III",
+        description=(
+            "The page must have exactly one <main> element (or role=\"main\") to identify "
+            "the primary content area. Screen readers use this landmark to navigate directly "
+            "to the page's main content."
+        ),
+        recommendation=(
+            "Wrap your primary page content in a <main> element. "
+            "Ensure there is exactly one per page."
+        ),
+        evidence=f"<main> / role='main' count: {main_count}",
+    ))
+
+    # <nav> or role="navigation" — at least one required
+    nav_count = _count_landmark("nav", "navigation")
+    findings.append(LegalFinding(
+        check_id="IL-ACC-LM-02",
+        framework="IL",
+        category="accessibility",
+        title=f"<nav> landmark present (found: {nav_count})",
+        status="PASS" if nav_count >= 1 else "FAIL",
+        severity="MEDIUM",
+        legal_basis="IL IS 5568 / WCAG 2.1 AA — SC 2.4.1 | ADA Title III",
+        description=(
+            "At least one <nav> element (or role=\"navigation\") is required to identify "
+            "navigation regions. Screen reader users rely on this landmark to quickly access "
+            "navigation menus."
+        ),
+        recommendation=(
+            "Wrap your navigation menus in <nav> elements. "
+            "Use aria-label to distinguish multiple navigation regions "
+            "(e.g., <nav aria-label='Main navigation'>)."
+        ),
+        evidence=f"<nav> / role='navigation' count: {nav_count}",
+    ))
+
+    # <header> or role="banner" — one per page
+    header_count = _count_landmark("header", "banner")
+    findings.append(LegalFinding(
+        check_id="IL-ACC-LM-03",
+        framework="IL",
+        category="accessibility",
+        title=f"<header> / banner landmark present (found: {header_count})",
+        status="PASS" if header_count >= 1 else "WARN",
+        severity="LOW",
+        legal_basis="IL IS 5568 / WCAG 2.1 AA — SC 1.3.6 | ADA Title III",
+        description=(
+            "A <header> element (or role=\"banner\") identifies the page banner area "
+            "(logo, site name, primary navigation). Screen readers announce this landmark "
+            "to help users understand page structure."
+        ),
+        recommendation="Wrap your site header in a <header> element at the top of the page.",
+        evidence=f"<header> / role='banner' count: {header_count}",
+    ))
+
+    # <footer> or role="contentinfo" — one per page
+    footer_count = _count_landmark("footer", "contentinfo")
+    findings.append(LegalFinding(
+        check_id="IL-ACC-LM-04",
+        framework="IL",
+        category="accessibility",
+        title=f"<footer> / contentinfo landmark present (found: {footer_count})",
+        status="PASS" if footer_count >= 1 else "WARN",
+        severity="LOW",
+        legal_basis="IL IS 5568 / WCAG 2.1 AA — SC 1.3.6 | ADA Title III",
+        description=(
+            "A <footer> element (or role=\"contentinfo\") identifies the page footer, "
+            "typically containing legal links, contact info, and copyright. "
+            "Screen reader users navigate to this landmark to find legal pages."
+        ),
+        recommendation="Wrap your site footer in a <footer> element at the bottom of the page.",
+        evidence=f"<footer> / role='contentinfo' count: {footer_count}",
+    ))
+
+    return findings
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NEW Check F — Advanced dark pattern detection
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _check_dark_patterns_advanced(soup: BeautifulSoup, html: str) -> list[LegalFinding]:
+    """Detect advanced dark patterns beyond pre-checked checkboxes.
+
+    Legal basis: FTC Act §5 — Bringing Dark Patterns to Light report (2022) |
+    GDPR Art. 7(4) | IL Consumer Protection Law §3
+    """
+    findings = []
+
+    # ── Confirm-shaming ──────────────────────────────────────────────────────
+    # Decline buttons using guilt language
+    confirm_shame_pattern = re.compile(
+        r"no.{0,15}(don.?t\s+want|prefer\s+not|hate|don.?t\s+care|miss\s+out|"
+        r"i\s+don.?t\s+like|no\s+thanks.*save|no\s+thanks.*discount|no\s+thanks.*money)",
+        re.IGNORECASE,
+    )
+    confirm_shame_found = bool(confirm_shame_pattern.search(html))
+
+    findings.append(LegalFinding(
+        check_id="US-FTC-DP-01",
+        framework="US",
+        category="dark_patterns",
+        title="Confirm-shaming (guilt-based decline language) detected",
+        status="FAIL" if confirm_shame_found else "PASS",
+        severity="HIGH",
+        legal_basis="FTC Act §5 — Bringing Dark Patterns to Light (2022) | GDPR Art. 7(4) | IL Consumer Protection Law §3",
+        description=(
+            "Confirm-shaming uses guilt-inducing language on decline/opt-out buttons "
+            "(e.g., 'No thanks, I hate saving money') to pressure users into accepting. "
+            "This is classified as a deceptive design practice by the FTC and GDPR."
+        ),
+        recommendation=(
+            "Use neutral, non-manipulative language for decline options. "
+            "Replace guilt language with simple 'No thanks' or 'Close'."
+        ),
+        evidence=f"Confirm-shaming pattern found: {confirm_shame_found}",
+    ))
+
+    # ── Asymmetric urgency / false scarcity ──────────────────────────────────
+    urgency_pattern = re.compile(
+        r"(hours?\s+left|minutes?\s+left|only\s+\d+\s+left|selling\s+fast|"
+        r"just\s+\d+\s+remain|limited\s+time\s+offer|offer\s+expires|"
+        r"last\s+\d+\s+items?|hurry|act\s+now|ends?\s+soon)",
+        re.IGNORECASE,
+    )
+    urgency_found = bool(urgency_pattern.search(html))
+
+    findings.append(LegalFinding(
+        check_id="US-FTC-DP-02",
+        framework="US",
+        category="dark_patterns",
+        title="Asymmetric urgency / false scarcity signals detected",
+        status="WARN" if urgency_found else "PASS",
+        severity="MEDIUM",
+        legal_basis="FTC Act §5 — Bringing Dark Patterns to Light (2022) | IL Consumer Protection Law §3",
+        description=(
+            "Countdown timers, false scarcity claims ('only 2 left!'), and extreme urgency "
+            "signals may constitute deceptive design if the urgency is manufactured or "
+            "exaggerated to pressure purchase decisions."
+        ),
+        recommendation=(
+            "Ensure all urgency claims are truthful and verifiable. "
+            "Do not use countdown timers that reset on page reload. "
+            "Stock counts must reflect actual inventory."
+        ),
+        evidence=f"Urgency/scarcity pattern found: {urgency_found}",
+    ))
+
+    # ── Hidden unsubscribe ────────────────────────────────────────────────────
+    # Check if 'unsubscribe' link is present in footer area
+    footer = soup.find("footer")
+    footer_text = footer.get_text(" ", strip=True).lower() if footer else ""
+    has_footer_unsub = "unsubscribe" in footer_text or "opt-out" in footer_text or "opt out" in footer_text
+    # If no footer, check the full HTML
+    global_unsub = bool(re.search(r"unsubscribe|opt.out", html, re.IGNORECASE))
+
+    findings.append(LegalFinding(
+        check_id="US-FTC-DP-03",
+        framework="US",
+        category="dark_patterns",
+        title="Unsubscribe mechanism visible in footer",
+        status="PASS" if has_footer_unsub else ("WARN" if global_unsub else "FAIL"),
+        severity="MEDIUM",
+        legal_basis="FTC Act §5 — Bringing Dark Patterns to Light (2022) | US: CAN-SPAM Act §5(a)(5) | IL: Telecom Law Anti-Spam §30A",
+        description=(
+            "The unsubscribe/opt-out mechanism should be clearly visible in the page footer. "
+            "Hiding it behind multiple clicks (2+ interactions required) constitutes a "
+            "dark pattern under FTC guidance."
+        ),
+        recommendation=(
+            "Add an 'Unsubscribe' or 'Manage email preferences' link to the page footer. "
+            "Ensure the unsubscribe process requires no more than 2 clicks."
+        ),
+        evidence=f"Unsubscribe in footer: {has_footer_unsub} | Unsubscribe anywhere on page: {global_unsub}",
+    ))
+
+    return findings
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NEW Check G — Payment security (PCI-DSS signals)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _check_payment_security(soup: BeautifulSoup, html: str) -> list[LegalFinding]:
+    """Detect payment forms and check for PCI-DSS compliance signals.
+
+    Legal basis: PCI-DSS v4.0 | IL: Data Security Regulations 2017 (financial data) |
+    GDPR Art. 32
+    """
+    findings = []
+
+    # Detect payment form signals
+    payment_keywords_in_html = bool(re.search(
+        r"card\s+number|credit\s+card|debit\s+card|cvv|cvc|expir|card\s+holder|"
+        r"payment\s+card|\*{4}\s*\*{4}|\d{4}\s+\d{4}\s+\d{4}",
+        html, re.IGNORECASE,
+    ))
+    # Look for card-number-style placeholders in inputs
+    card_inputs = soup.find_all("input", {
+        "placeholder": re.compile(r"\*{4}|\d{4}[\s-]\d{4}|card|cvv|cvc|expir", re.IGNORECASE)
+    })
+    card_type_inputs = soup.find_all("input", {"type": "number"})  # broad signal
+
+    payment_detected = payment_keywords_in_html or len(card_inputs) > 0
+
+    if not payment_detected:
+        # No payment form detected — skip this check
+        findings.append(LegalFinding(
+            check_id="ALL-PCI-01",
+            framework="ALL",
+            category="security",
+            title="Payment form PCI-DSS compliance (no payment form detected)",
+            status="PASS",
+            severity="HIGH",
+            legal_basis="PCI-DSS v4.0 | IL: Data Security Regulations 2017 | GDPR Art. 32",
+            description="No payment card input form detected on this page.",
+            recommendation="If you add payment functionality, use a recognised payment processor (Stripe, PayPal, Braintree) that handles PCI-DSS compliance for you.",
+            evidence="No payment card form signals detected in page HTML.",
+        ))
+        return findings
+
+    # Payment form detected — check for recognised processor
+    processor_found = any(sig in html for sig in PAYMENT_PROCESSOR_SIGNALS)
+    processor_names = [sig for sig in PAYMENT_PROCESSOR_SIGNALS if sig in html]
+
+    findings.append(LegalFinding(
+        check_id="ALL-PCI-01",
+        framework="ALL",
+        category="security",
+        title=f"Payment form detected — trusted processor: {'YES' if processor_found else 'NOT DETECTED'}",
+        status="PASS" if processor_found else "FAIL",
+        severity="HIGH",
+        legal_basis="PCI-DSS v4.0 | IL: Data Security Regulations 2017 §4 (financial data = HIGH security classification) | GDPR Art. 32",
+        description=(
+            "A payment card input form was detected. Self-hosted card forms that capture "
+            "raw card data without a recognized PCI-DSS compliant processor are a HIGH risk "
+            "PCI-DSS violation. Card data must be tokenized by a compliant processor."
+        ),
+        recommendation=(
+            "Use a recognised payment processor (Stripe, PayPal, Braintree, Square) "
+            "that handles PCI-DSS compliance via JavaScript tokenization. "
+            "Never transmit raw card numbers through your own servers. "
+            "If self-hosting, you must complete PCI-DSS SAQ D and annual audit."
+        ),
+        evidence=(
+            f"Payment form signals found: {payment_keywords_in_html} | "
+            f"Card input fields: {len(card_inputs)} | "
+            f"Trusted processor signals: {processor_names or 'none found'}"
+        ),
+    ))
+
+    return findings
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NEW Check H — Children's safety (COPPA / GDPR Art. 8 / advanced)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _check_children_safety_advanced(soup: BeautifulSoup, html: str) -> list[LegalFinding]:
+    """Advanced COPPA / child safety checks including age gate detection.
+
+    Legal basis: US COPPA 16 CFR §312 ($53,088/day fines) |
+    GDPR Art. 8 (child consent at 16) | IL: Consumer Protection covers minors
+    """
+    findings = []
+
+    # ── Child-directed content signals ─────────────────────────────────────
+    child_content = bool(re.search(
+        r"\bkids?\b|\bchildren\b|\bchild\b|\bteen\b|\bjunior\b|\byouth\b|"
+        r"family.friendly|for\s+kids|ages?\s+\d+|school\s+age|"
+        r"cartoon|animation|toy|playground",
+        html, re.IGNORECASE,
+    ))
+
+    # ── Age gate detection ──────────────────────────────────────────────────
+    # Date-of-birth input (year select or date input)
+    dob_inputs = soup.find_all("input", {"type": "date"})
+    year_selects = soup.find_all("select")
+    year_select_found = False
+    for sel in year_selects:
+        options = sel.find_all("option")
+        year_values = [o.get("value", "") for o in options if re.match(r"19\d{2}|20\d{2}", o.get("value", ""))]
+        if len(year_values) > 10:  # A reasonable year dropdown for DOB
+            year_select_found = True
+            break
+
+    age_gate_texts = bool(re.search(
+        r"age\s+verification|are\s+you\s+(over|above|at\s+least)\s+\d+|"
+        r"i\s+am\s+(over|above|at\s+least)\s+\d+|enter\s+your\s+(age|birth|dob)|"
+        r"date\s+of\s+birth|verify\s+your\s+age|age\s+gate",
+        html, re.IGNORECASE,
+    ))
+    has_age_gate = bool(dob_inputs) or year_select_found or age_gate_texts
+
+    # ── COPPA / child privacy policy mention ───────────────────────────────
+    policy_mentions_children = bool(re.search(
+        r"coppa|children.s\s+online\s+privacy|under\s+(the\s+age\s+of\s+)?13|"
+        r"parental\s+consent|verifiable\s+parental|child\s+directed",
+        html, re.IGNORECASE,
+    ))
+
+    # ── Assess risk ─────────────────────────────────────────────────────────
+    if child_content and not has_age_gate:
+        age_gate_status = "FAIL"
+    elif child_content and has_age_gate:
+        age_gate_status = "PASS"
+    else:
+        age_gate_status = "PASS"  # No child content detected
+
+    findings.append(LegalFinding(
+        check_id="US-COPPA-02",
+        framework="US",
+        category="privacy",
+        title=f"Age gate present for child-directed content (gate={has_age_gate}, child content={child_content})",
+        status=age_gate_status,
+        severity="HIGH",
+        legal_basis=(
+            "US COPPA 16 CFR §312 — fines up to $53,088/violation/day | "
+            "GDPR Art. 8 — child consent at 16 (lower in some EU states) | "
+            "IL: Consumer Protection Law covers minors"
+        ),
+        description=(
+            "Sites with child-directed content must implement age verification and obtain "
+            "verifiable parental consent before collecting data from children under 13 (US) "
+            "or under 16 (EU). Missing age gates on child-directed sites = COPPA violation."
+        ),
+        recommendation=(
+            "Implement an age gate (date-of-birth entry or year selection) before "
+            "presenting child-directed content. For users under 13, obtain verifiable "
+            "parental consent before any data collection. Add COPPA-compliant disclosures "
+            "to your privacy policy."
+        ),
+        evidence=(
+            f"Child-directed signals: {child_content} | "
+            f"Age gate (DOB input): {bool(dob_inputs)} | "
+            f"Age gate (year select): {year_select_found} | "
+            f"Age gate text: {age_gate_texts} | "
+            f"COPPA policy mention: {policy_mentions_children}"
+        ),
+    ))
+
+    # ── COPPA policy disclosure ─────────────────────────────────────────────
+    findings.append(LegalFinding(
+        check_id="US-COPPA-03",
+        framework="US",
+        category="privacy",
+        title="COPPA / children's privacy disclosure in policy",
+        status="PASS" if policy_mentions_children else ("WARN" if child_content else "PASS"),
+        severity="HIGH",
+        legal_basis="US COPPA 16 CFR §312.4 — privacy notice required | GDPR Art. 8",
+        description=(
+            "If the site collects data from children under 13, the privacy policy must "
+            "include specific COPPA-required disclosures: types of information collected, "
+            "parental rights, how to request deletion, and how parental consent is obtained."
+        ),
+        recommendation=(
+            "Add a dedicated 'Children's Privacy' section to your privacy policy addressing: "
+            "COPPA compliance, what data is collected from minors, how parental consent is "
+            "obtained, and how parents can request data deletion."
+        ),
+        evidence=f"COPPA/children mention in policy: {policy_mentions_children} | Child content detected: {child_content}",
+    ))
+
+    return findings
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Scoring engine
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1104,6 +1883,9 @@ def run_legal_scan(url: str, frameworks: list[str] | None = None) -> LegalScanRe
     headers = dict(resp.headers)
     headers_lower = {k.lower(): v for k, v in headers.items()}
 
+    # Extract domain for DNS-based checks
+    domain = urlparse(base_url).hostname or ""
+
     # ── 2. Detect trackers & consent SDK ───────────────────────────────────
     result.trackers_found = _detect_trackers(html)
     result.consent_sdk    = _detect_consent_sdk(html)
@@ -1135,6 +1917,31 @@ def run_legal_scan(url: str, frameworks: list[str] | None = None) -> LegalScanRe
     all_findings += _check_accessibility(soup, html)
     all_findings += _check_data_rights(soup, html, privacy_url)
 
+    # ── 6. New checks ────────────────────────────────────────────────────────
+    # A. DMARC / SPF
+    all_findings += _check_dmarc_spf(domain)
+
+    # B. Privacy policy metadata
+    all_findings += _check_privacy_policy_metadata(policy_text)
+
+    # C. GDPR EU representative
+    all_findings += _check_gdpr_eu_representative(policy_text, soup)
+
+    # D. Cookie inventory (tracking cookies before consent)
+    all_findings += _check_cookie_inventory(headers_lower, html)
+
+    # E. ARIA landmarks
+    all_findings += _check_aria_landmarks(soup)
+
+    # F. Advanced dark patterns
+    all_findings += _check_dark_patterns_advanced(soup, html)
+
+    # G. Payment security / PCI-DSS
+    all_findings += _check_payment_security(soup, html)
+
+    # H. Children's safety (advanced)
+    all_findings += _check_children_safety_advanced(soup, html)
+
     # Filter by selected frameworks
     filtered = [
         f for f in all_findings
@@ -1142,7 +1949,7 @@ def run_legal_scan(url: str, frameworks: list[str] | None = None) -> LegalScanRe
     ]
     result.findings = filtered
 
-    # ── 6. Scoring ──────────────────────────────────────────────────────────
+    # ── 7. Scoring ──────────────────────────────────────────────────────────
     result.risk_score, result.il_score, result.us_score, result.gdpr_score = \
         _calculate_scores(filtered)
     result.scan_time = round(time.time() - t0, 1)

@@ -311,7 +311,7 @@ def show_legal_scanner(prefill_url: str = "") -> None:
 </style>
 <div class="legal-hero">
   <h2>⚖️ Legal Compliance Scanner</h2>
-  <p>Automated compliance analysis across 3 legal frameworks · 40+ checks · Actionable remediation steps</p>
+  <p>Automated compliance analysis across 3 legal frameworks · 50+ checks · Actionable remediation steps</p>
 </div>""", unsafe_allow_html=True)
 
     _render_framework_cards()
@@ -369,6 +369,17 @@ def show_legal_scanner(prefill_url: str = "") -> None:
             st.error("⚠️ Scanning this app's own domain is disabled. Enter an external URL to scan.")
             return
 
+        # ── Quota check — 1 legal scan counts against the shared daily pool ──
+        from auth.streamlit_auth import get_current_user, check_quota, increment_quota
+        from billing_ui import show_upgrade_prompt
+
+        user = get_current_user()
+        if user:
+            quota = check_quota(user)
+            if not quota["allowed"]:
+                show_upgrade_prompt(user.subscription_tier, quota["limit"])
+                return
+
         # Log the scan attempt
         try:
             from audit_log import log_action
@@ -383,6 +394,13 @@ def show_legal_scanner(prefill_url: str = "") -> None:
         if result.error:
             st.error(f"Scan failed: {result.error}")
             return
+
+        # ── Increment quota after successful scan ─────────────────────────────
+        if user:
+            try:
+                increment_quota(user)
+            except Exception:
+                pass
 
         try:
             from audit_log import log_action
