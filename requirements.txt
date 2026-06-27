@@ -76,8 +76,7 @@ anyio>=4.4.0
 # pytest-asyncio>=0.23.0
 
 # ── Playwright (headless browser for legal_scanner + deep_js_crawler) ────────
-# System deps are in packages.txt (19 Chromium libs).
-# First use auto-downloads Chromium (~100 MB) via ensure_playwright_ready().
-# Pinned to 1.49.0 — last version confirmed stable on Streamlit Community Cloud
-# (Debian bullseye base image). Do NOT change to >=; minor upgrades break headless.
-playwright==1.49.0
+# DISABLED: playwright depends on greenlet, which fails to compile on Python 3.14.6
+# (Streamlit Cloud). playwright_executor.py already has a fallback to requests-based
+# static scanning when playwright is unavailable — no functionality lost.
+# playwright==1.49.0
