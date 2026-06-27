@@ -887,6 +887,8 @@ def show_auth_page() -> None:
                     with st.spinner("Creating account…"):
                         result = sign_up(_r_email.strip().lower(), _r_pass)
                     if result.get("ok"):
+                        from audit_log import log_action
+                        log_action("signup", target=_r_email.strip().lower(), details={"confirm_required": result.get("confirm_required", False)})
                         if result.get("confirm_required"):
                             st.success("Account created! Check your inbox for a confirmation email.")
                         else:
@@ -988,7 +990,92 @@ def show_admin_panel() -> None:
 
     st.markdown("## 🔐 Admin Panel")
 
-    tab_logs, tab_users = st.tabs(["Audit Logs", "Users & PT Approval"])
+    tab_analytics, tab_logs, tab_users = st.tabs(["📊 Analytics", "Audit Logs", "Users & PT Approval"])
+
+    with tab_analytics:
+        from datetime import datetime, timezone, timedelta
+        _now = datetime.now(timezone.utc)
+        _week_ago = (_now - timedelta(days=7)).isoformat()
+        _today_str = _now.date().isoformat()
+
+        _all_users = fetch_all_users()
+        _all_logs  = fetch_audit_logs(500)
+
+        _new_this_week = sum(
+            1 for u in _all_users
+            if (u.get("created_at") or "") >= _week_ago
+        )
+        _paid_users = sum(
+            1 for u in _all_users
+            if u.get("subscription_tier", "free") != "free"
+        )
+        _scans_today = sum(
+            1 for l in _all_logs
+            if l.get("action") == "scan_complete"
+            and (l.get("created_at") or "")[:10] == _today_str
+        )
+        _scans_week = sum(
+            1 for l in _all_logs
+            if l.get("action") == "scan_complete"
+            and (l.get("created_at") or "") >= _week_ago
+        )
+        _logins_today = sum(
+            1 for l in _all_logs
+            if l.get("action") == "login"
+            and (l.get("created_at") or "")[:10] == _today_str
+        )
+        _signups_week = sum(
+            1 for l in _all_logs
+            if l.get("action") == "signup"
+            and (l.get("created_at") or "") >= _week_ago
+        )
+
+        # Summary metric cards
+        mc1, mc2, mc3, mc4 = st.columns(4)
+        mc1.metric("Total Users", len(_all_users), delta=f"+{_new_this_week} this week")
+        mc2.metric("Paid Users", _paid_users)
+        mc3.metric("Scans Today", _scans_today, delta=f"+{_scans_week} this week")
+        mc4.metric("Logins Today", _logins_today)
+
+        st.markdown("---")
+
+        # Daily scans chart — last 7 days
+        _day_counts: dict[str, int] = {}
+        for _i in range(7):
+            _d = (_now - timedelta(days=6 - _i)).date().isoformat()
+            _day_counts[_d] = 0
+        for _l in _all_logs:
+            if _l.get("action") == "scan_complete":
+                _d = (_l.get("created_at") or "")[:10]
+                if _d in _day_counts:
+                    _day_counts[_d] += 1
+        _chart_df = pd.DataFrame({"Date": list(_day_counts.keys()), "Scans": list(_day_counts.values())})
+        _chart_df = _chart_df.set_index("Date")
+        st.subheader("Scans per day (last 7 days)")
+        st.bar_chart(_chart_df)
+
+        st.markdown("---")
+
+        # Action breakdown table
+        _action_counts: dict[str, int] = {}
+        for _l in _all_logs:
+            _a = _l.get("action", "unknown")
+            _action_counts[_a] = _action_counts.get(_a, 0) + 1
+        _action_rows = [{"Action": k, "Count": v} for k, v in sorted(_action_counts.items(), key=lambda x: -x[1])]
+        col_act, col_recent = st.columns([1, 2])
+        with col_act:
+            st.subheader("Event types")
+            st.dataframe(pd.DataFrame(_action_rows), hide_index=True, use_container_width=True)
+        with col_recent:
+            st.subheader("Recent signups")
+            _recent_signups = [
+                {"Email": u.get("email", "—"), "Tier": u.get("subscription_tier", "free"), "Joined": (u.get("created_at") or "")[:10]}
+                for u in _all_users[:10]
+            ]
+            st.dataframe(pd.DataFrame(_recent_signups), hide_index=True, use_container_width=True)
+
+        st.markdown("---")
+        st.caption(f"Data from last 500 audit log entries · refreshes on page reload")
 
     with tab_logs:
         st.caption("Last 200 actions across all users")

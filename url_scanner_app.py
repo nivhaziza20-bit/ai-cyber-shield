@@ -2332,6 +2332,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                             logging.getLogger(__name__).warning("History save failed: %s", _he)
                         _crit = sum(1 for r in _pr_results.values() if r.get("severity") == "CRITICAL")
                         _high = sum(1 for r in _pr_results.values() if r.get("severity") == "HIGH")
+                        log_action("scan_complete", target=target, details={"mode": "passive", "critical": _crit, "high": _high})
                         st.write(f"✅ **Done — {_crit} CRITICAL · {_high} HIGH · {len(_pr_results)} tools**")
                         _ps.update(label=f"✅ Passive Recon complete — {_crit}C / {_high}H", state="complete")
                     except Exception as _exc:
@@ -2409,6 +2410,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                             get_store().save_scan({**meta, "url": target})
                         except Exception as _he:
                             logging.getLogger(__name__).warning("History save failed: %s", _he)
+                        log_action("scan_complete", target=target, details={"mode": "standard", "score": result.get("overall_score"), "grade": result.get("overall_grade")})
 
                         # ── PT Mode: auto-run active verification ─────────────
                         if pt_mode_active:
