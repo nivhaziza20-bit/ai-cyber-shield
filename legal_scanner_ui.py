@@ -349,7 +349,7 @@ def _disclaimer_html() -> str:
   border:1px solid rgba(245,158,11,0.35);
   border-left:4px solid #f59e0b;
   border-radius:10px;padding:14px 18px;margin:16px 0 24px;
-  font-size:0.78rem;color:#94a3b8;line-height:1.6;
+  font-size:0.91rem;color:#94a3b8;line-height:1.6;
 ">
   <strong style="color:#f59e0b">{d['title']}</strong><br>
   {d['body']}
@@ -402,8 +402,8 @@ def _render_score_dashboard(result: LegalScanResult, active_frameworks: list[str
   border:1px solid {risk_col}44;
   box-shadow:0 0 30px {risk_col}1a;
 }}
-.lscore-fw{{font-size:0.7rem;color:#475569;margin-bottom:6px;letter-spacing:0.04em}}
-.lscore-lbl{{font-size:0.75rem;font-weight:700;margin-top:4px}}
+.lscore-fw{{font-size:0.83rem;color:#475569;margin-bottom:6px;letter-spacing:0.04em}}
+.lscore-lbl{{font-size:0.88rem;font-weight:700;margin-top:4px}}
 </style>
 <div class="lscore-wrap">
   <div class="lscore-card lscore-main">
@@ -438,7 +438,7 @@ def _render_score_dashboard(result: LegalScanResult, active_frameworks: list[str
     st.markdown(
         f'<div style="display:inline-block;background:{badge_bg};'
         f'border:1px solid {badge_border};border-radius:6px;padding:3px 12px;'
-        f'font-size:0.7rem;color:{badge_color};margin-top:4px">'
+        f'font-size:0.83rem;color:{badge_color};margin-top:4px">'
         f'{badge_html}</div>',
         unsafe_allow_html=True,
     )
@@ -455,7 +455,7 @@ def _render_tracker_summary(result: LegalScanResult) -> None:
         if result.trackers_found:
             pills = " ".join(
                 f'<span style="display:inline-block;background:#1e293b;border:1px solid #ef4444;'
-                f'border-radius:6px;padding:3px 10px;margin:3px;font-size:0.75rem;color:#f87171">'
+                f'border-radius:6px;padding:3px 10px;margin:3px;font-size:0.88rem;color:#f87171">'
                 f'{tr}</span>' for tr in result.trackers_found
             )
             st.markdown(
@@ -499,10 +499,10 @@ def _render_finding_card(f: LegalFinding) -> None:
         fine_parts = " &nbsp;|&nbsp; ".join(p for p in [fine_min_str, fine_max_str] if p)
         fine_html = f"""
 <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.25);
-  border-radius:6px;padding:7px 12px;margin-top:8px;font-size:0.74rem">
+  border-radius:6px;padding:7px 12px;margin-top:8px;font-size:0.87rem">
   <span style="color:#f87171;font-weight:700">{fs['fine_label']} &nbsp;</span>
   <span style="color:#fca5a5">{fine_parts}</span>
-  {'<br><span style="font-size:0.69rem">' + fine_case_str + '</span>' if fine_case_str else ''}
+  {'<br><span style="font-size:0.82rem">' + fine_case_str + '</span>' if fine_case_str else ''}
 </div>"""
 
     st.markdown(f"""
@@ -511,21 +511,21 @@ def _render_finding_card(f: LegalFinding) -> None:
   border-radius:10px;padding:14px 16px;margin:8px 0;
 ">
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
-    <div style="font-size:0.9rem;font-weight:700;color:#f1f5f9">{si} {f.title}</div>
+    <div style="font-size:1.02rem;font-weight:700;color:#f1f5f9">{si} {f.title}</div>
     <div style="display:flex;gap:6px;align-items:center">
       <span style="background:{sev_bg};border:1px solid {sev_c};color:{sev_c};
-        font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.05em">{f.severity}</span>
+        font-size:0.91rem;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.05em">{f.severity}</span>
       <span style="background:#1e293b;border:1px solid {fw_col}44;color:{fw_col};
-        font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:4px">{fw_flag} {f.framework}</span>
+        font-size:0.91rem;font-weight:700;padding:2px 8px;border-radius:4px">{fw_flag} {f.framework}</span>
     </div>
   </div>
-  <div style="font-size:0.75rem;color:#64748b;margin-bottom:6px">
+  <div style="font-size:0.88rem;color:#64748b;margin-bottom:6px">
     ⚖️ <em>{f.legal_basis}</em>
   </div>
-  <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:8px;line-height:1.5">{f.description}</div>
-  {'<div style="background:#0f1f0f;border:1px solid #166534;border-radius:6px;padding:8px 12px;font-size:0.78rem;color:#86efac;margin-top:4px">💡 ' + f.recommendation + '</div>' if f.status in ("FAIL", "WARN") else ''}
+  <div style="font-size:0.94rem;color:#94a3b8;margin-bottom:8px;line-height:1.5">{f.description}</div>
+  {'<div style="background:#0f1f0f;border:1px solid #166534;border-radius:6px;padding:8px 12px;font-size:0.91rem;color:#86efac;margin-top:4px">💡 ' + f.recommendation + '</div>' if f.status in ("FAIL", "WARN") else ''}
   {fine_html}
-  {'<div style="font-size:0.7rem;color:#334155;margin-top:6px">🔍 ' + f.evidence + '</div>' if f.evidence else ''}
+  {'<div style="font-size:0.83rem;color:#334155;margin-top:6px">🔍 ' + f.evidence + '</div>' if f.evidence else ''}
 </div>""", unsafe_allow_html=True)
 
 
@@ -624,7 +624,7 @@ def _render_cookie_table(cookies: list[CookieRecord]) -> None:
         rows = []
         for c in sorted(cookies, key=lambda x: (x.category, x.name)):
             label, col = cc[c.category]
-            cat_badge  = f'<span style="color:{col};font-size:0.7rem;font-weight:700">{label}</span>'
+            cat_badge  = f'<span style="color:{col};font-size:0.83rem;font-weight:700">{label}</span>'
             flags = []
             if c.secure:    flags.append('<span style="color:#10b981">Secure</span>')
             if c.http_only: flags.append('<span style="color:#3b82f6">HttpOnly</span>')
@@ -632,13 +632,13 @@ def _render_cookie_table(cookies: list[CookieRecord]) -> None:
             flags_html  = " ".join(flags) or f'<span style="color:#ef4444">{ck["no_flags"]}</span>'
             tracker_str = f' <em style="color:#f59e0b">({c.tracker})</em>' if c.tracker else ""
             rows.append(
-                f'<tr><td style="font-family:monospace;color:#93c5fd;font-size:0.75rem">{c.name}</td>'
+                f'<tr><td style="font-family:monospace;color:#93c5fd;font-size:0.88rem">{c.name}</td>'
                 f'<td>{cat_badge}{tracker_str}</td>'
                 f'<td>{flags_html}</td>'
-                f'<td style="color:#475569;font-size:0.7rem">{c.domain}</td></tr>'
+                f'<td style="color:#475569;font-size:0.83rem">{c.domain}</td></tr>'
             )
         table = (
-            '<table style="width:100%;border-collapse:collapse;font-size:0.8rem">'
+            '<table style="width:100%;border-collapse:collapse;font-size:0.94rem">'
             f'<thead><tr style="border-bottom:1px solid #1e293b;color:#64748b">'
             f'<th style="text-align:left;padding:4px 8px">{ck["col_name"]}</th>'
             f'<th style="text-align:left;padding:4px 8px">{ck["col_cat"]}</th>'
@@ -674,7 +674,7 @@ def _render_framework_cards() -> None:
 <div style="background:linear-gradient(135deg,#0a0f1e,#060b14);
   border:1px solid {fw['color']}33;border-radius:12px;padding:14px 16px;height:100%">
   <div style="font-size:1.1rem;margin-bottom:6px">{fw['flag']} <strong style="color:{fw['color']}">{fw['name']}</strong></div>
-  <div style="font-size:0.7rem;color:#475569;line-height:1.6">{fw['laws']}</div>
+  <div style="font-size:0.83rem;color:#475569;line-height:1.6">{fw['laws']}</div>
 </div>""", unsafe_allow_html=True)
 
 

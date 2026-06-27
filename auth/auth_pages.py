@@ -369,16 +369,37 @@ _NAV_HTML = """
 
 def _get_hero_html(lang: str = "he") -> str:
     _headlines = {
-        "he": ("האתר שלך מאובטח<br>עכשיו?", "גלה עכשיו.", "rtl"),
-        "en": ("Is your website<br>secure right now?", "Find out.", "ltr"),
+        "he": ("האתר שלך מאובטח<br>וחוקי?", "בדוק עכשיו.", "rtl"),
+        "en": ("Is your website secure<br>and legally compliant?", "Find out.", "ltr"),
     }
     h, em, direction = _headlines.get(lang, _headlines["en"])
     _trust = {
         "he": ["ללא agent בשרת שלך", "Zero network footprint", "18 כלים · תוצאות תוך 90 שניות"],
         "en": ["No agent on your server", "Zero network footprint", "18 tools · results in <90 sec"],
     }.get(lang, ["No agent on your server", "Zero network footprint", "18 tools · results in <90 sec"])
-    _scan_label = "הכנס את כתובת האתר שלך" if lang == "he" else "Enter your website to get started"
-    _sub = "פלטפורמת מודיעין אבטחה לאפליקציות ווב" if lang == "he" else "Web Application Security Intelligence"
+    _scan_label  = "הכנס את כתובת האתר שלך לסריקה" if lang == "he" else "Enter your website to get started"
+    _sub         = "סריקת אבטחה + ציות משפטי · AI · 18 כלים" if lang == "he" else "Security + Legal Compliance Scanner · AI · 18 Tools"
+    _dual_badge  = (
+        '<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">'
+        f'<span style="display:inline-flex;align-items:center;gap:6px;background:#0a1e2e;border:1px solid #22d3ee55;border-radius:8px;padding:7px 14px;font-size:0.82rem;color:#22d3ee;font-weight:700">🛡 {"סריקת אבטחה" if lang=="he" else "Security Scan"} <span style="color:#475569;font-weight:400">18 OSINT</span></span>'
+        f'<span style="display:inline-flex;align-items:center;gap:6px;background:#1a0e2e;border:1px solid #818cf855;border-radius:8px;padding:7px 14px;font-size:0.82rem;color:#a5b4fc;font-weight:700">⚖️ {"ציות משפטי" if lang=="he" else "Legal Compliance"} <span style="color:#475569;font-weight:400">IL · GDPR · US</span></span>'
+        '</div>'
+    )
+    _checks_he = [
+        ('warn','🔒 TLS / SSL'), ('warn','📧 זיוף מייל'), ('warn','🔗 CVE'),
+        ('ok','🌐 DNS'), ('ok','🛡 Headers'), ('ok','☁️ Cloud'),
+        ('','⚖️ ציות GDPR'), ('','🇮🇱 חוק ישראלי'), ('','🇺🇸 US Law'),
+    ]
+    _checks_en = [
+        ('warn','🔒 TLS / SSL'), ('warn','📧 Email Spoof'), ('warn','🔗 CVE Detection'),
+        ('ok','🌐 DNS Scan'), ('ok','🛡 HTTP Headers'), ('ok','☁️ Cloud Buckets'),
+        ('','⚖️ GDPR Check'), ('','🇮🇱 Israeli Law'), ('','🇺🇸 US Law'),
+    ]
+    _checks = _checks_he if lang == "he" else _checks_en
+    checks_html = ''.join(
+        f'<div class="lp-check{"  lp-check-"+c if c else ""}">{t}</div>'
+        for c, t in _checks
+    )
     return f"""
 <div class="lp-brand" dir="{direction}">
   <div class="lp-brand-icon">🛡</div>
@@ -388,17 +409,8 @@ def _get_hero_html(lang: str = "he") -> str:
   </div>
 </div>
 <h1 class="lp-headline" dir="{direction}">{h} <em>{em}</em></h1>
-<div class="lp-checks">
-  <div class="lp-check lp-check-warn">🔒 TLS / SSL</div>
-  <div class="lp-check lp-check-warn">📧 Email Spoofability</div>
-  <div class="lp-check lp-check-warn">🔗 CVE Detection</div>
-  <div class="lp-check lp-check-ok">🌐 DNS Deep Scan</div>
-  <div class="lp-check lp-check-ok">🛡 HTTP Headers</div>
-  <div class="lp-check lp-check-ok">☁️ Cloud Buckets</div>
-  <div class="lp-check">🐙 GitHub Leaks</div>
-  <div class="lp-check">📡 IP / Shodan</div>
-  <div class="lp-check">🗂 Exposed Files</div>
-</div>
+{_dual_badge}
+<div class="lp-checks">{checks_html}</div>
 <div class="lp-trust">
   {''.join(f'<span>{s}</span>' for s in _trust)}
 </div>
@@ -517,8 +529,9 @@ _FEATURES_HTML = """
     <div class="lp-feat-desc">Swagger / GraphQL exposure, SPF / DMARC records, subdomain takeover detection</div>
   </div>
 </div>
-<div class="lp-free-badge">
-  ✅ <strong>Free tier included</strong> — 18-tool OSINT scan, no credit card required. Upgrade for active scanning and PT mode.
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+  <div class="lp-free-badge">✅ <strong>Free tier</strong> — 18 OSINT tools, no card needed</div>
+  <div class="lp-free-badge" style="border-color:#818cf8;background:#0f0d1f;color:#c7d2fe">⚖️ <strong>Legal Scanner</strong> — IL · GDPR · US compliance</div>
 </div>
 """
 
