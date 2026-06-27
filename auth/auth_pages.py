@@ -717,26 +717,6 @@ def show_auth_page() -> None:
     with col_left:
         st.markdown(_HERO_HTML, unsafe_allow_html=True)
 
-        # ── Hero URL input — stores URL for post-login auto-fill ──────────────
-        _hero_url = st.text_input(
-            "hero_label",
-            placeholder="https://yourwebsite.com",
-            key="hero_scan_url",
-            label_visibility="collapsed",
-        )
-        if st.button(
-            "→  Get your free security score",
-            key="hero_get_score_btn",
-            type="primary",
-            use_container_width=True,
-        ):
-            if _hero_url.strip():
-                st.session_state["hero_target_url"] = _hero_url.strip()
-                st.session_state["_run_guest_scan"]  = True
-                st.rerun()
-            else:
-                st.warning("Enter a URL to get started.")
-
         # ── Animated stats ────────────────────────────────────────────────────
         st.html(_STATS_HTML)
 
