@@ -379,24 +379,82 @@ Scan results are stored only in your Supabase project — we never share your da
 # ── Quota exceeded inline prompt ──────────────────────────────────────────────
 
 def show_upgrade_prompt(user_tier: str, limit: int) -> None:
-    """Small inline upgrade card shown when quota is hit during a scan."""
+    """Full-page upgrade wall shown when daily quota is exhausted."""
+    from audit_log import log_action
     next_tier = {"free": "starter", "starter": "professional"}.get(user_tier, "professional")
     next_plan = next((p for p in PLANS if p["key"] == next_tier), PLANS[1])
-    st.markdown(
-        f"""
-        <div style="background:#0d1117;border:1px solid {next_plan['color']};
-                    border-radius:12px;padding:20px 24px;margin:16px 0">
-            <div style="font-size:1rem;font-weight:700;color:{next_plan['color']};margin-bottom:6px">
-                ⚡ Upgrade to {next_plan['name']} — {next_plan['price_label']}
-            </div>
-            <div style="color:#94a3b8;font-size:0.85rem;margin-bottom:12px">
-                You've used all {limit} scans on your {user_tier.title()} plan today.
-                {next_plan['name']} gives you <b style="color:#f1f5f9">{next_plan['scans']}</b>.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button(f"🚀 Upgrade to {next_plan['name']}", type="primary", key="inline_upgrade_btn"):
-        st.session_state["_show_pricing"] = True
-        st.rerun()
+
+    # Log that the user hit the wall (analytics: conversion funnel entry)
+    log_action("quota_wall_shown", details={"tier": user_tier, "limit": limit}, severity="info")
+
+    st.markdown(f"""
+<style>
+.uwall{{
+  background:linear-gradient(135deg,#060b14 0%,#0a0f1e 100%);
+  border:1px solid {next_plan['color']}33;
+  border-radius:20px;padding:40px 36px;margin:24px 0;
+  box-shadow:0 0 60px {next_plan['color']}0d,0 24px 48px rgba(0,0,0,0.6);
+  position:relative;overflow:hidden;text-align:center;
+}}
+.uwall::before{{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,{next_plan['color']},{next_plan['color']}88,transparent);
+  border-radius:20px 20px 0 0;
+}}
+.uwall-icon{{font-size:2.8rem;margin-bottom:12px;display:block}}
+.uwall-title{{color:#f1f5f9;font-size:1.5rem;font-weight:900;margin-bottom:8px;line-height:1.2}}
+.uwall-sub{{color:#64748b;font-size:0.9rem;margin-bottom:28px;line-height:1.6}}
+.uwall-sub b{{color:#94a3b8}}
+.uwall-features{{
+  display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:28px;
+}}
+.uwall-feat{{
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+  border-radius:8px;padding:8px 14px;font-size:0.78rem;color:#94a3b8;
+}}
+.uwall-feat span{{color:{next_plan['color']};font-weight:700;margin-right:5px}}
+.uwall-price{{
+  color:{next_plan['color']};font-size:2.2rem;font-weight:900;margin-bottom:4px;
+}}
+.uwall-price-sub{{color:#475569;font-size:0.78rem;margin-bottom:24px}}
+</style>
+<div class="uwall">
+  <span class="uwall-icon">🔒</span>
+  <div class="uwall-title">You've used your {limit} free scan{"s" if limit != 1 else ""} today</div>
+  <div class="uwall-sub">
+    Free plan includes <b>{limit} scans per day</b>. You found real vulnerabilities —<br>
+    unlock unlimited scanning and keep your site protected 24/7.
+  </div>
+  <div class="uwall-features">
+    <div class="uwall-feat"><span>✓</span>{next_plan['scans']} scans / day</div>
+    <div class="uwall-feat"><span>✓</span>Full AI security report</div>
+    <div class="uwall-feat"><span>✓</span>18 tools every scan</div>
+    <div class="uwall-feat"><span>✓</span>PDF export</div>
+    <div class="uwall-feat"><span>✓</span>Email alerts</div>
+    <div class="uwall-feat"><span>✓</span>Scan history</div>
+  </div>
+  <div class="uwall-price">{next_plan['price_label']}<span style="font-size:1rem;color:#475569;font-weight:400">/month</span></div>
+  <div class="uwall-price-sub">Cancel anytime · 7-day money-back guarantee</div>
+</div>
+""", unsafe_allow_html=True)
+
+    col_up, col_wait = st.columns([3, 2])
+    with col_up:
+        if st.button(
+            f"🚀  Upgrade to {next_plan['name']} — {next_plan['price_label']}/mo",
+            type="primary",
+            use_container_width=True,
+            key="inline_upgrade_btn",
+        ):
+            log_action("upgrade_clicked", details={"from_tier": user_tier, "to_tier": next_tier, "source": "quota_wall"}, severity="info")
+            st.session_state["_show_pricing"] = True
+            st.rerun()
+    with col_wait:
+        if st.button(
+            "⏳  Wait until tomorrow (free)",
+            use_container_width=True,
+            key="quota_wait_btn",
+        ):
+            log_action("upgrade_declined", details={"tier": user_tier}, severity="info")
+            st.info("Your free scans reset at midnight UTC. See you tomorrow! 👋")
+            st.stop()

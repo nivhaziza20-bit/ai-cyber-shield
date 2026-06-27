@@ -11,10 +11,10 @@ import streamlit as st
 _log = logging.getLogger(__name__)
 
 TIER_DAILY_LIMITS: dict[str, int] = {
-    "free":         5,    # 5 scans/day
-    "starter":      50,   # 50 scans/day  — $29/mo
-    "professional": 200,  # 200 scans/day — $99/mo
-    "enterprise":   -1,   # unlimited     — $299/mo
+    "free":         2,    # 2 scans/day (beta limit — forces upgrade)
+    "starter":      50,   # 50 scans/day  — €20/mo
+    "professional": 200,  # 200 scans/day — €50/mo
+    "enterprise":   -1,   # unlimited     — €120/mo
 }
 
 
