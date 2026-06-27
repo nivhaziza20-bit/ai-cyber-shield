@@ -1237,9 +1237,9 @@ def show_auth_page() -> None:
 
             if st.button(_t("auth_signin_btn"), use_container_width=True, key="li_btn", type="primary"):
                 if not _li_email or not _li_pass:
-                    st.error("Please enter email and password.")
+                    st.error(_t("auth_fill_both"))
                 elif not _valid_email(_li_email):
-                    st.error("Enter a valid email address.")
+                    st.error(_t("auth_valid_email"))
                 else:
                     with st.spinner("Authenticating…"):
                         result = sign_in(_li_email.strip().lower(), _li_pass)
@@ -1255,21 +1255,21 @@ def show_auth_page() -> None:
             _tc1, _tc2 = st.columns([1, 1])
             with _tc1:
                 st.markdown(
-                    '<div style="color:#334155;font-size:0.79rem;padding-top:6px">New here?</div>',
+                    f'<div style="color:#334155;font-size:0.79rem;padding-top:6px">{_t("auth_new_here")}</div>',
                     unsafe_allow_html=True,
                 )
                 st.markdown('<div class="auth-toggle-row">', unsafe_allow_html=True)
-                if st.button("Create free account", key="go_signup"):
+                if st.button(_t("auth_create_free"), key="go_signup"):
                     st.session_state["_auth_view"] = "signup"
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
             with _tc2:
                 st.markdown(
-                    '<div style="text-align:right;color:#334155;font-size:0.79rem;padding-top:6px">Trouble signing in?</div>',
+                    f'<div style="text-align:right;color:#334155;font-size:0.79rem;padding-top:6px">{_t("auth_trouble")}</div>',
                     unsafe_allow_html=True,
                 )
                 st.markdown('<div class="auth-toggle-row" style="text-align:right">', unsafe_allow_html=True)
-                if st.button("Reset password", key="go_reset"):
+                if st.button(_t("auth_reset_pw"), key="go_reset"):
                     st.session_state["_auth_view"] = "reset"
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -1330,9 +1330,9 @@ def show_auth_page() -> None:
                         from audit_log import log_action
                         log_action("signup", target=_r_email.strip().lower(), details={"confirm_required": result.get("confirm_required", False)})
                         if result.get("confirm_required"):
-                            st.success("Account created! Check your inbox for a confirmation email.")
+                            st.success(_t("auth_confirm_email"))
                         else:
-                            st.success("Account created! You can now sign in.")
+                            st.success(_t("auth_confirmed_ok"))
                     else:
                         st.error(result.get("error", "Registration failed"))
 
@@ -1357,12 +1357,12 @@ def show_auth_page() -> None:
             st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
             if st.button(_t("auth_reset_btn"), use_container_width=True, key="rst_btn", type="primary"):
                 if not _rst_email or not _valid_email(_rst_email):
-                    st.error("Enter a valid email address.")
+                    st.error(_t("auth_valid_email"))
                 else:
                     with st.spinner("Sending…"):
                         result = request_password_reset(_rst_email.strip().lower())
                     if result.get("ok"):
-                        st.success("Reset link sent! Check your inbox — also check spam.")
+                        st.success(_t("auth_reset_sent"))
                         st.info("📧 Spam folder  ·  🔒 Link expires 24 h  ·  Return here to sign in")
                     else:
                         st.error(result.get("error", "Failed to send reset email"))

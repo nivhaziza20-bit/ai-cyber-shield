@@ -80,6 +80,26 @@ _T: dict[str, dict[str, str]] = {
     "quota_wait_btn":    {"en": "⏳  Wait until tomorrow (free)", "he": "⏳  חכה למחר (חינם)", "ru": "⏳  Подождать до завтра", "ar": "⏳  انتظر حتى الغد"},
     "quota_wait_msg":    {"en": "Your free scans reset at midnight UTC. See you tomorrow! 👋", "he": "הסריקות החינמיות מתאפסות בחצות UTC. להתראות מחר! 👋", "ru": "Сканы сбрасываются в полночь UTC.", "ar": "تتجدد فحوصاتك عند منتصف الليل."},
 
+    # ── Auth status messages ──────────────────────────────────────────────────
+    "auth_new_here":     {"en": "New here?",              "he": "חדש כאן?",            "ru": "Новый здесь?",      "ar": "جديد هنا؟"},
+    "auth_trouble":      {"en": "Trouble signing in?",    "he": "בעיה בכניסה?",        "ru": "Проблема со входом?","ar": "مشكلة في الدخول؟"},
+    "auth_create_free":  {"en": "Create free account",    "he": "צור חשבון חינם",      "ru": "Создать аккаунт",   "ar": "إنشاء حساب مجاني"},
+    "auth_reset_pw":     {"en": "Reset password",         "he": "אפס סיסמה",           "ru": "Сбросить пароль",   "ar": "إعادة تعيين كلمة المرور"},
+    "auth_confirm_email":{"en": "Account created! Check your inbox for a confirmation email.", "he": "החשבון נוצר! בדוק את תיבת הדואר שלך.", "ru": "Аккаунт создан! Проверьте email.", "ar": "تم إنشاء الحساب! تحقق من بريدك."},
+    "auth_confirmed_ok": {"en": "Account created! You can now sign in.", "he": "החשבון נוצר! תוכל להיכנס עכשיו.", "ru": "Готово! Теперь войдите.", "ar": "تم! يمكنك تسجيل الدخول الآن."},
+    "auth_reset_sent":   {"en": "Reset link sent — check your inbox (and spam folder).", "he": "קישור נשלח — בדוק את המייל שלך (גם ספאם).", "ru": "Ссылка отправлена — проверьте email.", "ar": "تم إرسال الرابط — تحقق من بريدك."},
+    "auth_fill_both":    {"en": "Please enter email and password.", "he": "אנא הכנס מייל וסיסמה.", "ru": "Введите email и пароль.", "ar": "أدخل البريد وكلمة المرور."},
+    "auth_valid_email":  {"en": "Enter a valid email address.", "he": "הכנס כתובת מייל תקינה.", "ru": "Введите корректный email.", "ar": "أدخل بريدًا إلكترونيًا صحيحًا."},
+
+    # ── Upgrade wall (billing_ui.py) ─────────────────────────────────────────
+    "wall_title":        {"en": "You've used your {n} free scan{s} today", "he": "השתמשת ב-{n} סריקות החינמיות שלך להיום", "ru": "Вы использовали {n} бесплатных сканов", "ar": "لقد استخدمت {n} فحوصاتك المجانية اليوم"},
+    "wall_sub":          {"en": "Free plan includes <b>{n} scans per day</b>. You found real vulnerabilities —<br>unlock unlimited scanning and keep your site protected 24/7.", "he": "תוכנית חינם כוללת <b>{n} סריקות ביום</b>. מצאת פגיעויות אמיתיות —<br>פתח סריקה בלתי מוגבלת והגן על האתר שלך 24/7.", "ru": "Бесплатный план включает <b>{n} сканов/день</b>. Вы нашли уязвимости —<br>разблокируйте неограниченное сканирование.", "ar": "الخطة المجانية تشمل <b>{n} فحوصات/يوم</b>. وجدت ثغرات حقيقية —<br>افتح الفحص غير المحدود."},
+    "wall_upgrade_btn":  {"en": "🚀  Upgrade to {plan} — {price}/mo", "he": "🚀  שדרג ל-{plan} — {price}/חודש", "ru": "🚀  Улучшить до {plan} — {price}/мес", "ar": "🚀  ترقية إلى {plan} — {price}/شهر"},
+    "wall_wait_btn":     {"en": "⏳  Wait until tomorrow (free)", "he": "⏳  חכה למחר (חינם)", "ru": "⏳  Подождать до завтра", "ar": "⏳  انتظر حتى الغد"},
+    "wall_wait_msg":     {"en": "Your free scans reset at midnight UTC. See you tomorrow! 👋", "he": "הסריקות החינמיות מתאפסות בחצות UTC. להתראות מחר! 👋", "ru": "Сканы сбрасываются в полночь UTC. До завтра!", "ar": "تتجدد فحوصاتك عند منتصف الليل. إلى اللقاء غدًا!"},
+    "wall_cancel":       {"en": "Cancel anytime · 7-day money-back guarantee", "he": "ביטול בכל עת · אחריות 7 ימים", "ru": "Отмена в любое время · Возврат 7 дней", "ar": "إلغاء في أي وقت · ضمان 7 أيام"},
+    "wall_per_month":    {"en": "/month", "he": "/חודש", "ru": "/мес", "ar": "/شهر"},
+
     # ── Legal ─────────────────────────────────────────────────────────────────
     "tos_link":          {"en": "Terms of Service",     "he": "תנאי שימוש",          "ru": "Условия",           "ar": "شروط الخدمة"},
     "privacy_link":      {"en": "Privacy Policy",       "he": "מדיניות פרטיות",      "ru": "Конфиденциальность","ar": "سياسة الخصوصية"},
@@ -121,9 +141,8 @@ html, body, [data-testid="stAppViewContainer"], .block-container,
 
 
 def lang_switcher(location: str = "sidebar") -> None:
-    """Render language toggle buttons."""
+    """Render language toggle buttons. Caller is responsible for any preceding separator."""
     if location == "sidebar":
-        st.sidebar.markdown("---")
         cols = st.sidebar.columns(len(SUPPORTED_LANGS))
         for i, (code, info) in enumerate(SUPPORTED_LANGS.items()):
             with cols[i]:

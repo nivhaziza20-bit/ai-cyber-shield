@@ -1,6 +1,7 @@
 """Pricing page and billing management for AI Cyber Shield."""
 from __future__ import annotations
 import streamlit as st
+from translations import t
 
 # ── Pricing config ────────────────────────────────────────────────────────────
 
@@ -420,11 +421,8 @@ def show_upgrade_prompt(user_tier: str, limit: int) -> None:
 </style>
 <div class="uwall">
   <span class="uwall-icon">🔒</span>
-  <div class="uwall-title">You've used your {limit} free scan{"s" if limit != 1 else ""} today</div>
-  <div class="uwall-sub">
-    Free plan includes <b>{limit} scans per day</b>. You found real vulnerabilities —<br>
-    unlock unlimited scanning and keep your site protected 24/7.
-  </div>
+  <div class="uwall-title">{t("wall_title", n=limit, s="" if limit == 1 else "s")}</div>
+  <div class="uwall-sub">{t("wall_sub", n=limit)}</div>
   <div class="uwall-features">
     <div class="uwall-feat"><span>✓</span>{next_plan['scans']} scans / day</div>
     <div class="uwall-feat"><span>✓</span>Full AI security report</div>
@@ -433,15 +431,15 @@ def show_upgrade_prompt(user_tier: str, limit: int) -> None:
     <div class="uwall-feat"><span>✓</span>Email alerts</div>
     <div class="uwall-feat"><span>✓</span>Scan history</div>
   </div>
-  <div class="uwall-price">{next_plan['price_label']}<span style="font-size:1rem;color:#475569;font-weight:400">/month</span></div>
-  <div class="uwall-price-sub">Cancel anytime · 7-day money-back guarantee</div>
+  <div class="uwall-price">{next_plan['price_label']}<span style="font-size:1rem;color:#475569;font-weight:400">{t("wall_per_month")}</span></div>
+  <div class="uwall-price-sub">{t("wall_cancel")}</div>
 </div>
 """, unsafe_allow_html=True)
 
     col_up, col_wait = st.columns([3, 2])
     with col_up:
         if st.button(
-            f"🚀  Upgrade to {next_plan['name']} — {next_plan['price_label']}/mo",
+            t("wall_upgrade_btn", plan=next_plan["name"], price=next_plan["price_label"]),
             type="primary",
             use_container_width=True,
             key="inline_upgrade_btn",
@@ -451,10 +449,10 @@ def show_upgrade_prompt(user_tier: str, limit: int) -> None:
             st.rerun()
     with col_wait:
         if st.button(
-            "⏳  Wait until tomorrow (free)",
+            t("wall_wait_btn"),
             use_container_width=True,
             key="quota_wait_btn",
         ):
             log_action("upgrade_declined", details={"tier": user_tier}, severity="info")
-            st.info("Your free scans reset at midnight UTC. See you tomorrow! 👋")
+            st.info(t("wall_wait_msg"))
             st.stop()

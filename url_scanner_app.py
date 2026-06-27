@@ -52,11 +52,10 @@ from monitoring import init_sentry, set_user_context
 from legal_pages import show_terms_of_service, show_privacy_policy, show_legal_nav
 from healthcheck import maybe_show_health
 from ip_rate_limit import enforce_rate_limit
-from translations import t, lang_switcher, inject_rtl_css, get_lang
+from translations import t, lang_switcher, inject_rtl_css
 init_sentry()  # Must be before any other imports that might throw
 maybe_show_health()   # ?health=1 → status page, no auth needed
 enforce_rate_limit()  # Block abusive sessions before auth
-inject_rtl_css()      # RTL direction for Hebrew/Arabic
 
 from auth.streamlit_auth import (
     require_auth, get_current_user, sign_out,
@@ -1750,6 +1749,8 @@ def _show_empty_state(scan_mode: str = "passive") -> None:
 
 </div>""")
 
+
+inject_rtl_css()  # Must run after auth (before sidebar renders)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Sidebar  — mode selector + demo toggle
