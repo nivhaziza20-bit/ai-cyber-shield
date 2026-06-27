@@ -52,9 +52,11 @@ from monitoring import init_sentry, set_user_context
 from legal_pages import show_terms_of_service, show_privacy_policy, show_legal_nav
 from healthcheck import maybe_show_health
 from ip_rate_limit import enforce_rate_limit
+from translations import t, lang_switcher, inject_rtl_css, get_lang
 init_sentry()  # Must be before any other imports that might throw
 maybe_show_health()   # ?health=1 → status page, no auth needed
 enforce_rate_limit()  # Block abusive sessions before auth
+inject_rtl_css()      # RTL direction for Hebrew/Arabic
 
 from auth.streamlit_auth import (
     require_auth, get_current_user, sign_out,
@@ -1783,15 +1785,17 @@ with st.sidebar:
 
         col_up, col_lo = st.columns(2)
         with col_up:
-            if st.button("⬆ Upgrade", use_container_width=True, key="upgrade_btn"):
+            if st.button(f"⬆ {t('sidebar_upgrade')}", use_container_width=True, key="upgrade_btn"):
                 st.session_state["_show_pricing"] = not st.session_state.get("_show_pricing", False)
                 st.rerun()
         with col_lo:
-            if st.button("Logout", use_container_width=True, key="logout_btn"):
+            if st.button(t("sidebar_logout"), use_container_width=True, key="logout_btn"):
                 log_action("logout")
                 sign_out()
                 st.rerun()
         st.divider()
+        # ── Language switcher ─────────────────────────────────────────────────
+        lang_switcher("sidebar")
 
         # ── Scan history (primary action — stays visible) ────────────────────
         if st.button("📊 Scan History", use_container_width=True, key="history_btn"):
@@ -2002,9 +2006,9 @@ with tab_url:
     _hero_prefill  = st.session_state.pop("hero_target_url", "")
     _demo_default  = _hero_prefill or (_DEMO_TARGET_URL if demo_mode else "")
     url_input = st.text_input(
-        "Target URL",
+        t("scan_input_label"),
         value=_demo_default,
-        placeholder="https://your-site.com",
+        placeholder=t("scan_input_ph"),
         help="Enter the full URL of a website you own or have written permission to scan.",
         label_visibility="collapsed",
     )

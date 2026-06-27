@@ -1153,6 +1153,11 @@ def show_auth_page() -> None:
     # ── Navigation bar ────────────────────────────────────────────────────────
     st.html(_NAV_HTML)
 
+    # ── Language switcher row ─────────────────────────────────────────────────
+    from translations import lang_switcher, inject_rtl_css, t as _t
+    inject_rtl_css()
+    lang_switcher("landing")
+
     # ── Two-column split: 60% marketing, 40% auth form ───────────────────────
     col_left, col_right = st.columns([3, 2], gap="large")
 
@@ -1174,9 +1179,9 @@ def show_auth_page() -> None:
         _view = st.session_state["_auth_view"]
 
         _card_meta = {
-            "signin": ("Welcome back.",        "Sign in to AI Cyber Shield"),
-            "signup": ("Create your account.", "Free forever · No credit card required"),
-            "reset":  ("Forgot your password?","We'll send a reset link to your inbox"),
+            "signin": (_t("auth_signin_title"), _t("auth_signin_sub")),
+            "signup": (_t("auth_signup_title"), _t("auth_signup_sub")),
+            "reset":  (_t("auth_reset_title"),  _t("auth_reset_sub")),
         }
         _hl, _sub = _card_meta.get(_view, _card_meta["signin"])
 
@@ -1199,7 +1204,7 @@ def show_auth_page() -> None:
 </style>
 <div class="google-oauth-row"></div>""", unsafe_allow_html=True)
             if st.button(
-                "G  Continue with Google",
+                f"G  {_t('auth_google')}",
                 use_container_width=True,
                 key=f"google_{_view}",
             ):
@@ -1210,10 +1215,10 @@ def show_auth_page() -> None:
                 else:
                     st.error(_gg.get("error", "Google login is not configured yet."))
 
-            st.markdown("""
+            st.markdown(f"""
 <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px">
   <div style="flex:1;height:1px;background:#1a2a3d"></div>
-  <span style="color:#2d4056;font-size:0.7rem;white-space:nowrap;letter-spacing:0.06em">or continue with email</span>
+  <span style="color:#2d4056;font-size:0.7rem;white-space:nowrap;letter-spacing:0.06em">{_t('auth_or_email')}</span>
   <div style="flex:1;height:1px;background:#1a2a3d"></div>
 </div>""", unsafe_allow_html=True)
 
@@ -1223,14 +1228,14 @@ def show_auth_page() -> None:
         # ── Sign In ───────────────────────────────────────────────────────────
         if _view == "signin":
             _li_email = st.text_input(
-                "Email address", key="li_email", placeholder="you@example.com",
+                _t("auth_email"), key="li_email", placeholder="you@example.com",
             )
             _li_pass = st.text_input(
-                "Password", type="password", key="li_pass", placeholder="••••••••",
+                _t("auth_password"), type="password", key="li_pass", placeholder="••••••••",
             )
             st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-            if st.button("Sign In →", use_container_width=True, key="li_btn", type="primary"):
+            if st.button(_t("auth_signin_btn"), use_container_width=True, key="li_btn", type="primary"):
                 if not _li_email or not _li_pass:
                     st.error("Please enter email and password.")
                 elif not _valid_email(_li_email):
@@ -1276,10 +1281,10 @@ def show_auth_page() -> None:
                 unsafe_allow_html=True,
             )
             _r_email = st.text_input(
-                "Email address", key="reg_email", placeholder="you@example.com",
+                _t("auth_email"), key="reg_email", placeholder="you@example.com",
             )
             _r_pass = st.text_input(
-                "Password", type="password", key="reg_pass",
+                _t("auth_password"), type="password", key="reg_pass",
                 placeholder="Min 8 chars + 1 number/symbol",
             )
             if _r_pass:
@@ -1308,7 +1313,7 @@ def show_auth_page() -> None:
                 '</div>',
                 unsafe_allow_html=True,
             )
-            if st.button("Create Free Account →", use_container_width=True, key="reg_btn", type="primary"):
+            if st.button(_t("auth_signup_btn"), use_container_width=True, key="reg_btn", type="primary"):
                 _errors = []
                 if not _r_email or not _valid_email(_r_email):
                     _errors.append("Enter a valid email address.")
@@ -1333,7 +1338,7 @@ def show_auth_page() -> None:
 
             st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
             st.markdown('<div class="auth-toggle-row">', unsafe_allow_html=True)
-            if st.button("← Already have an account? Sign in", key="go_signin_from_reg"):
+            if st.button(_t("auth_have_account"), key="go_signin_from_reg"):
                 st.session_state["_auth_view"] = "signin"
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
@@ -1347,10 +1352,10 @@ def show_auth_page() -> None:
                 unsafe_allow_html=True,
             )
             _rst_email = st.text_input(
-                "Email address", key="rst_email", placeholder="you@example.com",
+                _t("auth_email"), key="rst_email", placeholder="you@example.com",
             )
             st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-            if st.button("Send Reset Link →", use_container_width=True, key="rst_btn", type="primary"):
+            if st.button(_t("auth_reset_btn"), use_container_width=True, key="rst_btn", type="primary"):
                 if not _rst_email or not _valid_email(_rst_email):
                     st.error("Enter a valid email address.")
                 else:
@@ -1364,7 +1369,7 @@ def show_auth_page() -> None:
 
             st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
             st.markdown('<div class="auth-toggle-row">', unsafe_allow_html=True)
-            if st.button("← Back to Sign In", key="go_signin_from_reset"):
+            if st.button(_t("auth_back_signin"), key="go_signin_from_reset"):
                 st.session_state["_auth_view"] = "signin"
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
