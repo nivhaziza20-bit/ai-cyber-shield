@@ -112,6 +112,21 @@ if _qp.get("st_at") and _qp.get("st_type") in ("signup", "recovery", "email_chan
     st.query_params.clear()
     st.rerun()
 
+# Handle ?legal=tos / ?legal=privacy — public, no auth required
+_legal_qp = _qp.get("legal", "")
+if _legal_qp in ("tos", "privacy"):
+    st.query_params.clear()
+    if _legal_qp == "tos":
+        show_terms_of_service()
+    else:
+        show_privacy_policy()
+    st.markdown("---")
+    col_back, _ = st.columns([1, 5])
+    with col_back:
+        if st.button("← Back to app", key="legal_back_btn", type="primary"):
+            st.rerun()
+    st.stop()
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Guest scan page  (pre-auth, shown before require_auth gate)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2223,6 +2238,16 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                 target = url_input.strip()
                 if not target.startswith("http"):
                     target = "https://" + target
+                # Block self-scan until we have a real domain
+                _self_host = __import__("urllib.parse", fromlist=["urlparse"]).urlparse(target).hostname or ""
+                _BLOCKED_SELF = ("streamlit.app", "localhost", "127.0.0.1")
+                if any(_self_host == b or _self_host.endswith("." + b) for b in _BLOCKED_SELF):
+                    st.error(
+                        "🚫 **Self-scan temporarily disabled** — scanning the app's own domain "
+                        "is blocked until a custom domain is configured. "
+                        "Scan an external site instead."
+                    )
+                    st.stop()
                 _pr_tool_labels = {
                     "security_txt":       "📝 Security.txt",
                     "robots_sitemap":     "🤖 Robots & Sitemap",
@@ -2331,6 +2356,18 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
             from scan_rate_limiter import get_limiter
             from scan_history_store import get_store
             target = url_input.strip()
+            # Block self-scan until we have a real domain
+            _self_host2 = __import__("urllib.parse", fromlist=["urlparse"]).urlparse(
+                target if target.startswith("http") else "https://" + target
+            ).hostname or ""
+            _BLOCKED_SELF2 = ("streamlit.app", "localhost", "127.0.0.1")
+            if any(_self_host2 == b or _self_host2.endswith("." + b) for b in _BLOCKED_SELF2):
+                st.error(
+                    "🚫 **Self-scan temporarily disabled** — scanning the app's own domain "
+                    "is blocked until a custom domain is configured. "
+                    "Scan an external site instead."
+                )
+                st.stop()
             _limiter = get_limiter()
             if not _limiter.acquire(target):
                 st.warning(f"⏳ A scan for **{target}** is already running. Please wait.")

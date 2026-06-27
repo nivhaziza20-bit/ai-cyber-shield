@@ -689,6 +689,21 @@ def _valid_password(p: str) -> tuple[bool, str]:
 def show_auth_page() -> None:
     """Full landing page with embedded auth form. Call then st.stop()."""
     from auth.streamlit_auth import sign_in, sign_up, request_password_reset
+    from legal_pages import show_terms_of_service, show_privacy_policy
+
+    # Handle ?legal= query param — show legal pages without requiring login
+    _legal_qp = st.query_params.get("legal", "")
+    if _legal_qp in ("tos", "privacy"):
+        st.query_params.clear()
+        st.markdown(_LANDING_CSS, unsafe_allow_html=True)
+        if _legal_qp == "tos":
+            show_terms_of_service()
+        else:
+            show_privacy_policy()
+        st.markdown("---")
+        if st.button("← Back", key="legal_lp_back", type="primary"):
+            st.rerun()
+        st.stop()
 
     st.markdown(_LANDING_CSS, unsafe_allow_html=True)
 
