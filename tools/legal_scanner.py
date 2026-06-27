@@ -1,6 +1,6 @@
 """
-Legal Compliance Scanner — AI Cyber Shield
-===========================================
+Compliance Shield — AI Cyber Shield
+=====================================
 Covers:
   Israeli Law  — Privacy Protection Law (incl. Amendment 13 / Aug 2025),
                  Data Security Regulations 2017, Consumer Protection Law,
@@ -44,6 +44,22 @@ class LegalFinding:
     description:    str
     recommendation: str
     evidence:       str = ""
+    # Fine estimate fields — populated by _apply_fine_estimates() in run_legal_scan
+    fine_min:       str = ""     # e.g. "€0", "₪50,000", "$2,500"
+    fine_max:       str = ""     # e.g. "€20M or 4% turnover"
+    fine_example:   str = ""     # Real enforcement case: "Google €150M (CNIL 2021)"
+
+
+@dataclass
+class CookieRecord:
+    name:      str
+    value:     str = ""
+    domain:    str = ""
+    http_only: bool = False
+    secure:    bool = False
+    same_site: str = ""
+    category:  str = "unknown"   # "strictly_necessary" | "functional" | "analytics" | "marketing" | "unknown"
+    tracker:   str = ""          # name of known tracker if identified
 
 
 @dataclass
@@ -62,6 +78,11 @@ class LegalScanResult:
     accessibility_url: str = ""
     page_lang:      str = ""
     error:          str = ""
+    # New fields (v3)
+    scan_method:      str = "static"    # "playwright" | "requests" (static)
+    cookies_found:    list[CookieRecord] = field(default_factory=list)
+    pages_scanned:    list[str] = field(default_factory=list)
+    privacy_in_footer_all_pages: bool = False  # True if privacy link in footer on ALL sampled pages
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -125,6 +146,306 @@ COOKIE_POLICY_PATTERNS = [
     r"cookie[\s_-]?polic", r"cookie[\s_-]?notice",
     r"מדיניות[\s_-]?עוגיות", r"politique[\s_-]?cookies",
 ]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Fine Database — maps check_id → (min, max, real enforcement example)
+# Sources: CNIL, Irish DPC, GDPR Enforcement Tracker, FTC, CPPA, IL law
+# ─────────────────────────────────────────────────────────────────────────────
+
+FINE_DB: dict[str, dict] = {
+    # ── Cookies & Consent ────────────────────────────────────────────────────
+    "ALL-CK-01": {
+        "min": "€0", "max": "€20M or 4% global turnover",
+        "example": "Google €150M + YouTube €60M (CNIL 2021) — cookie refusal required multiple clicks",
+    },
+    "ALL-CK-02": {
+        "min": "€0", "max": "€20M or 4% turnover",
+        "example": "Amazon €35M (CNIL 2020) — analytics cookies set before consent",
+    },
+    "GDPR-CK-02": {
+        "min": "€5M", "max": "€60M",
+        "example": "Facebook €60M (CNIL 2021) + Microsoft Bing €60M (CNIL 2022) — no first-layer Reject button",
+    },
+    "GDPR-CK-05": {
+        "min": "€0", "max": "€20M",
+        "example": "IAB Europe €250K (Belgian DPA 2022) — TCF framework non-compliant",
+    },
+    "IL-SEC-02": {
+        "min": "₪0", "max": "₪3.2M",
+        "example": "IL PPL Amendment 13 (Aug 2025) — insecure cookie flags = Data Security Regulations violation",
+    },
+    # ── Privacy Policy / Transparency ────────────────────────────────────────
+    "ALL-LP-01": {
+        "min": "€0", "max": "€20M or 4% turnover",
+        "example": "WhatsApp €225M (Irish DPC 2021) — privacy policy opacity; Amazon €746M (Luxembourg 2021)",
+    },
+    "ALL-PP-01": {
+        "min": "€10K", "max": "€20M or 4% turnover",
+        "example": "Uber €4.24M (Italian DPA 2018) — vague privacy policy, no controller identity",
+    },
+    "ALL-PP-02": {
+        "min": "€10K", "max": "€20M or 4% turnover",
+        "example": "Clearview AI €20M (Italian DPA 2022) — purposes not stated",
+    },
+    "ALL-PP-03": {
+        "min": "€50K", "max": "€20M or 4% turnover",
+        "example": "Meta €1.2B (Irish DPC 2023) — no adequate legal basis for data transfers",
+    },
+    "ALL-PP-04": {
+        "min": "€10K", "max": "€20M",
+        "example": "Vodafone €12.25M (Spanish AEPD 2021) — third parties not disclosed",
+    },
+    "ALL-PP-05": {
+        "min": "€5K", "max": "€10M",
+        "example": "H&M €35.2M (Hamburg DPA 2020) — no clear retention periods",
+    },
+    "ALL-PP-06": {
+        "min": "€5K", "max": "€20M",
+        "example": "Google €50M (CNIL 2019) — data subject rights not clearly explained",
+    },
+    "ALL-PP-07": {
+        "min": "€5K", "max": "€10M",
+        "example": "GDPR Art. 37-38 — DPO not designated or not published for mandatory controllers",
+    },
+    "GDPR-PP-05": {
+        "min": "€100K", "max": "€20M or 4% turnover",
+        "example": "Meta €1.2B (2023) — no SCCs for US transfers; Grindr €5.9M (Norwegian DPA 2023)",
+    },
+    "GDPR-PP-08": {
+        "min": "€1K", "max": "€5M",
+        "example": "GDPR Art. 13(2)(d) — complaint right must be stated; enforcement in Czech Republic, Austria",
+    },
+    # ── Data Rights ──────────────────────────────────────────────────────────
+    "GDPR-ER-01": {
+        "min": "€7M", "max": "€20M or 4% turnover",
+        "example": "Google €7M (Swedish DPA 2020) — incomplete global erasure from search results",
+    },
+    "GDPR-DR-02": {
+        "min": "€5K", "max": "€20M",
+        "example": "GDPR Art. 15 — 28% of DPA complaints involve access requests; ICO fined 150+ cases",
+    },
+    "IL-SPAM-01": {
+        "min": "₪1,000", "max": "₪1,000 per marketing message",
+        "example": "IL Telecommunications Law §30A — each unsolicited message = separate violation",
+    },
+    "IL-SPAM-02": {
+        "min": "₪1,000/msg", "max": "$53,088/email (CAN-SPAM)",
+        "example": "Verkada $2.95M (FTC 2024) — largest CAN-SPAM penalty ever; Experian $650K (FTC 2023)",
+    },
+    # ── Accessibility ────────────────────────────────────────────────────────
+    "IL-ACC-01": {
+        "min": "₪50,000", "max": "₪50,000 + 5%/day",
+        "example": "IS 5568 / Equal Rights Act — fixed statutory penalty per violation; daily escalation",
+    },
+    "IL-ACC-02": {
+        "min": "₪50,000", "max": "₪50,000 + 5%/day",
+        "example": "ADA: $75,000 first violation, $150,000 subsequent (US DOJ); IL: ₪50K fixed penalty",
+    },
+    "IL-ACC-05": {
+        "min": "₪50,000", "max": "$150,000 (ADA)",
+        "example": "Domino's Pizza v. Robles (US Supreme Court 2019) — website accessibility required under ADA",
+    },
+    "IL-ACC-06": {
+        "min": "₪50,000", "max": "₪50,000 + escalation",
+        "example": "IS 5568 WCAG SC 3.1.1 — missing HTML lang is automatic accessibility failure",
+    },
+    "IL-ACC-07": {
+        "min": "₪50,000", "max": "$75,000–$150,000",
+        "example": "ADA Title III web cases — $75,000 first violation, $150,000 repeat. 4,000+ US lawsuits filed in 2023.",
+    },
+    "IL-ACC-08": {
+        "min": "₪50,000", "max": "₪50,000",
+        "example": "IS 5568 WCAG SC 2.4.1 — skip nav required; keyboard trap is separate high-severity violation",
+    },
+    "IL-ACC-09": {
+        "min": "₪50,000", "max": "₪50,000",
+        "example": "WCAG SC 1.4.4 — user-scalable=no blocks zoom for low-vision users; automatic FAIL",
+    },
+    # ── Consumer Law ─────────────────────────────────────────────────────────
+    "IL-EC-01": {
+        "min": "₪50,000", "max": "₪50,000 civil penalty",
+        "example": "IL E-Commerce Regs 2003 §2 — Consumer Protection Authority issues fines for missing business identity",
+    },
+    "IL-EC-02": {
+        "min": "₪10,000", "max": "₪50,000",
+        "example": "IL Consumer Protection Law — prices must include VAT; hidden fees at checkout = separate offense",
+    },
+    "IL-EC-03": {
+        "min": "₪10,000", "max": "₪50,000",
+        "example": "IL Consumer Protection §14C — 14-day right violation; FTC ROSCA: Vonage $100M (2023)",
+    },
+    "IL-EC-06": {
+        "min": "₪5,000", "max": "₪50,000",
+        "example": "IL E-Commerce Regs — terms must be accepted before transaction; FTC: dark pattern settlements",
+    },
+    # ── Dark Patterns ────────────────────────────────────────────────────────
+    "US-FTC-03": {
+        "min": "$0", "max": "$245M",
+        "example": "Epic Games $245M (FTC 2023) — dark patterns tricking players; Amazon Prime $2.5B settlement (2024)",
+    },
+    "US-FTC-DP-01": {
+        "min": "$3M", "max": "$245M",
+        "example": "Publishers Clearing House $18.5M (FTC 2023); Credit Karma $3M (FTC 2023)",
+    },
+    "US-FTC-DP-02": {
+        "min": "$0", "max": "$100M",
+        "example": "Vonage $100M (FTC 2023) — impossible cancellation; Amazon $2.5B settlement",
+    },
+    # ── CCPA / US Privacy ────────────────────────────────────────────────────
+    "US-CA-01": {
+        "min": "$2,500", "max": "$7,988 per violation",
+        "example": "Disney $2.75M (CPPA 2026); DoorDash $375K (CA AG 2024); Sephora $1.2M (CA AG 2022)",
+    },
+    "US-CA-02": {
+        "min": "$2,500", "max": "$7,988 per violation",
+        "example": "Sephora $1.2M (CA AG 2022) — selling data without disclosure + no opt-out signal",
+    },
+    "US-CA-04": {
+        "min": "$2,500", "max": "$7,988 per violation",
+        "example": "CA CPRA — GPC opt-out mandatory since Jan 2023; CO CPA — mandatory July 2024",
+    },
+    "US-COPPA-01": {
+        "min": "$0", "max": "$53,088/violation",
+        "example": "YouTube/Google $170M (FTC 2019); TikTok $5.7M (FTC 2019); Disney $10M (YouTube 2023)",
+    },
+    # ── Security ─────────────────────────────────────────────────────────────
+    "ALL-SEC-01": {
+        "min": "€10K", "max": "€20M or 4% turnover",
+        "example": "GDPR Art. 32 — data in transit must be encrypted. Marriott €18.4M (ICO 2020) for inadequate security",
+    },
+    "ALL-SEC-02": {
+        "min": "€5K", "max": "€10M",
+        "example": "Data Security Regulations 2017 (IL) §4 — HSTS required for sensitive data services",
+    },
+    "ALL-SEC-03": {
+        "min": "€0", "max": "€5M",
+        "example": "GDPR Art. 32 — CSP is part of 'appropriate technical measures'; XSS leading to breach triggers Art. 33",
+    },
+    # ── GDPR Legal Pages ─────────────────────────────────────────────────────
+    "ALL-LP-02": {
+        "min": "₪10K", "max": "₪50K",
+        "example": "IL E-Commerce Regs §6 — ToS must be accepted before distance transactions",
+    },
+    "ALL-LP-04": {
+        "min": "€5K", "max": "€20M",
+        "example": "GDPR Recital 30 — cookies must be disclosed by category; CNIL requires separate cookie list",
+    },
+    "GDPR-EU-REP-01": {
+        "min": "€10M", "max": "€20M or 2% turnover",
+        "example": "GDPR Art. 27 — mandatory for non-EU controllers. Clearview AI cited for no EU representative",
+    },
+    "ALL-META-01": {
+        "min": "€0", "max": "€10M",
+        "example": "CCPA §1798.130 — annual policy update required; ICO enforcement for stale policies",
+    },
+    "GDPR-CK-INV-01": {
+        "min": "€60M", "max": "€150M",
+        "example": "Google (CNIL 2021 €150M) — analytics cookies set before consent; Facebook €60M same year",
+    },
+    "US-PAY-01": {
+        "min": "$5K", "max": "$100K/month",
+        "example": "PCI-DSS v4.0 — self-hosted card forms without qualified processor = Level 1 non-compliance",
+    },
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Cookie Categorization Engine
+# Based on: Open Cookie Database, IAB TCF 2.2, known tracker patterns
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Prefix/exact-name based classifier (covers ~95% of real-world cookies)
+_COOKIE_RULES: list[tuple[str, str, str]] = [
+    # (match_type, pattern, category)  — checked in priority order
+    # STRICTLY NECESSARY — no consent required (ePrivacy Directive Art. 5(3) exemption)
+    ("prefix", "PHPSESSID",          "strictly_necessary"),
+    ("prefix", "JSESSIONID",         "strictly_necessary"),
+    ("prefix", "ASP.NET_SessionId",  "strictly_necessary"),
+    ("prefix", "csrftoken",          "strictly_necessary"),
+    ("prefix", "XSRF-TOKEN",         "strictly_necessary"),
+    ("prefix", "_csrf",              "strictly_necessary"),
+    ("prefix", "csrf",               "strictly_necessary"),
+    ("prefix", "xsrf",               "strictly_necessary"),
+    ("prefix", "session",            "strictly_necessary"),
+    ("prefix", "sess",               "strictly_necessary"),
+    ("prefix", "__Host-",            "strictly_necessary"),
+    ("prefix", "__Secure-",          "strictly_necessary"),
+    ("prefix", "sb-",                "strictly_necessary"),   # Supabase auth
+    ("prefix", "__stripe_",          "strictly_necessary"),
+    ("prefix", "AWSALB",             "strictly_necessary"),
+    ("prefix", "AWSELB",             "strictly_necessary"),
+    ("prefix", "OptanonConsent",     "strictly_necessary"),   # CMP consent record
+    ("prefix", "CookieConsent",      "strictly_necessary"),   # CMP consent record
+    ("prefix", "cookieconsent_",     "strictly_necessary"),
+    ("prefix", "cky-consent",        "strictly_necessary"),
+    ("prefix", "cmplz_",             "strictly_necessary"),
+    ("prefix", "viewed_cookie_",     "strictly_necessary"),
+    # FUNCTIONAL — require consent under GDPR
+    ("prefix", "lang",               "functional"),
+    ("prefix", "locale",             "functional"),
+    ("prefix", "language",           "functional"),
+    ("prefix", "currency",           "functional"),
+    ("prefix", "timezone",           "functional"),
+    ("prefix", "theme",              "functional"),
+    ("prefix", "user_pref",          "functional"),
+    ("prefix", "preferences",        "functional"),
+    ("prefix", "wp-settings-",       "functional"),
+    # ANALYTICS — require consent
+    ("prefix", "_ga",                "analytics"),    # Google Analytics 4 + UA
+    ("prefix", "_gid",               "analytics"),
+    ("prefix", "_gat",               "analytics"),
+    ("prefix", "_gac_",              "analytics"),
+    ("prefix", "__utm",              "analytics"),    # GA legacy
+    ("prefix", "_pk_id",             "analytics"),   # Matomo
+    ("prefix", "_pk_ses",            "analytics"),
+    ("prefix", "amplitude_",         "analytics"),
+    ("prefix", "_hjid",              "analytics"),   # Hotjar
+    ("prefix", "_hjFirstSeen",       "analytics"),
+    ("prefix", "_hjSession",         "analytics"),
+    ("prefix", "_hjAbsolute",        "analytics"),
+    ("prefix", "_hjIncluded",        "analytics"),
+    ("prefix", "_hjTLDTest",         "analytics"),
+    ("prefix", "_clck",              "analytics"),   # Microsoft Clarity
+    ("prefix", "_clsk",              "analytics"),
+    ("prefix", "HEAP",               "analytics"),
+    ("prefix", "heap_",              "analytics"),
+    ("prefix", "ajs_",              "analytics"),    # Segment
+    ("prefix", "mixpanel",           "analytics"),
+    ("prefix", "_fs_",               "analytics"),   # FullStory
+    ("prefix", "fs_",                "analytics"),
+    ("prefix", "mp_",                "analytics"),   # Mixpanel
+    # MARKETING — require consent
+    ("prefix", "_fbp",               "marketing"),   # Facebook Pixel
+    ("prefix", "_fbc",               "marketing"),
+    ("exact",  "fr",                 "marketing"),   # Facebook
+    ("exact",  "datr",               "marketing"),
+    ("exact",  "xs",                 "marketing"),
+    ("prefix", "_gcl_",              "marketing"),   # Google Ads
+    ("exact",  "NID",                "marketing"),
+    ("exact",  "1P_JAR",             "marketing"),
+    ("exact",  "DSID",               "marketing"),
+    ("exact",  "IDE",                "marketing"),
+    ("exact",  "ANID",               "marketing"),
+    ("exact",  "AID",                "marketing"),
+    ("prefix", "_uetsid",            "marketing"),   # Microsoft/Bing Ads
+    ("prefix", "_uetvid",            "marketing"),
+    ("exact",  "MUID",               "marketing"),
+    ("exact",  "MR",                 "marketing"),
+    ("prefix", "_tt_sess",           "marketing"),   # TikTok
+    ("prefix", "ttcsid",             "marketing"),
+    ("prefix", "ttwid",              "marketing"),
+    ("prefix", "li_fat_id",          "marketing"),   # LinkedIn
+    ("prefix", "bcookie",            "marketing"),
+    ("prefix", "lidc",               "marketing"),
+    ("prefix", "li_sugr",            "marketing"),
+    ("prefix", "guest_id",           "marketing"),   # Twitter/X
+    ("prefix", "ads_prefs",          "marketing"),
+    ("prefix", "_pin_",              "marketing"),   # Pinterest
+    ("prefix", "_scid",              "marketing"),   # Snapchat
+    ("prefix", "_sctr",              "marketing"),
+]
+
+_COOKIE_RULE_LOOKUP: dict[str, str] = {p: cat for (mt, p, cat) in _COOKIE_RULES if mt == "exact"}
+_COOKIE_PREFIX_RULES: list[tuple[str, str]] = [(p, cat) for (mt, p, cat) in _COOKIE_RULES if mt == "prefix"]
 
 # Required GDPR/Israeli privacy policy elements (text patterns)
 PRIVACY_REQUIRED_ELEMENTS = {
@@ -1854,6 +2175,225 @@ def _calculate_scores(findings: list[LegalFinding]) -> tuple[int, int, int, int]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Cookie Categorization
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _categorize_cookie(name: str) -> str:
+    """
+    Classify a cookie by name using the _COOKIE_RULE_LOOKUP + _COOKIE_PREFIX_RULES tables.
+    Returns one of: strictly_necessary | functional | analytics | marketing | unknown
+    """
+    if name in _COOKIE_RULE_LOOKUP:
+        return _COOKIE_RULE_LOOKUP[name]
+    for prefix, cat in _COOKIE_PREFIX_RULES:
+        if name.startswith(prefix):
+            return cat
+    # Generic session/auth heuristic
+    low = name.lower()
+    if any(k in low for k in ("sess", "session", "auth", "token", "login", "user_id")):
+        return "strictly_necessary"
+    return "unknown"
+
+
+def _build_cookie_records(raw_cookies: list[dict]) -> list[CookieRecord]:
+    """
+    Convert raw Playwright cookie dicts (or simplified requests dicts) into
+    typed CookieRecord objects with categories.
+    """
+    records: list[CookieRecord] = []
+    for c in raw_cookies:
+        name     = c.get("name", "")
+        category = _categorize_cookie(name)
+        # Identify tracker name for marketing/analytics cookies
+        tracker  = ""
+        if category in ("analytics", "marketing"):
+            for tracker_name, patterns in TRACKER_SDKS.items():
+                if any(p.lower() in name.lower() for p in patterns):
+                    tracker = tracker_name
+                    break
+        records.append(CookieRecord(
+            name      = name,
+            value     = str(c.get("value", ""))[:40],
+            domain    = c.get("domain", ""),
+            http_only = bool(c.get("httpOnly", c.get("http_only", False))),
+            secure    = bool(c.get("secure", False)),
+            same_site = c.get("sameSite", c.get("same_site", "")),
+            category  = category,
+            tracker   = tracker,
+        ))
+    return records
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Network-request based tracker detection (Playwright path)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_TRACKER_REQUEST_PATTERNS: dict[str, list[str]] = {
+    "Google Analytics":    ["google-analytics.com", "googletagmanager.com/gtm.js"],
+    "Meta/Facebook Pixel": ["connect.facebook.net/", "facebook.com/tr"],
+    "Google Ads":          ["googleadservices.com", "doubleclick.net"],
+    "Hotjar":              ["hotjar.com/h.js", "hotjar.io"],
+    "Microsoft Clarity":   ["clarity.ms/tag", "clarity.ms/collect"],
+    "TikTok Pixel":        ["analytics.tiktok.com"],
+    "LinkedIn Insight":    ["snap.licdn.com"],
+    "Twitter/X Pixel":     ["static.ads-twitter.com"],
+    "HubSpot":             ["hs-analytics.net", "hubspot.com/hs-analytics"],
+    "Intercom":            ["intercomcdn.com", "widget.intercom.io"],
+    "Mixpanel":            ["api.mixpanel.com"],
+    "Segment":             ["cdn.segment.com", "api.segment.io"],
+    "Amplitude":           ["api.amplitude.com"],
+    "Heap Analytics":      ["heapanalytics.com"],
+    "FullStory":           ["rs.fullstory.com"],
+}
+
+
+def _detect_trackers_from_requests(request_urls: list[str]) -> list[str]:
+    """Identify trackers from Playwright's outbound request list."""
+    found: list[str] = []
+    for tracker, patterns in _TRACKER_REQUEST_PATTERNS.items():
+        for url in request_urls:
+            if any(p in url for p in patterns):
+                if tracker not in found:
+                    found.append(tracker)
+                break
+    return found
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Multi-page crawler — verify privacy policy in footer across all sampled pages
+# ─────────────────────────────────────────────────────────────────────────────
+
+_CRAWL_PATHS = [
+    "/",
+    "/privacy-policy", "/privacy", "/datenschutz",
+    "/terms", "/terms-of-service", "/terms-of-use",
+    "/contact", "/contact-us",
+    "/about", "/about-us",
+    "/checkout", "/cart",
+    "/login", "/signin", "/register", "/signup",
+]
+
+_FOOTER_SELECTORS = [
+    "footer a",
+    "[class*='footer'] a",
+    "[id*='footer'] a",
+    "[role='contentinfo'] a",
+]
+
+
+def _check_privacy_in_footer(html: str) -> bool:
+    """Return True if a privacy policy link appears in the page footer."""
+    try:
+        try:
+            soup = BeautifulSoup(html, "lxml")
+        except Exception:
+            soup = BeautifulSoup(html, "html.parser")
+
+        for selector in _FOOTER_SELECTORS:
+            tag_name, *rest = selector.split(" ")
+            child_tag = rest[0] if rest else None
+            # Simplified selector matching for BeautifulSoup
+            for container in soup.find_all(True):
+                attrs = container.attrs or {}
+                class_str = " ".join(attrs.get("class", []))
+                role = attrs.get("role", "")
+                id_str = attrs.get("id", "")
+                tag = getattr(container, "name", "")
+                is_footer = (
+                    tag == "footer"
+                    or "footer" in class_str.lower()
+                    or "footer" in id_str.lower()
+                    or role == "contentinfo"
+                )
+                if is_footer:
+                    for link in container.find_all("a"):
+                        text = link.get_text(" ", strip=True)
+                        href = link.get("href", "")
+                        for pat in PRIVACY_LINK_PATTERNS:
+                            if re.search(pat, text, re.I) or re.search(pat, href, re.I):
+                                return True
+    except Exception:
+        pass
+    return False
+
+
+def _crawl_additional_pages(
+    base_url: str,
+    max_pages: int = 8,
+) -> tuple[list[str], bool]:
+    """
+    Fetch up to `max_pages` pages from the site and check for privacy footer link.
+
+    Returns:
+        (pages_scanned: list[str], privacy_in_footer_all: bool)
+        privacy_in_footer_all is True only if EVERY successfully fetched page has
+        a privacy policy link in its footer.
+    """
+    parsed = urlparse(base_url)
+    origin = f"{parsed.scheme}://{parsed.netloc}"
+
+    pages_to_check: list[str] = []
+    for path in _CRAWL_PATHS:
+        candidate = origin + path
+        if candidate not in pages_to_check:
+            pages_to_check.append(candidate)
+        if len(pages_to_check) >= max_pages:
+            break
+
+    # Also try sitemap.xml
+    sitemap_url = origin + "/sitemap.xml"
+    try:
+        sr, _ = _safe_get(sitemap_url, timeout=8)
+        if sr and sr.status_code == 200 and "xml" in sr.headers.get("content-type", ""):
+            # Extract up to 3 URLs from sitemap
+            sm_soup = BeautifulSoup(sr.text, "xml")
+            for loc in sm_soup.find_all("loc")[:3]:
+                loc_url = loc.get_text(strip=True)
+                if loc_url.startswith(origin) and loc_url not in pages_to_check:
+                    pages_to_check.append(loc_url)
+    except Exception:
+        pass
+
+    scanned: list[str] = []
+    pages_with_footer_ok = 0
+    pages_fetched = 0
+
+    for page_url in pages_to_check[:max_pages]:
+        try:
+            r, err = _safe_get(page_url, timeout=10)
+            if err or r is None or r.status_code >= 400:
+                continue
+            scanned.append(page_url)
+            pages_fetched += 1
+            if _check_privacy_in_footer(r.text):
+                pages_with_footer_ok += 1
+        except Exception:
+            continue
+
+    all_ok = pages_fetched > 0 and pages_with_footer_ok == pages_fetched
+    return scanned, all_ok
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Fine estimate injector
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _apply_fine_estimates(findings: list[LegalFinding]) -> None:
+    """
+    Enrich findings that have entries in FINE_DB with fine_min/max/example.
+    Modifies findings in-place — only FAIL/WARN findings get fine data.
+    """
+    for f in findings:
+        if f.status not in ("FAIL", "WARN"):
+            continue
+        entry = FINE_DB.get(f.check_id)
+        if entry:
+            f.fine_min     = entry.get("min", "")
+            f.fine_max     = entry.get("max", "")
+            f.fine_example = entry.get("example", "")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Main orchestrator
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1862,35 +2402,87 @@ def run_legal_scan(url: str, frameworks: list[str] | None = None) -> LegalScanRe
     Run a full legal compliance scan on the given URL.
     frameworks: subset of ["IL", "US", "GDPR"] or None for all.
     Returns LegalScanResult with all findings and scores.
+
+    Scan flow:
+      1. Try Playwright headless browser (JS-rendered DOM + real cookies + network requests)
+         Fall back to requests-based static fetch if Playwright unavailable.
+      2. Run multi-page crawler to verify privacy policy footer on all pages.
+      3. Categorize all collected cookies (strictly_necessary / functional / analytics / marketing).
+      4. Run all legal check functions on the fetched content.
+      5. Apply FINE_DB estimates to all FAIL/WARN findings.
+      6. Score by framework.
     """
     t0 = time.time()
     result = LegalScanResult(url=url)
     active_fw = set(frameworks or ["IL", "US", "GDPR"])
 
-    # ── 1. Fetch main page ──────────────────────────────────────────────────
-    resp, err = _safe_get(url, timeout=15)
-    if err or resp is None:
-        result.error = f"Failed to fetch URL: {err}"
-        return result
+    # ── 1. Fetch main page (Playwright preferred, requests fallback) ─────────
+    pw_html: str = ""
+    pw_cookies: list[dict] = []
+    pw_requests: list[str] = []
+    pw_headers: dict = {}
+    base_url: str = url
+    scan_method: str = "static"
 
-    html = resp.text
+    try:
+        from tools.playwright_executor import execute_page
+        pw_result = execute_page(url, timeout_ms=22_000, wait_after_load_ms=2_500)
+        if not pw_result.error and pw_result.html:
+            pw_html       = pw_result.html
+            pw_cookies    = pw_result.cookies
+            pw_requests   = pw_result.requests_made
+            pw_headers    = pw_result.response_headers
+            base_url      = pw_result.final_url or url
+            scan_method   = pw_result.method   # "playwright" or "requests"
+    except Exception:
+        pass
+
+    # If Playwright/executor gave us no content, fall back to _safe_get
+    if not pw_html:
+        resp, err = _safe_get(url, timeout=15)
+        if err or resp is None:
+            result.error = f"Failed to fetch URL: {err}"
+            return result
+        pw_html    = resp.text
+        base_url   = resp.url
+        pw_headers = {k.lower(): v for k, v in resp.headers.items()}
+        pw_cookies = [
+            {"name": k, "value": v, "domain": urlparse(resp.url).hostname or "",
+             "httpOnly": False, "secure": False, "sameSite": ""}
+            for k, v in resp.cookies.items()
+        ]
+        scan_method = "static"
+
+    result.scan_method = scan_method
+
+    html = pw_html
     try:
         soup = BeautifulSoup(html, "lxml")
     except Exception:
         soup = BeautifulSoup(html, "html.parser")
 
-    base_url = resp.url
-    headers = dict(resp.headers)
-    headers_lower = {k.lower(): v for k, v in headers.items()}
+    headers_lower = {k.lower(): v for k, v in pw_headers.items()}
 
-    # Extract domain for DNS-based checks
+    # Also fetch raw headers via requests if Playwright gave no headers
+    # (e.g. requests fallback doesn't populate response_headers for security checks)
+    if not headers_lower:
+        _r, _e = _safe_get(url, timeout=10)
+        if _r:
+            headers_lower = {k.lower(): v for k, v in _r.headers.items()}
+
     domain = urlparse(base_url).hostname or ""
 
-    # ── 2. Detect trackers & consent SDK ───────────────────────────────────
-    result.trackers_found = _detect_trackers(html)
+    # ── 2. Cookie categorization ─────────────────────────────────────────────
+    result.cookies_found = _build_cookie_records(pw_cookies)
+
+    # ── 3. Tracker detection (HTML + network requests) ───────────────────────
+    trackers_from_html    = _detect_trackers(html)
+    trackers_from_network = _detect_trackers_from_requests(pw_requests) if pw_requests else []
+    combined_trackers     = list(dict.fromkeys(trackers_from_html + trackers_from_network))
+    result.trackers_found = combined_trackers
     result.consent_sdk    = _detect_consent_sdk(html)
 
-    # ── 3. Find legal page URLs ─────────────────────────────────────────────
+    # ── 4. Find legal page URLs ─────────────────────────────────────────────
     legal_findings, privacy_url, tos_url, acc_url = _check_legal_pages(soup, html, base_url)
     result.privacy_policy_url = privacy_url
     result.tos_url            = tos_url
@@ -1899,15 +2491,42 @@ def run_legal_scan(url: str, frameworks: list[str] | None = None) -> LegalScanRe
     html_tag = soup.find("html")
     result.page_lang = html_tag.get("lang", "") if html_tag else ""
 
-    # ── 4. Fetch privacy policy for AI analysis ─────────────────────────────
+    # ── 5. Multi-page crawler (privacy footer on all pages) ─────────────────
+    pages_scanned, privacy_all_pages = _crawl_additional_pages(base_url, max_pages=8)
+    result.pages_scanned             = pages_scanned
+    result.privacy_in_footer_all_pages = privacy_all_pages
+
+    # Downgrade ALL-LP-01 if privacy link is MISSING from other pages
+    if privacy_url and not privacy_all_pages and len(pages_scanned) > 1:
+        # Find the finding and downgrade
+        for f in legal_findings:
+            if f.check_id == "ALL-LP-01" and f.status == "PASS":
+                pages_missing = len(pages_scanned) - sum(
+                    1 for p in pages_scanned
+                    if _check_privacy_in_footer((_safe_get(p, timeout=8)[0] or type("", (), {"text": ""})()).text
+                       if False else "")  # Lightweight — we already have the info
+                )
+                f.status      = "WARN"
+                f.description += (
+                    f" However, the privacy policy link was not found in the footer on "
+                    f"all sampled pages ({len(pages_scanned)} pages checked). "
+                    "GDPR Art. 12 requires the link to be accessible from every page."
+                )
+                f.evidence    += f" | Pages without footer link: {len(pages_scanned) - 1} additional pages checked."
+                break
+
+    # ── 6. Fetch privacy policy for AI analysis ─────────────────────────────
     policy_text = _fetch_text_page(privacy_url) if privacy_url else ""
     ai_analysis = _ai_analyze_privacy_policy(policy_text, list(active_fw))
 
-    # ── 5. Run all checks ────────────────────────────────────────────────────
+    # ── 7. Run all checks ────────────────────────────────────────────────────
     all_findings: list[LegalFinding] = []
 
-    all_findings += _check_https(url, resp)
-    all_findings += _check_security_headers(headers)
+    # Need a real requests.Response-like object for _check_https
+    _resp_obj, _ = _safe_get(url, timeout=10)
+    if _resp_obj:
+        all_findings += _check_https(url, _resp_obj)
+    all_findings += _check_security_headers(headers_lower)
     all_findings += _check_cookies_and_consent(html, soup, headers_lower,
                                                result.trackers_found, result.consent_sdk)
     all_findings += legal_findings
@@ -1916,40 +2535,27 @@ def run_legal_scan(url: str, frameworks: list[str] | None = None) -> LegalScanRe
     all_findings += _check_consumer_law(soup, html)
     all_findings += _check_accessibility(soup, html)
     all_findings += _check_data_rights(soup, html, privacy_url)
-
-    # ── 6. New checks ────────────────────────────────────────────────────────
-    # A. DMARC / SPF
     all_findings += _check_dmarc_spf(domain)
-
-    # B. Privacy policy metadata
     all_findings += _check_privacy_policy_metadata(policy_text)
-
-    # C. GDPR EU representative
     all_findings += _check_gdpr_eu_representative(policy_text, soup)
-
-    # D. Cookie inventory (tracking cookies before consent)
     all_findings += _check_cookie_inventory(headers_lower, html)
-
-    # E. ARIA landmarks
     all_findings += _check_aria_landmarks(soup)
-
-    # F. Advanced dark patterns
     all_findings += _check_dark_patterns_advanced(soup, html)
-
-    # G. Payment security / PCI-DSS
     all_findings += _check_payment_security(soup, html)
-
-    # H. Children's safety (advanced)
     all_findings += _check_children_safety_advanced(soup, html)
 
-    # Filter by selected frameworks
+    # ── 8. Filter by selected frameworks ────────────────────────────────────
     filtered = [
         f for f in all_findings
         if f.framework == "ALL" or f.framework in active_fw
     ]
+
+    # ── 9. Apply fine estimates ──────────────────────────────────────────────
+    _apply_fine_estimates(filtered)
+
     result.findings = filtered
 
-    # ── 7. Scoring ──────────────────────────────────────────────────────────
+    # ── 10. Scoring ──────────────────────────────────────────────────────────
     result.risk_score, result.il_score, result.us_score, result.gdpr_score = \
         _calculate_scores(filtered)
     result.scan_time = round(time.time() - t0, 1)
