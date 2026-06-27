@@ -1986,9 +1986,10 @@ st.markdown(f"""
 if "auth_scan_auth" not in st.session_state:
     st.session_state["auth_scan_auth"] = None
 
-tab_url, tab_legal, tab_code, tab_history, tab_diff = st.tabs([
+tab_url, tab_legal, tab_our_legal, tab_code, tab_history, tab_diff = st.tabs([
     "🌐  URL Security Scanner",
     "⚖️  Legal Compliance",
+    "📋  Legal Docs",
     "💻  Source Code Scanner",
     "📈  Scan History",
     "🔄  Compare Scans",
@@ -3584,6 +3585,12 @@ with tab_legal:
     from legal_scanner_ui import show_legal_scanner
     _legal_prefill = url_input if "url_input" in dir() else ""
     show_legal_scanner(prefill_url=_legal_prefill)
+
+# ─────────────────────────────────────────────────────────────────────────────
+
+with tab_our_legal:
+    from legal_pages import show_legal_pages
+    show_legal_pages()
 
 # ═════════════════════════════════════════════════════════════════════════════
 
