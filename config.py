@@ -62,7 +62,14 @@ class Settings(BaseSettings):
 
     # SSRF guard — parsed into ipaddress network objects
     blocked_cidr_ranges: str = Field(
-        "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,169.254.0.0/16"
+        "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,"
+        "169.254.0.0/16,"    # link-local (AWS/GCP/Azure IMDS at 169.254.169.254)
+        "100.64.0.0/10,"     # CGNAT (RFC 6598) — used in some cloud VPC routing
+        "192.0.2.0/24,"      # TEST-NET-1 (RFC 5737)
+        "198.51.100.0/24,"   # TEST-NET-2
+        "203.0.113.0/24,"    # TEST-NET-3
+        "240.0.0.0/4,"       # Reserved (RFC 1112)
+        "0.0.0.0/8"          # This-host network
     )
 
     @field_validator("semgrep_ruleset")

@@ -28,6 +28,22 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# Security meta tags — injected once at page load
+# (HTTP-level headers require Cloudflare/reverse-proxy; these cover what's possible in Streamlit)
+st.html("""
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'self' https: blob: data:;
+           script-src 'self' 'unsafe-inline' 'unsafe-eval' https:;
+           style-src  'self' 'unsafe-inline' https://fonts.googleapis.com;
+           font-src   'self' https://fonts.gstatic.com data:;
+           img-src    'self' https: data: blob:;
+           connect-src 'self' https: wss:;
+           frame-ancestors 'none';">
+""")
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Auth gate — Supabase if configured, else simple APP_PASSWORD fallback
 # ─────────────────────────────────────────────────────────────────────────────
@@ -54,6 +70,49 @@ from api_docs_ui import show_api_docs
 from team_ui import show_team_panel
 from scan_cache import get_cached_scan, set_cached_scan
 from ip_rate_limit import check_scan_rate
+
+# ─────────────────────────────────────────────────────────────────────────────
+# URL input validation — called before every scan
+# ─────────────────────────────────────────────────────────────────────────────
+_BLOCKED_SCHEMES = frozenset(("javascript", "file", "data", "ftp", "smb",
+                               "gopher", "dict", "tftp", "ldap", "netdoc"))
+_MAX_URL_LEN = 2048
+
+
+def _validate_scan_url(raw: str) -> str:
+    """
+    Normalize and validate a user-supplied scan URL.
+    Returns a cleaned https://... URL, or raises ValueError with a user-friendly message.
+    """
+    import re as _re
+    url = raw.strip()
+    if not url:
+        raise ValueError("Enter a target URL.")
+    if len(url) > _MAX_URL_LEN:
+        raise ValueError(f"URL too long (max {_MAX_URL_LEN} chars).")
+    # Reject null bytes and carriage-return/newline injection
+    if _re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f\r\n]", url):
+        raise ValueError("URL contains invalid characters.")
+    # Parse scheme before adding https://
+    from urllib.parse import urlparse as _up
+    _scheme = _up(url).scheme.lower()
+    if _scheme in _BLOCKED_SCHEMES:
+        raise ValueError(f"Scheme '{_scheme}:' is not allowed. Use https://.")
+    # Add default scheme
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    parsed = _up(url)
+    hostname = (parsed.hostname or "").lower()
+    if not hostname:
+        raise ValueError("Could not parse a hostname from that URL.")
+    # Block self-scan
+    _SELF_BLOCKED = ("streamlit.app", "localhost", "127.0.0.1", "::1")
+    if any(hostname == b or hostname.endswith("." + b) for b in _SELF_BLOCKED):
+        raise ValueError(
+            "Scanning this app's own domain is disabled until a custom domain is configured."
+        )
+    return url
+
 
 # ── Playwright pre-download (background, one-shot at app startup) ─────────────
 # Without this, the first user who triggers a deep-JS scan waits ~2 min while
@@ -2235,18 +2294,10 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
             if not url_input.strip():
                 st.warning("Enter a target URL before running Passive Recon.")
             else:
-                target = url_input.strip()
-                if not target.startswith("http"):
-                    target = "https://" + target
-                # Block self-scan until we have a real domain
-                _self_host = __import__("urllib.parse", fromlist=["urlparse"]).urlparse(target).hostname or ""
-                _BLOCKED_SELF = ("streamlit.app", "localhost", "127.0.0.1")
-                if any(_self_host == b or _self_host.endswith("." + b) for b in _BLOCKED_SELF):
-                    st.error(
-                        "🚫 **Self-scan temporarily disabled** — scanning the app's own domain "
-                        "is blocked until a custom domain is configured. "
-                        "Scan an external site instead."
-                    )
+                try:
+                    target = _validate_scan_url(url_input)
+                except ValueError as _ve:
+                    st.error(f"🚫 {_ve}")
                     st.stop()
                 _pr_tool_labels = {
                     "security_txt":       "📝 Security.txt",
@@ -2356,18 +2407,10 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
             from url_scanner_pipeline import run_url_security_audit
             from scan_rate_limiter import get_limiter
             from scan_history_store import get_store
-            target = url_input.strip()
-            # Block self-scan until we have a real domain
-            _self_host2 = __import__("urllib.parse", fromlist=["urlparse"]).urlparse(
-                target if target.startswith("http") else "https://" + target
-            ).hostname or ""
-            _BLOCKED_SELF2 = ("streamlit.app", "localhost", "127.0.0.1")
-            if any(_self_host2 == b or _self_host2.endswith("." + b) for b in _BLOCKED_SELF2):
-                st.error(
-                    "🚫 **Self-scan temporarily disabled** — scanning the app's own domain "
-                    "is blocked until a custom domain is configured. "
-                    "Scan an external site instead."
-                )
+            try:
+                target = _validate_scan_url(url_input)
+            except ValueError as _ve:
+                st.error(f"🚫 {_ve}")
                 st.stop()
             _limiter = get_limiter()
             if not _limiter.acquire(target):
