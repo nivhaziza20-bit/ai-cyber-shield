@@ -301,9 +301,63 @@ button[kind="secondary"]:hover {
   text-decoration-color: rgba(52,211,153,0.85) !important;
 }
 
+/* ── Dual scanner panel ─────────────────────────────── */
+.dp-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:22px 0 20px}
+@media(max-width:640px){.dp-wrap{grid-template-columns:1fr}}
+.dp-panel{border-radius:11px;padding:16px 14px}
+.dp-sec{background:#040d19;border:1px solid rgba(34,211,238,0.2)}
+.dp-leg{background:#05040f;border:1px solid rgba(129,140,248,0.2)}
+.dp-title{font-size:0.72rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:6px}
+.dp-subtitle{font-size:0.63rem;color:#334155;margin-bottom:11px;letter-spacing:0.03em}
+.dp-sec .dp-title{color:#22d3ee}
+.dp-leg .dp-title{color:#818cf8}
+.dp-item{font-size:0.77rem;color:#64748b;padding:2.5px 0;display:flex;align-items:baseline;gap:5px;line-height:1.4}
+.dp-item::before{content:"›";font-weight:900;flex-shrink:0;font-size:0.85rem}
+.dp-sec .dp-item::before{color:#22d3ee}
+.dp-leg .dp-item::before{color:#818cf8}
+
+/* ── Eyebrow tag ────────────────────────────────────── */
+.lp-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(34,211,238,0.07);border:1px solid rgba(34,211,238,0.2);border-radius:99px;padding:5px 14px;margin-bottom:20px;margin-top:8px}
+.lp-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:#22d3ee;display:inline-block;animation:eyebrowPulse 1.6s ease-in-out infinite}
+@keyframes eyebrowPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.lp-eyebrow-txt{color:#22d3ee;font-size:0.64rem;letter-spacing:0.16em;text-transform:uppercase;font-weight:700}
+
+/* ── Hero headline — larger ─────────────────────────── */
+.lp-headline{font-size:3.6rem;font-weight:900;color:#f1f5f9;line-height:1.05;margin:0 0 0;letter-spacing:-0.04em;font-family:'Heebo','Inter',sans-serif}
+.lp-headline em{font-style:normal;background:linear-gradient(90deg,#22d3ee,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 20px rgba(34,211,238,0.40));animation:cyanGlow 3s ease-in-out infinite}
+
+/* ── Trust bar ──────────────────────────────────────── */
+.lp-trust{display:flex;flex-wrap:wrap;gap:6px 16px;margin:18px 0 8px}
+.lp-trust span{color:#475569;font-size:0.72rem;display:inline-flex;align-items:center;gap:5px}
+.lp-trust span::before{content:"✓";color:#22d3ee;font-weight:900}
+.lp-scan-label{color:#334155;font-size:0.69rem;letter-spacing:0.04em;margin-top:4px;padding-bottom:20px;border-bottom:1px solid #0f1e2d}
+
+/* ── Nav dual badge ─────────────────────────────────── */
+.nav-dual{display:inline-flex;align-items:center;gap:6px;background:#080e1a;border:1px solid #1a2a3d;border-radius:7px;padding:3px 10px;font-size:0.64rem}
+.nav-dual-sec{color:#22d3ee;font-weight:700}
+.nav-dual-leg{color:#818cf8;font-weight:700}
+.nav-dual-sep{color:#1e2d3d;font-size:0.7rem}
+
+/* ── Feature dual panel ─────────────────────────────── */
+.feat-section{margin:24px 0 8px}
+.feat-section-label{color:#475569;font-size:0.63rem;text-transform:uppercase;letter-spacing:0.22em;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.feat-section-label::after{content:"";flex:1;height:1px;background:#0f1e2d}
+.feat-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+@media(max-width:600px){.feat-duo{grid-template-columns:1fr}}
+.feat-panel{border-radius:12px;padding:18px 16px}
+.feat-panel-sec{background:#040d19;border:1px solid rgba(34,211,238,0.15)}
+.feat-panel-leg{background:#05040f;border:1px solid rgba(129,140,248,0.15)}
+.feat-panel-head{font-size:0.72rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:3px}
+.feat-panel-sec .feat-panel-head{color:#22d3ee}
+.feat-panel-leg .feat-panel-head{color:#818cf8}
+.feat-panel-sub{font-size:0.63rem;color:#334155;margin-bottom:12px;letter-spacing:0.03em}
+.feat-panel-item{font-size:0.77rem;color:#64748b;padding:3px 0;display:flex;gap:7px;align-items:flex-start;line-height:1.4}
+.feat-panel-item-icon{flex-shrink:0}
+.feat-panel-item strong{color:#94a3b8}
+
 /* ── MOBILE — tablet (≤768px) ───────────────────────────── */
 @media (max-width: 768px) {
-  .lp-headline { font-size: 2.1rem; }
+  .lp-headline { font-size: 2.2rem; }
   .lp-desc { font-size: 0.9rem; }
   .lp-features { grid-template-columns: 1fr; }
   .lp-stats { gap: 16px; }
@@ -315,7 +369,7 @@ button[kind="secondary"]:hover {
 
 /* ── MOBILE — phone (≤480px) ────────────────────────────── */
 @media (max-width: 480px) {
-  .lp-headline { font-size: 1.7rem; letter-spacing: -0.01em; }
+  .lp-headline { font-size: 1.8rem; letter-spacing: -0.02em; }
   .lp-desc { font-size: 0.85rem; max-width: 100%; }
   .lp-cta-btn { padding: 10px 18px; font-size: 0.82rem; width: 100%; justify-content: center; }
   .lp-cta-note { font-size: 0.7rem; }
@@ -335,29 +389,28 @@ button[kind="secondary"]:hover {
 
 _NAV_HTML = """
 <style>
-.aics-nav{display:flex;align-items:center;justify-content:space-between;padding:13px 4px;border-bottom:1px solid #1e2d3d;margin-bottom:6px;flex-wrap:wrap;gap:10px}
-.aics-nav-brand{display:flex;align-items:center;gap:10px}
-.aics-nav-links{display:flex;align-items:center;gap:20px}
-.aics-nav-link{color:#64748b;font-size:0.76rem;white-space:nowrap}
-.aics-nav-cta{background:#22d3ee;color:#000;font-weight:800;font-size:0.76rem;padding:6px 16px;border-radius:7px;white-space:nowrap}
-@media(max-width:768px){
-  .aics-nav-links .aics-nav-link{display:none}
-  .aics-nav{padding:10px 4px}
-}
-@media(max-width:480px){
-  .aics-nav-cta{font-size:0.7rem;padding:5px 12px}
-}
+.aics-nav{display:flex;align-items:center;justify-content:space-between;padding:13px 4px;border-bottom:1px solid #0f1e2d;margin-bottom:4px;flex-wrap:wrap;gap:10px}
+.aics-nav-brand{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.aics-nav-links{display:flex;align-items:center;gap:18px}
+.aics-nav-link{color:#334155;font-size:0.73rem;white-space:nowrap}
+.aics-nav-cta{background:#22d3ee;color:#000;font-weight:800;font-size:0.73rem;padding:6px 15px;border-radius:7px;white-space:nowrap;letter-spacing:-0.01em}
+@media(max-width:768px){.aics-nav-links .aics-nav-link{display:none}.aics-nav{padding:10px 4px}}
+@media(max-width:480px){.aics-nav-cta{font-size:0.68rem;padding:5px 11px}}
 </style>
 <div class="aics-nav">
   <div class="aics-nav-brand">
-    <span style="font-size:1.2rem">🛡</span>
-    <span style="font-family:'JetBrains Mono','Courier New',monospace;font-weight:900;color:#22d3ee;font-size:0.95rem;letter-spacing:-0.03em">AI Cyber Shield</span>
-    <span style="background:#061a2e;border:1px solid #22d3ee;border-radius:4px;color:#67e8f9;font-size:0.56rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:2px 7px">Beta</span>
+    <span style="font-size:1.25rem;line-height:1">🛡</span>
+    <span style="font-family:'JetBrains Mono','Courier New',monospace;font-weight:900;color:#22d3ee;font-size:0.97rem;letter-spacing:-0.03em">AI Cyber Shield</span>
+    <div class="nav-dual">
+      <span class="nav-dual-sec">🔒 Security</span>
+      <span class="nav-dual-sep">+</span>
+      <span class="nav-dual-leg">⚖️ Legal</span>
+    </div>
   </div>
   <div class="aics-nav-links">
-    <span class="aics-nav-link">18 scan tools</span>
-    <span class="aics-nav-link">No agent required</span>
-    <span class="aics-nav-link">Free tier available</span>
+    <span class="aics-nav-link">18 tools</span>
+    <span class="aics-nav-link">IL · GDPR · US</span>
+    <span class="aics-nav-link">Free tier</span>
     <span class="aics-nav-cta">Start Free →</span>
   </div>
 </div>
@@ -368,52 +421,88 @@ _NAV_HTML = """
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _get_hero_html(lang: str = "he") -> str:
-    _headlines = {
-        "he": ("האתר שלך מאובטח<br>וחוקי?", "בדוק עכשיו.", "rtl"),
-        "en": ("Is your website secure<br>and legally compliant?", "Find out.", "ltr"),
+    direction = "rtl" if lang == "he" else "ltr"
+
+    _h = {
+        "he": ("האתר שלך", "מוגן וחוקי?"),
+        "en": ("Is your site", "secure & compliant?"),
     }
-    h, em, direction = _headlines.get(lang, _headlines["en"])
+    h, em = _h.get(lang, _h["en"])
+
+    _eyebrow = "פלטפורמת AI · אבטחה + ציות משפטי" if lang == "he" else "AI Platform · Security + Legal Compliance"
+
+    _sec = {
+        "he": [
+            "SSL/TLS · מפתחות וחתימות",
+            "CVE · פגיעויות ידועות + EPSS",
+            "DNS · SPF/DMARC · זיוף מייל",
+            "GitHub · דליפות קוד וסודות",
+            "HTTP Headers · הגדרות שגויות",
+            "Cloud Buckets · חשיפה ציבורית",
+        ],
+        "en": [
+            "SSL/TLS · Keys & Certificates",
+            "CVE · Known vulns + EPSS scoring",
+            "DNS · SPF/DMARC · Email spoof",
+            "GitHub · Code & secret leaks",
+            "HTTP Headers · Misconfigurations",
+            "Cloud Buckets · Public exposure",
+        ],
+    }
+    _leg = {
+        "he": [
+            "חוק הגנת הפרטיות הישראלי",
+            "GDPR · תקנות האיחוד האירופי",
+            "CCPA · FTC · חוק פדרלי אמריקאי",
+            "עוגיות · הסכמה וגילוי נאות",
+            "נגישות · WCAG 2.1 AA",
+            "דפוסים כהים · dark patterns",
+        ],
+        "en": [
+            "Israeli Privacy Protection Law",
+            "GDPR · EU Regulation 2016/679",
+            "CCPA / FTC · US Federal Law",
+            "Cookies · Consent & Disclosure",
+            "Accessibility · WCAG 2.1 AA",
+            "Dark Patterns Detection",
+        ],
+    }
+
+    sec_html = "".join(f'<div class="dp-item">{i}</div>' for i in _sec.get(lang, _sec["en"]))
+    leg_html = "".join(f'<div class="dp-item">{i}</div>' for i in _leg.get(lang, _leg["en"]))
+
     _trust = {
-        "he": ["ללא agent בשרת שלך", "Zero network footprint", "18 כלים · תוצאות תוך 90 שניות"],
-        "en": ["No agent on your server", "Zero network footprint", "18 tools · results in <90 sec"],
-    }.get(lang, ["No agent on your server", "Zero network footprint", "18 tools · results in <90 sec"])
-    _scan_label  = "הכנס את כתובת האתר שלך לסריקה" if lang == "he" else "Enter your website to get started"
-    _sub         = "סריקת אבטחה + ציות משפטי · AI · 18 כלים" if lang == "he" else "Security + Legal Compliance Scanner · AI · 18 Tools"
-    _dual_badge  = (
-        '<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">'
-        f'<span style="display:inline-flex;align-items:center;gap:6px;background:#0a1e2e;border:1px solid #22d3ee55;border-radius:8px;padding:7px 14px;font-size:0.82rem;color:#22d3ee;font-weight:700">🛡 {"סריקת אבטחה" if lang=="he" else "Security Scan"} <span style="color:#475569;font-weight:400">18 OSINT</span></span>'
-        f'<span style="display:inline-flex;align-items:center;gap:6px;background:#1a0e2e;border:1px solid #818cf855;border-radius:8px;padding:7px 14px;font-size:0.82rem;color:#a5b4fc;font-weight:700">⚖️ {"ציות משפטי" if lang=="he" else "Legal Compliance"} <span style="color:#475569;font-weight:400">IL · GDPR · US</span></span>'
-        '</div>'
-    )
-    _checks_he = [
-        ('warn','🔒 TLS / SSL'), ('warn','📧 זיוף מייל'), ('warn','🔗 CVE'),
-        ('ok','🌐 DNS'), ('ok','🛡 Headers'), ('ok','☁️ Cloud'),
-        ('','⚖️ ציות GDPR'), ('','🇮🇱 חוק ישראלי'), ('','🇺🇸 US Law'),
-    ]
-    _checks_en = [
-        ('warn','🔒 TLS / SSL'), ('warn','📧 Email Spoof'), ('warn','🔗 CVE Detection'),
-        ('ok','🌐 DNS Scan'), ('ok','🛡 HTTP Headers'), ('ok','☁️ Cloud Buckets'),
-        ('','⚖️ GDPR Check'), ('','🇮🇱 Israeli Law'), ('','🇺🇸 US Law'),
-    ]
-    _checks = _checks_he if lang == "he" else _checks_en
-    checks_html = ''.join(
-        f'<div class="lp-check{"  lp-check-"+c if c else ""}">{t}</div>'
-        for c, t in _checks
-    )
+        "he": ["ללא agent בשרת שלך", "Zero network footprint", "תוצאות תוך 60 שניות"],
+        "en": ["No agent on your server", "Zero network footprint", "Results in 60 seconds"],
+    }.get(lang, ["No agent on your server", "Zero network footprint", "Results in 60 seconds"])
+
+    _scan_label  = "הכנס את כתובת האתר שלך לסריקה מיידית" if lang == "he" else "Enter your website URL to start your free scan"
+    _sec_sub     = "18 כלי OSINT · OWASP Top 10" if lang == "he" else "18 OSINT Tools · OWASP Top 10"
+    _leg_sub     = "3 מערכות חוק · ניקוד אוטומטי" if lang == "he" else "3 Jurisdictions · Auto-Scoring"
+    _sec_title   = "אבטחת סייבר" if lang == "he" else "Cybersecurity"
+    _leg_title   = "ציות משפטי" if lang == "he" else "Legal Compliance"
+
+    trust_html = "".join(f"<span>{s}</span>" for s in _trust)
+
     return f"""
-<div class="lp-brand" dir="{direction}">
-  <div class="lp-brand-icon">🛡</div>
-  <div>
-    <div class="lp-brand-name">AI Cyber Shield</div>
-    <div class="lp-brand-sub">{_sub}</div>
+<div class="lp-eyebrow">
+  <span class="lp-eyebrow-dot"></span>
+  <span class="lp-eyebrow-txt">{_eyebrow}</span>
+</div>
+<h1 class="lp-headline" dir="{direction}">{h}<br><em>{em}</em></h1>
+<div class="dp-wrap">
+  <div class="dp-panel dp-sec">
+    <div class="dp-title">🛡 {_sec_title}</div>
+    <div class="dp-subtitle">{_sec_sub}</div>
+    {sec_html}
+  </div>
+  <div class="dp-panel dp-leg">
+    <div class="dp-title">⚖️ {_leg_title}</div>
+    <div class="dp-subtitle">{_leg_sub}</div>
+    {leg_html}
   </div>
 </div>
-<h1 class="lp-headline" dir="{direction}">{h} <em>{em}</em></h1>
-{_dual_badge}
-<div class="lp-checks">{checks_html}</div>
-<div class="lp-trust">
-  {''.join(f'<span>{s}</span>' for s in _trust)}
-</div>
+<div class="lp-trust">{trust_html}</div>
 <div class="lp-scan-label">{_scan_label}</div>
 """
 
@@ -496,42 +585,38 @@ aicsCU('st-classes',   8,  500);
 # ─────────────────────────────────────────────────────────────────────────────
 
 _FEATURES_HTML = """
-<div class="lp-features-label">What we scan</div>
-<div class="lp-features">
-  <div class="lp-feat">
-    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-    <div class="lp-feat-name">TLS / SSL</div>
-    <div class="lp-feat-desc">Protocol version, cipher suites, certificate validity &amp; HSTS preload status</div>
+<div class="feat-section">
+  <div class="feat-section-label">מה בסריקה שלנו &nbsp;·&nbsp; What's in your scan</div>
+  <div class="feat-duo">
+    <div class="feat-panel feat-panel-sec">
+      <div class="feat-panel-head">🛡 Security Scan</div>
+      <div class="feat-panel-sub">18 OSINT tools · OWASP Top 10 · Active probes</div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">🔒</span><span><strong>TLS / SSL</strong> — Protocol, ciphers, HSTS</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">🏗</span><span><strong>Tech Stack</strong> — 7,537 Wappalyzer signatures + CVE</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">🔗</span><span><strong>CVE Detection</strong> — NVD · GitHub · OSV + EPSS</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">📧</span><span><strong>Email Spoof</strong> — SPF · DKIM · DMARC records</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">🐙</span><span><strong>GitHub Leaks</strong> — Secrets in public repos</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">☁️</span><span><strong>Cloud Buckets</strong> — AWS · GCP · Azure exposure</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">🌐</span><span><strong>API &amp; DNS</strong> — Swagger/GraphQL · subdomain takeover</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">✅</span><span><strong>Active Probes</strong> — XSS · CORS · Open Redirect · SSTI</span></div>
+    </div>
+    <div class="feat-panel feat-panel-leg">
+      <div class="feat-panel-head">⚖️ Legal Compliance</div>
+      <div class="feat-panel-sub">3 jurisdictions · Auto-scoring · Fine estimates</div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">🇮🇱</span><span><strong>Israeli Law</strong> — Privacy Protection · ILPA 2024</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">🇪🇺</span><span><strong>GDPR</strong> — EU Regulation 2016/679</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">🇺🇸</span><span><strong>US Federal</strong> — CCPA · FTC Act · CAN-SPAM</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">🍪</span><span><strong>Cookies</strong> — Consent banner · Disclosure</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">♿</span><span><strong>Accessibility</strong> — WCAG 2.1 AA compliance</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">⚠️</span><span><strong>Dark Patterns</strong> — Deceptive UI detection</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">🔐</span><span><strong>Privacy Policy</strong> — Required disclosures check</span></div>
+      <div class="feat-panel-item"><span class="feat-panel-item-icon">💰</span><span><strong>Fine Estimates</strong> — Potential penalty ranges</span></div>
+    </div>
   </div>
-  <div class="lp-feat">
-    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
-    <div class="lp-feat-name">Technology Stack</div>
-    <div class="lp-feat-desc">7,537 Wappalyzer signatures with version extraction and CVE mapping</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+    <div class="lp-free-badge">✅ <strong>Free tier</strong> — 18 OSINT tools, no card needed</div>
+    <div class="lp-free-badge" style="border-color:#818cf8;background:#0a0818;color:#c7d2fe">⚖️ <strong>Legal Scanner</strong> — IL · GDPR · US compliance</div>
   </div>
-  <div class="lp-feat">
-    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
-    <div class="lp-feat-name">CVE Detection</div>
-    <div class="lp-feat-desc">NVD + GitHub + OSV multi-source feed with EPSS exploit probability scoring</div>
-  </div>
-  <div class="lp-feat">
-    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
-    <div class="lp-feat-name">Active Verification</div>
-    <div class="lp-feat-desc">Non-destructive canary probes confirm Open Redirect, XSS, CORS, SSTI &amp; more</div>
-  </div>
-  <div class="lp-feat">
-    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
-    <div class="lp-feat-name">Deep JS Crawling</div>
-    <div class="lp-feat-desc">Headless Chromium intercepts XHR, discovers hidden API endpoints &amp; secrets</div>
-  </div>
-  <div class="lp-feat">
-    <span class="lp-feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
-    <div class="lp-feat-name">API &amp; DNS</div>
-    <div class="lp-feat-desc">Swagger / GraphQL exposure, SPF / DMARC records, subdomain takeover detection</div>
-  </div>
-</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-  <div class="lp-free-badge">✅ <strong>Free tier</strong> — 18 OSINT tools, no card needed</div>
-  <div class="lp-free-badge" style="border-color:#818cf8;background:#0f0d1f;color:#c7d2fe">⚖️ <strong>Legal Scanner</strong> — IL · GDPR · US compliance</div>
 </div>
 """
 
@@ -1196,30 +1281,29 @@ def show_auth_page() -> None:
 
     st.markdown(_LANDING_CSS, unsafe_allow_html=True)
 
+    # ── Translations / RTL ────────────────────────────────────────────────────
+    from translations import lang_switcher, inject_rtl_css, get_lang as _get_lang, t as _t
+    inject_rtl_css()
+
     # ── Navigation bar ────────────────────────────────────────────────────────
     st.html(_NAV_HTML)
-
-    # ── Language switcher row ─────────────────────────────────────────────────
-    from translations import lang_switcher, inject_rtl_css, t as _t
-    inject_rtl_css()
-    lang_switcher("landing")
 
     # ── Two-column split: 60% marketing, 40% auth form ───────────────────────
     col_left, col_right = st.columns([3, 2], gap="large")
 
     # ── LEFT: product marketing ───────────────────────────────────────────────
     with col_left:
-        from translations import get_lang as _get_lang
         st.markdown(_get_hero_html(_get_lang()), unsafe_allow_html=True)
-
-        # ── Animated stats ────────────────────────────────────────────────────
         st.html(_STATS_HTML)
-
         st.markdown(_FEATURES_HTML, unsafe_allow_html=True)
         st.html(_SHOWCASE_HTML)
 
-    # ── RIGHT: auth card (no tabs — session-state view switching) ────────────
+    # ── RIGHT: language toggle + auth card ───────────────────────────────────
     with col_right:
+        # Language switcher sits neatly above the auth card
+        lang_switcher("landing")
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
         # ── View state ────────────────────────────────────────────────────────
         if "_auth_view" not in st.session_state:
             st.session_state["_auth_view"] = "signin"
