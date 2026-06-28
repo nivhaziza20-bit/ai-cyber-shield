@@ -1855,13 +1855,8 @@ with st.sidebar:
                 if st.button(t("sidebar_admin_panel"), use_container_width=True, key="admin_panel_btn"):
                     st.session_state["_show_admin"] = not st.session_state.get("_show_admin", False)
 
-    # ── Demo / Live toggle (hidden in dev tools expander) ────────────────────
-    with st.expander(t("sidebar_dev_tools")):
-        demo_mode = st.toggle(t("demo_mode_toggle"), value=False, key="demo_mode_toggle")
-        if demo_mode:
-            st.success(t("demo_mode_active_msg"))
-        else:
-            st.caption(t("live_mode_caption"))
+    # Demo mode removed — always live
+    demo_mode = False
 
     st.divider()
 
@@ -1881,26 +1876,21 @@ with st.sidebar:
     )
 
     if scan_mode == "passive":
-        st.markdown("""
+        st.markdown(f"""
 <div class="mode-badge-passive">
-🔵 PASSIVE RECON — 18 OSINT TOOLS<br>
+{t("mode_passive_title")}<br>
 <span style="font-weight:400;color:#93c5fd;font-size:0.72rem">
-  18 OSINT tools · safe on ANY website<br>
-  JS secrets · Cloud buckets · CVE match<br>
-  GitHub leaks · Email spoofability · Wayback<br>
-  DNS deep · CNAME takeover · Exposed files
+  {t("mode_passive_desc")}
 </span>
 </div>""", unsafe_allow_html=True)
         pt_mode_active = False
 
     elif scan_mode == "standard":
-        st.markdown("""
+        st.markdown(f"""
 <div class="mode-badge-standard">
-🟢 STANDARD SCAN<br>
+{t("mode_standard_title")}<br>
 <span style="font-weight:400;color:#94a3b8;font-size:0.72rem">
-  17 passive tools + AI analysis<br>
-  Safe for any site worldwide<br>
-  No live probes sent
+  {t("mode_standard_desc")}
 </span>
 </div>""", unsafe_allow_html=True)
         pt_mode_active = False
@@ -1914,15 +1904,25 @@ with st.sidebar:
 <div class="mode-badge-locked">
 🔒 PT MODE — ADMIN APPROVAL REQUIRED<br>
 <span style="font-weight:400;font-size:0.7rem;color:#fca5a5">
-  Contact admin to request PT Mode access.<br>
-  Your account must be approved before use.
+  PT Mode requires explicit admin approval.<br>
+  Your account must be whitelisted before use.
 </span>
 </div>""", unsafe_allow_html=True)
+            st.markdown("""
+<div style="background:#0d0f14;border:1px solid #1e293b;border-radius:8px;
+            padding:10px 12px;margin-top:8px;font-size:0.7rem;line-height:1.7;color:#64748b">
+⚖️ <b style="color:#f59e0b">Legal notice</b> — Active scanning without authorization<br>
+is a criminal offence under Israeli law (חוק המחשבים, 1995).<br>
+<br>
+To request access, contact the system owner:<br>
+📞 <a href="tel:0546962565" style="color:#22d3ee;text-decoration:none">054-696-2565</a>&nbsp;&nbsp;
+✉️ <a href="mailto:nivhaziza20@gmail.com" style="color:#22d3ee;text-decoration:none">nivhaziza20@gmail.com</a>
+</div>""", unsafe_allow_html=True)
             if _current_user:
-                if st.button("📩 Request PT Access", use_container_width=True, key="pt_request_btn"):
+                if st.button(t("pt_request_btn"), use_container_width=True, key="pt_request_btn"):
                     log_action("pt_request", severity="warning",
                                details={"email": _current_user.email})
-                    st.success("Request sent — admin will review and approve your account.")
+                    st.success(t("pt_request_success"))
             pt_mode_active = False
         else:
             st.markdown("""
@@ -1931,17 +1931,26 @@ with st.sidebar:
 <span style="font-weight:400;color:#fca5a5;font-size:0.72rem">
   Passive scan + live canary probes<br>
   Confirms vulnerabilities with PoC<br>
-  Only for authorized targets
+  Authorized targets only — criminal liability applies
 </span>
 </div>""", unsafe_allow_html=True)
             st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
-            st.markdown(
-                '<span style="color:#f59e0b;font-size:0.75rem;font-weight:700;'
-                'font-family:Courier New,monospace">⚠️ LEGAL CONFIRMATION REQUIRED</span>',
-                unsafe_allow_html=True,
-            )
+            st.markdown("""
+<div style="background:#1a0606;border:1px solid #7f1d1d;border-radius:8px;
+            padding:10px 12px;margin-bottom:6px;font-size:0.7rem;line-height:1.8;color:#fca5a5">
+⚖️ <b>LEGAL AUTHORIZATION REQUIRED</b><br>
+Under Israeli law (חוק המחשבים, 1995) and international equivalents,<br>
+scanning a computer system without permission is a criminal offence.<br>
+<br>
+✅ You must own the target domain, OR<br>
+✅ Hold a signed written authorization from the domain owner.<br>
+<br>
+Questions / authorization verification:<br>
+📞 <a href="tel:0546962565" style="color:#f87171;text-decoration:none">054-696-2565</a>&nbsp;
+✉️ <a href="mailto:nivhaziza20@gmail.com" style="color:#f87171;text-decoration:none">nivhaziza20@gmail.com</a>
+</div>""", unsafe_allow_html=True)
             pt_owns = st.checkbox(
-                "I confirm: this site is mine, or I hold explicit written permission.",
+                t("pt_legal_confirm"),
                 value=False,
                 key="pt_owns_confirm",
             )
@@ -1949,14 +1958,13 @@ with st.sidebar:
                 st.markdown("""
 <div class="mode-badge-locked">
 🔒 PT MODE LOCKED<br>
-<span style="font-weight:400;font-size:0.7rem">Check the box above to unlock.</span>
+<span style="font-weight:400;font-size:0.7rem">
+Check the legal confirmation above to unlock active probes.
+</span>
 </div>""", unsafe_allow_html=True)
                 pt_mode_active = False
-            elif demo_mode:
-                st.warning("Switch to **Live Mode** to use PT Mode.")
-                pt_mode_active = False
             else:
-                st.success("✅ PT Mode active — live probes enabled")
+                st.success(t("pt_mode_unlocked"))
                 pt_mode_active = True
 
     st.divider()
@@ -1987,6 +1995,15 @@ with st.sidebar:
 <span style="color:#22d3ee;font-weight:700">✓</span> ReDoS-safe regex patterns<br>
 <span style="color:#22d3ee;font-weight:700">✓</span> 49 DKIM selectors · 38 exposed file probes<br>
 <span style="color:#22d3ee;font-weight:700">✓</span> CNAME takeover · CORS cache poison check
+</small>
+""", unsafe_allow_html=True)
+
+    st.divider()
+    st.markdown(f'<div class="section-label">{t("section_contact")}</div>', unsafe_allow_html=True)
+    st.markdown("""
+<small style="line-height:2">
+📞 <a href="tel:0546962565" style="color:#22d3ee;text-decoration:none">054-696-2565</a><br>
+✉️ <a href="mailto:nivhaziza20@gmail.com" style="color:#22d3ee;text-decoration:none">nivhaziza20@gmail.com</a>
 </small>
 """, unsafe_allow_html=True)
 
@@ -2177,8 +2194,8 @@ button[kind="primary"]:hover {
     box-shadow: 0 4px 12px rgba(220,38,38,.35) !important;
 }
 </style>""", unsafe_allow_html=True)
-        _btn_label   = "🔴  Scan + Verify (PT Mode)"
-        _btn_caption = "Live canary probes will be sent automatically. Only use on authorized targets."
+        _btn_label   = t("scan_btn_pt")
+        _btn_caption = t("scan_btn_pt_caption")
     elif scan_mode == "passive":
         st.markdown("""<style>
 button[kind="primary"] {
@@ -2190,11 +2207,11 @@ button[kind="primary"]:hover {
     box-shadow: 0 4px 12px rgba(37,99,235,.35) !important;
 }
 </style>""", unsafe_allow_html=True)
-        _btn_label   = "🔵  Run Passive Recon (18 Tools)"
-        _btn_caption = "18 OSINT tools · SSL/TLS · DNS · CT Logs · HTTP headers · IP Intelligence (Shodan) · WHOIS · URLScan · ~90 s"
+        _btn_label   = t("scan_btn_passive")
+        _btn_caption = t("scan_btn_passive_caption")
     else:
-        _btn_label   = "🔍  Scan Now — Full Analysis"
-        _btn_caption = "17 passive tools + AI report · ~30 s · no probes sent · safe for any site"
+        _btn_label   = t("scan_btn_standard")
+        _btn_caption = t("scan_btn_standard_caption")
 
     # ── Active-scan disclosure (Standard / PT modes include TCP port probing) ──
     # Consent is per-URL: changing the target resets the gate so the user must
@@ -2207,26 +2224,12 @@ button[kind="primary"]:hover {
         _already_consented  = bool(_consented_for_url) and (_consented_for_url == _current_url_key)
 
         with st.expander(
-            "⚠️  Active Scan Disclosure — please read before scanning",
+            t("disclosure_expander"),
             expanded=not _already_consented,
         ):
-            st.markdown("""
-**This scan mode includes active TCP port probing.**
-
-The scanner will open TCP connections to 18 common ports on the target host
-(MySQL, PostgreSQL, MongoDB, Redis, RDP, SSH, FTP, SMB…) to check whether
-they are reachable from the internet.
-
-**Before running, confirm:**
-- You own the target domain **or** have written authorisation to scan it.
-- You understand that TCP SYN connections will appear in the target's access logs.
-- You are not using this to probe infrastructure you do not control.
-
-Scanning systems without permission may violate the Computer Fraud and Abuse Act
-(CFAA), Computer Misuse Act (CMA), or local equivalent laws.
-""")
+            st.markdown(t("disclosure_body"))
             _consent_check = st.checkbox(
-                "I confirm I am authorised to scan this target and accept responsibility for this scan.",
+                t("disclosure_check"),
                 key="active_scan_consent_cb",
                 value=_already_consented,
             )
@@ -2247,13 +2250,13 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
         key="url_scan",
         disabled=(scan_mode in ("standard", "pt") and not _active_scan_consent),
     )
-    clear_btn = col_clear.button("✕  Clear",  use_container_width=True, key="url_clear")
+    clear_btn = col_clear.button(t("scan_btn_clear"),  use_container_width=True, key="url_clear")
     with col_cap:
         if pt_mode_active:
             st.markdown(f'<span style="color:#fca5a5;font-size:0.75rem">🔴 {_btn_caption}</span>',
                         unsafe_allow_html=True)
         elif scan_mode in ("standard", "pt") and not _active_scan_consent:
-            st.caption("Check the disclosure above to enable scanning.")
+            st.caption(t("disclosure_required"))
         else:
             st.caption(f"🟢 {_btn_caption}")
 
@@ -2340,7 +2343,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                     "It does not use your Groq API key. Disable Demo Mode only affects Standard/PT scans."
                 )
             if not url_input.strip():
-                st.warning("Enter a target URL before running Passive Recon.")
+                st.warning(t("status_url_required"))
             else:
                 try:
                     target = _validate_scan_url(url_input)
@@ -2373,7 +2376,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                 if _current_user:
                     increment_quota(_current_user)
 
-                with st.status("🔵 Running Passive Recon — 18 OSINT tools…", expanded=True) as _ps:
+                with st.status(t("status_passive_running"), expanded=True) as _ps:
                     st.write(f"🎯 Target: **{target}** — OSINT only, no active probes")
                     _prog = st.progress(0, text="Starting 18 tools in parallel…")
                     try:
@@ -2437,7 +2440,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                     except Exception as _exc:
                         logging.getLogger(__name__).error("Passive recon error: %s", _exc, exc_info=True)
                         _ps.update(label="❌ Passive Recon failed", state="error")
-                        st.error("Passive Recon failed — check the target URL and try again. Details logged.")
+                        st.error(t("status_passive_failed"))
                 st.session_state["_scanning"] = False
                 st.session_state["_scroll_to_results"] = True
                 st.rerun()
@@ -2450,7 +2453,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
             st.session_state.pop("url_passive_recon", None)
             st.rerun()
         elif not url_input.strip():
-            st.warning("Enter a target URL first.")
+            st.warning(t("status_url_required_gen"))
         else:
             from url_scanner_pipeline import run_url_security_audit
             from scan_rate_limiter import get_limiter
@@ -2577,7 +2580,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
         _render_grade_banner(grade, score, target)
 
         # ── 17-category score grid ────────────────────────────────────────────
-        st.markdown('<div class="section-label">SECURITY SCORES — ALL 17 CATEGORIES</div>',
+        st.markdown(f'<div class="section-label">{t("section_scores")}</div>',
                     unsafe_allow_html=True)
 
         # 3-column layout, 6 cards each row
@@ -2600,7 +2603,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
             except Exception:
                 _waf_data = {}
             if _waf_data.get("stealth_used"):
-                st.markdown("""
+                st.markdown(f"""
 <div style="background:#071a10;border:1px solid #22d3ee;border-left:4px solid #22d3ee;
             border-radius:6px;padding:10px 16px;margin:12px 0;display:flex;
             align-items:center;gap:10px">
@@ -2608,10 +2611,10 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
   <div>
     <span style="color:#22d3ee;font-weight:700;font-size:0.8rem;
                  font-family:'Courier New',monospace;letter-spacing:.08em">
-      STEALTH MODE ACTIVATED
+      {t("stealth_activated")}
     </span>
     <span style="color:#475569;font-size:0.78rem;margin-left:8px">
-      — WAF blocked standard scanner UA · browser TLS fingerprint used for WAF fingerprinting
+      {t("stealth_detail")}
     </span>
   </div>
 </div>""", unsafe_allow_html=True)
@@ -2813,7 +2816,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
     <div style="flex:1;min-width:200px">
       <div style="color:#64748b;font-size:0.67rem;text-transform:uppercase;
                   letter-spacing:0.16em;font-family:JetBrains Mono,monospace;margin-bottom:5px">
-        Passive OSINT Recon · 18 Tools · {_ts_display} UTC
+        {t("passive_recon_header", ts=_ts_display)}
       </div>
       <div style="color:#e2e8f0;font-size:1.2rem;font-weight:700;
                   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -3656,9 +3659,9 @@ with tab_code:
             st.caption(f"ℹ️ Minor risk signals: score {pre.risk_score}/100")
 
     col2_run, col2_clear, _ = st.columns([3, 1, 4])
-    run2_btn   = col2_run.button("🚀  Analyse Code", type="primary",
+    run2_btn   = col2_run.button(t("code_analyse_btn"), type="primary",
                                   use_container_width=True, key="code_run")
-    clear2_btn = col2_clear.button("✕ Clear", use_container_width=True, key="code_clear")
+    clear2_btn = col2_clear.button(t("code_clear_btn"), use_container_width=True, key="code_clear")
 
     if clear2_btn:
         for k in ("code_report", "code_meta"):
@@ -3681,7 +3684,7 @@ with tab_code:
             }
             st.rerun()
         elif not code_input.strip():
-            st.warning("Paste source code first.")
+            st.warning(t("status_code_no_input"))
         else:
             with st.status("🕵️ Running static analysis…", expanded=True) as status:
                 try:
@@ -3699,11 +3702,11 @@ with tab_code:
                     status.update(label="✅ Analysis complete!", state="complete")
                 except ValueError:
                     status.update(label="❌ Invalid input", state="error")
-                    st.error("Invalid input — check that the code or URL is correctly formatted.")
+                    st.error(t("status_code_invalid"))
                 except Exception as exc:
                     logging.getLogger(__name__).error("Code scan error: %s", exc, exc_info=True)
                     status.update(label="❌ Analysis failed", state="error")
-                    st.error("Analysis failed — check the input and try again. Details logged.")
+                    st.error(t("status_code_failed"))
             if "code_report" in st.session_state:
                 st.rerun()
 
@@ -3711,7 +3714,7 @@ with tab_code:
         meta = st.session_state["code_meta"] or {}
 
         # ── Summary metrics ───────────────────────────────────────────────────
-        st.markdown('<div class="section-label">ANALYSIS SUMMARY</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="section-label">{t("section_code_summary")}</div>', unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
         c1.metric("Input Risk Score",   f"{meta.get('risk_score', 0)}/100")
         c2.metric("Critical / High",    len(meta.get("high_sev_findings", [])))
@@ -3723,7 +3726,7 @@ with tab_code:
             _render_critical_findings(findings)
 
         # ── Report sections ───────────────────────────────────────────────────
-        st.markdown('<div class="section-label" style="margin-top:8px">VULNERABILITY REPORT</div>',
+        st.markdown(f'<div class="section-label" style="margin-top:8px">{t("section_vuln_report")}</div>',
                     unsafe_allow_html=True)
         _render_report_sections(st.session_state["code_report"])
 
@@ -3749,7 +3752,7 @@ with tab_code:
 # ═════════════════════════════════════════════════════════════════════════════
 
 with tab_history:
-    st.markdown('<div class="section-label">HISTORICAL SCAN TIMELINE</div>',
+    st.markdown(f'<div class="section-label">{t("section_hist_timeline")}</div>',
                 unsafe_allow_html=True)
 
     from scan_history_store import get_store as _get_store
@@ -3758,10 +3761,10 @@ with tab_history:
     _all_urls = _store.get_all_scanned_urls()
 
     if not _all_urls:
-        st.info("No scan history found yet. Run a live scan and results will appear here.")
+        st.info(t("hist_no_history"))
     else:
         selected_url = st.selectbox(
-            "Select URL to view history",
+            t("hist_select_url"),
             options=_all_urls,
             format_func=lambda u: u,
             label_visibility="collapsed",
@@ -3776,7 +3779,7 @@ with tab_history:
                 chron = list(reversed(history))
 
                 # ── Score over time chart ─────────────────────────────────────
-                st.markdown('<div class="section-label">SCORE TIMELINE</div>',
+                st.markdown(f'<div class="section-label">{t("section_score_timeline")}</div>',
                             unsafe_allow_html=True)
 
                 import pandas as pd
@@ -3789,7 +3792,7 @@ with tab_history:
                 st.line_chart(chart_data["Score"], color="#22d3ee", height=220)
 
                 # ── History entries ───────────────────────────────────────────
-                st.markdown('<div class="section-label">SCAN HISTORY</div>',
+                st.markdown(f'<div class="section-label">{t("section_scan_history")}</div>',
                             unsafe_allow_html=True)
 
                 for rec in history:
@@ -3821,7 +3824,7 @@ with tab_history:
 # ═════════════════════════════════════════════════════════════════════════════
 
 with tab_diff:
-    st.markdown('<div class="section-label">DIFFERENTIAL SCAN COMPARISON</div>',
+    st.markdown(f'<div class="section-label">{t("section_diff_compare")}</div>',
                 unsafe_allow_html=True)
 
     from scan_history_store import get_store as _get_store2
@@ -3830,10 +3833,10 @@ with tab_diff:
     _urls2   = _store2.get_all_scanned_urls()
 
     if not _urls2:
-        st.info("No scan history yet — run scans and compare them here.")
+        st.info(t("diff_no_history"))
     else:
         diff_url = st.selectbox(
-            "Target URL to compare",
+            t("diff_select_url"),
             options=_urls2,
             label_visibility="collapsed",
             key="diff_url_select",
@@ -3853,11 +3856,11 @@ with tab_diff:
                 col_a, col_b = st.columns(2)
                 _idx_a = min(1, len(_labels) - 1)  # baseline = older scan (index 1 if available)
                 with col_a:
-                    st.markdown('<div class="section-label">SCAN A (BASELINE)</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="section-label">{t("diff_scan_a")}</div>', unsafe_allow_html=True)
                     label_a = st.selectbox("Scan A", options=_labels, index=_idx_a,
                                            label_visibility="collapsed", key="diff_a")
                 with col_b:
-                    st.markdown('<div class="section-label">SCAN B (COMPARISON)</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="section-label">{t("diff_scan_b")}</div>', unsafe_allow_html=True)
                     label_b = st.selectbox("Scan B", options=_labels, index=0,
                                            label_visibility="collapsed", key="diff_b")
 

@@ -220,6 +220,119 @@ _T: dict[str, dict[str, str]] = {
     "res_upgrade_fixes":    {"he": "🔍 שדרג ל-Pro לקבלת מדריכי תיקון שלב-אחר-שלב", "en": "🔍 Upgrade to Pro for step-by-step fix guides"},
     "res_tools_no_data":    {"he": "⚙️ {n} כלים — אין נתונים ליעד זה", "en": "⚙️ {n} tools — no data for this target"},
 
+    # ── Scan buttons ─────────────────────────────────────────────────────────
+    "scan_btn_pt":          {"he": "🔴  סריקה + אימות (PT Mode)",    "en": "🔴  Scan + Verify (PT Mode)"},
+    "scan_btn_pt_caption":  {
+        "he": "בדיקות חיות יישלחו אוטומטית. השתמש על יעדים מורשים בלבד.",
+        "en": "Live canary probes will be sent automatically. Only use on authorized targets.",
+    },
+    "scan_btn_passive":     {"he": "🔵  הרץ סריקה פסיבית (18 כלים)", "en": "🔵  Run Passive Recon (18 Tools)"},
+    "scan_btn_passive_caption": {
+        "he": "18 כלי OSINT · SSL/TLS · DNS · CT Logs · כותרות HTTP · IP Intelligence · WHOIS · URLScan · ~90 שניות",
+        "en": "18 OSINT tools · SSL/TLS · DNS · CT Logs · HTTP headers · IP Intelligence (Shodan) · WHOIS · URLScan · ~90 s",
+    },
+    "scan_btn_standard":    {"he": "🔍  סרוק עכשיו — ניתוח מלא",   "en": "🔍  Scan Now — Full Analysis"},
+    "scan_btn_standard_caption": {
+        "he": "17 כלים פסיביים + דוח AI · ~30 שניות · ללא בדיקות חיות · בטוח לכל אתר",
+        "en": "17 passive tools + AI report · ~30 s · no probes sent · safe for any site",
+    },
+    "scan_btn_clear":       {"he": "✕  נקה",                         "en": "✕  Clear"},
+
+    # ── Mode badges (sidebar descriptions) ───────────────────────────────────
+    "mode_passive_title":   {"he": "🔵 PASSIVE RECON — 18 OSINT TOOLS", "en": "🔵 PASSIVE RECON — 18 OSINT TOOLS"},
+    "mode_passive_desc":    {
+        "he": "18 כלי OSINT · בטוח לכל אתר · ללא בדיקות חיות<br>  JS secrets · Cloud Buckets · CVE · GitHub Leaks<br>  Email Spoofability · Wayback · DNS · CNAME Takeover",
+        "en": "18 OSINT tools · safe on ANY website · no active probes<br>  JS secrets · Cloud buckets · CVE match<br>  GitHub leaks · Email spoofability · Wayback<br>  DNS deep · CNAME takeover · Exposed files",
+    },
+    "mode_standard_title":  {"he": "🟢 STANDARD SCAN",                "en": "🟢 STANDARD SCAN"},
+    "mode_standard_desc":   {
+        "he": "17 כלים פסיביים + ניתוח AI<br>  בטוח לכל אתר בעולם<br>  ללא בדיקות חיות",
+        "en": "17 passive tools + AI analysis<br>  Safe for any site worldwide<br>  No live probes sent",
+    },
+
+    # ── Active scan disclosure ────────────────────────────────────────────────
+    "disclosure_expander":  {"he": "⚠️  גילוי סריקה פעילה — נא לקרוא לפני הסריקה", "en": "⚠️  Active Scan Disclosure — please read before scanning"},
+    "disclosure_body":      {
+        "he": """**מצב סריקה זה כולל בדיקת פורטים TCP פעילה.**
+
+הסורק יפתח חיבורי TCP ל-18 פורטים נפוצים ביעד
+(MySQL, PostgreSQL, MongoDB, Redis, RDP, SSH, FTP, SMB…) כדי לבדוק
+אם הם נגישים מהאינטרנט.
+
+**לפני הסריקה, אשר:**
+- הנך הבעלים של הדומיין היעד **או** קיבלת אישור כתוב לסרוק אותו.
+- חיבורי TCP SYN יופיעו ביומני הגישה של היעד.
+- אינך משתמש בזה לסריקת תשתית שאינה בשליטתך.
+
+סריקת מערכות ללא אישור עלולה להפר את חוק המחשבים הישראלי (1995),
+ה-CFAA האמריקאי, או חוקים מקומים שקולים.""",
+        "en": """**This scan mode includes active TCP port probing.**
+
+The scanner will open TCP connections to 18 common ports on the target host
+(MySQL, PostgreSQL, MongoDB, Redis, RDP, SSH, FTP, SMB…) to check whether
+they are reachable from the internet.
+
+**Before running, confirm:**
+- You own the target domain **or** have written authorisation to scan it.
+- You understand that TCP SYN connections will appear in the target's access logs.
+- You are not using this to probe infrastructure you do not control.
+
+Scanning systems without permission may violate the Computer Fraud and Abuse Act
+(CFAA), Computer Misuse Act (CMA), or local equivalent laws.""",
+    },
+    "disclosure_check":     {
+        "he": "אני מאשר שאני מורשה לסרוק יעד זה ומקבל אחריות לסריקה זו.",
+        "en": "I confirm I am authorised to scan this target and accept responsibility for this scan.",
+    },
+    "disclosure_required":  {"he": "אמת את הגילוי לעיל כדי לאפשר סריקה.", "en": "Check the disclosure above to enable scanning."},
+
+    # ── PT mode UI ───────────────────────────────────────────────────────────
+    "pt_request_btn":       {"he": "📩 בקש גישה ל-PT Mode",          "en": "📩 Request PT Access"},
+    "pt_request_success":   {
+        "he": "הבקשה נרשמה — צור קשר עם nivhaziza20@gmail.com להשלמת האישור.",
+        "en": "Request logged — contact nivhaziza20@gmail.com to complete approval.",
+    },
+    "pt_legal_confirm":     {
+        "he": "✅ אני מאשר שאני הבעלים של הדומיין הזה או מחזיק אישור כתוב חתום מבעל הדומיין.",
+        "en": "✅ I confirm I own this domain OR hold signed written permission from the domain owner.",
+    },
+    "pt_mode_unlocked":     {"he": "✅ PT Mode פעיל — אישור משפטי נרשם, בדיקות חיות מופעלות", "en": "✅ PT Mode active — legal confirmation recorded, live probes enabled"},
+
+    # ── Key section labels ────────────────────────────────────────────────────
+    "section_scores":       {"he": "ציוני אבטחה — כל 17 הקטגוריות",  "en": "SECURITY SCORES — ALL 17 CATEGORIES"},
+    "section_code_summary": {"he": "סיכום ניתוח",                     "en": "ANALYSIS SUMMARY"},
+    "section_vuln_report":  {"he": "דוח פגיעויות",                    "en": "VULNERABILITY REPORT"},
+    "section_hist_timeline":{"he": "ציר זמן סריקות היסטוריות",       "en": "HISTORICAL SCAN TIMELINE"},
+    "section_score_timeline":{"he": "ציר ציונים",                     "en": "SCORE TIMELINE"},
+    "section_scan_history": {"he": "היסטוריית סריקות",               "en": "SCAN HISTORY"},
+    "section_diff_compare": {"he": "השוואת סריקות — מצב דיפרנציאלי", "en": "DIFFERENTIAL SCAN COMPARISON"},
+    "section_contact":      {"he": "📞 צור קשר",                      "en": "📞 Contact"},
+
+    # ── Scan status messages ─────────────────────────────────────────────────
+    "status_passive_running":  {"he": "🔵 מריץ Passive Recon…",        "en": "🔵 Running Passive Recon…"},
+    "status_url_required":     {"he": "הכנס כתובת URL יעד לפני הסריקה הפסיבית.", "en": "Enter a target URL before running Passive Recon."},
+    "status_url_required_gen": {"he": "הכנס קודם את כתובת ה-URL.",     "en": "Enter a target URL first."},
+    "status_passive_failed":   {"he": "הסריקה הפסיבית נכשלה — בדוק את כתובת ה-URL ונסה שוב.", "en": "Passive Recon failed — check the target URL and try again."},
+    "status_code_no_input":    {"he": "הדבק קוד מקור קודם.",           "en": "Paste source code first."},
+    "status_code_invalid":     {"he": "קלט לא חוקי — בדוק שהקוד או ה-URL תקינים ונסה שוב.", "en": "Invalid input — check that the code or URL is valid and try again."},
+    "status_code_failed":      {"he": "הניתוח נכשל — בדוק את הקלט ונסה שוב. פרטים מוקלדים.", "en": "Analysis failed — check the input and try again. Details logged."},
+
+    # ── Code scanner ─────────────────────────────────────────────────────────
+    "code_input_label":     {"he": "הדבק קוד מקור",                   "en": "Paste source code"},
+    "code_analyse_btn":     {"he": "🚀  נתח קוד",                     "en": "🚀  Analyse Code"},
+    "code_clear_btn":       {"he": "✕  נקה",                          "en": "✕  Clear"},
+
+    # ── Scan history / compare ────────────────────────────────────────────────
+    "hist_no_history":      {"he": "לא נמצאה היסטוריית סריקות עדיין…", "en": "No scan history found yet…"},
+    "hist_select_url":      {"he": "בחר URL לצפייה בהיסטוריה",        "en": "Select URL to view history"},
+    "diff_no_history":      {"he": "אין היסטוריית סריקות עדיין…",     "en": "No scan history yet…"},
+    "diff_select_url":      {"he": "URL יעד להשוואה",                  "en": "Target URL to compare"},
+    "diff_scan_a":          {"he": "סריקה A (בסיס)",                   "en": "SCAN A (BASELINE)"},
+    "diff_scan_b":          {"he": "סריקה B (השוואה)",                 "en": "SCAN B (COMPARISON)"},
+    "stealth_activated":    {"he": "🕵️ מצב STEALTH הופעל — WAF חסם UA רגיל · TLS fingerprint של דפדפן בשימוש", "en": "STEALTH MODE ACTIVATED"},
+    "stealth_detail":       {"he": "", "en": " — WAF blocked standard scanner UA · browser TLS fingerprint used for WAF fingerprinting"},
+    "passive_recon_header": {"he": "PASSIVE RECON — תוצאות · 18 כלים · {ts} UTC", "en": "Passive OSINT Recon · 18 Tools · {ts} UTC"},
+
     # ── Empty state ───────────────────────────────────────────────────────────
     "empty_headline_passive": {"he": "האתר שלך דולף מידע עכשיו?",     "en": "Is your website leaking secrets right now?"},
     "empty_headline_standard":{"he": "מה הפגיעויות שהאתר שלך חושף?",  "en": "What vulnerabilities is your site exposing?"},

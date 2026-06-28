@@ -1231,7 +1231,11 @@ def _get_footer_html(lang: str = "he") -> str:
   &nbsp;·&nbsp;
   <a href="/?legal=privacy" style="color:#475569;text-decoration:none">{privacy}</a>
   &nbsp;·&nbsp;
-  <a href="mailto:support@aicybershield.com" style="color:#475569;text-decoration:none">{contact}</a>
+  <a href="mailto:nivhaziza20@gmail.com" style="color:#475569;text-decoration:none">{contact}</a>
+  <br>
+  <a href="tel:0546962565" style="color:#475569;text-decoration:none">📞 054-696-2565</a>
+  &nbsp;·&nbsp;
+  <a href="mailto:nivhaziza20@gmail.com" style="color:#475569;text-decoration:none">✉️ nivhaziza20@gmail.com</a>
   <br>{disc}
 </div>"""
 
