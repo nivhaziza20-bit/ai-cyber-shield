@@ -1,0 +1,124 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# AI Cyber Shield — Scheduled Scan Worker
+#
+# Why GitHub Actions (vs Supabase Edge Functions / cron-job.org)?
+#   • Python-native — runs the same scanner pipeline as the Streamlit app
+#   • Free (2000 min/month on public repos, 500 on private)
+#   • Full audit trail — every run is logged in Actions history
+#   • Secrets management via GitHub Secrets (not exposed in code)
+#   • Concurrent-safe — GitHub ensures one run at a time per schedule
+#
+# Triggers:
+#   • Hourly cron (05 past every hour — avoids :00 thundering herd)
+#   • Manual dispatch (for testing or one-off runs)
+#
+# Secrets required (Settings → Secrets → Actions):
+#   SUPABASE_URL        — https://ycrtbajqlxjylngryqiy.supabase.co
+#   SUPABASE_KEY        — service role key (not anon key)
+#   GROQ_API_KEY        — for LLM analysis
+#   ANTHROPIC_API_KEY   — fallback LLM (optional)
+#   RESEND_API_KEY      — for email notifications (optional)
+#   NOTIFY_EMAIL        — default notification email (optional)
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Scheduled Security Scans
+
+on:
+  schedule:
+    - cron: '5 * * * *'    # 05 past every hour UTC — staggered to avoid :00 load spikes
+
+  workflow_dispatch:
+    inputs:
+      schedule_id:
+        description: 'Run a specific schedule ID only (leave empty to run all due)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run — list due scans without executing them'
+        required: false
+        default: false
+        type: boolean
+      limit:
+        description: 'Max scans to run per invocation'
+        required: false
+        default: '20'
+        type: string
+
+# Only one scheduled-scan job at a time — prevents duplicate scans if a run is slow
+concurrency:
+  group: scheduled-scans
+  cancel-in-progress: false   # never cancel — let the current run finish
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  run-scheduled-scans:
+    name: Run Due Scheduled Scans
+    runs-on: ubuntu-latest
+    timeout-minutes: 60    # max 1 hour — covers up to ~40 full scans at ~90s each
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Python ──────────────────────────────────────────────────────────
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      # ── 3. System deps (Playwright / Chromium) ─────────────────────────────
+      - name: Install system packages
+        run: |
+          sudo apt-get update -qq
+          # Chromium system libs (from packages.txt)
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+            libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+            libgbm1 libxkbcommon0 libpango-1.0-0 libcairo2 \
+            libasound2 libatspi2.0-0 || true
+
+      # ── 4. Python dependencies ─────────────────────────────────────────────
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip --quiet
+          pip install -r requirements.txt --quiet
+          pip install croniter>=2.0.0 --quiet    # cron expression parser
+
+      # ── 5. Run the scanner ─────────────────────────────────────────────────
+      - name: Run scheduled scan worker
+        env:
+          SUPABASE_URL:       ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY:       ${{ secrets.SUPABASE_KEY }}
+          GROQ_API_KEY:       ${{ secrets.GROQ_API_KEY }}
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          RESEND_API_KEY:     ${{ secrets.RESEND_API_KEY }}
+          NOTIFY_EMAIL:       ${{ secrets.NOTIFY_EMAIL }}
+          APP_URL:            ${{ secrets.APP_URL || 'https://aicybershield.streamlit.app' }}
+          PYTHONPATH:         ${{ github.workspace }}
+        run: |
+          ARGS=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ -n "${{ github.event.inputs.schedule_id }}" ]; then
+            ARGS="$ARGS --schedule-id ${{ github.event.inputs.schedule_id }}"
+          fi
+          if [ -n "${{ github.event.inputs.limit }}" ]; then
+            ARGS="$ARGS --limit ${{ github.event.inputs.limit }}"
+          fi
+          python tools/scheduled_scan_runner.py $ARGS
+
+      # ── 6. Upload logs as artifact ─────────────────────────────────────────
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Scheduled Scan Worker" >> $GITHUB_STEP_SUMMARY
+          echo "Run at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+          echo "Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            echo "Mode: **DRY RUN**" >> $GITHUB_STEP_SUMMARY
+          fi

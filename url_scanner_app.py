@@ -2222,13 +2222,14 @@ st.markdown(f"""
 if "auth_scan_auth" not in st.session_state:
     st.session_state["auth_scan_auth"] = None
 
-tab_url, tab_code, tab_legal, tab_history, tab_diff, tab_our_legal = st.tabs([
+tab_url, tab_code, tab_legal, tab_history, tab_diff, tab_our_legal, tab_portfolio = st.tabs([
     t("tab_url_scanner"),
     t("tab_code_scanner"),
     t("tab_legal"),
     t("tab_scan_history"),
     t("tab_compare_scans"),
     t("tab_legal_docs"),
+    t("tab_portfolio"),
 ])
 
 
@@ -4265,6 +4266,158 @@ with tab_diff:
                     for f in resolved_findings:
                         st.markdown(f'<div class="verify-row verify-unknown" style="border-left-color:#22d3ee">✅ RESOLVED: {f}</div>',
                                     unsafe_allow_html=True)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# TAB 7 — Portfolio Dashboard
+# Research: UpGuard shows domain grid with risk score + trend. SecurityScorecard
+# shows grade badges + industry percentile. ManageEngine shows alert counts.
+# OUR APPROACH: all 3 combined — grade badge + score + trend delta + last scan
+# date + critical count + one-click rescan. Zero extra DB calls: uses existing
+# scan_history_store which dual-backends to Supabase or local JSON.
+# ═════════════════════════════════════════════════════════════════════════════
+
+with tab_portfolio:
+    st.markdown(
+        f'<div class="section-label">{t("tab_portfolio")} — '
+        + ("כל הדומיינים שסרקתם" if get_lang() == "he" else "All Scanned Domains")
+        + '</div>',
+        unsafe_allow_html=True,
+    )
+    st.caption(
+        "סקירת מצב אבטחה לכל הדומיינים שסרקתם — ציון, מגמה, ממצאים קריטיים, סריקה מהירה."
+        if get_lang() == "he" else
+        "Security posture overview for all your scanned domains — grade, trend, critical count, quick rescan."
+    )
+
+    from scan_history_store import get_store as _pf_store
+    _pf = _pf_store()
+    _pf_urls = _pf.get_all_scanned_urls()
+
+    if not _pf_urls:
+        st.info(
+            "אין דומיינים בפורטפוליו עדיין. בצע סריקה ראשונה בטאב 'סורק URL'."
+            if get_lang() == "he" else
+            "No domains in portfolio yet. Run your first scan in the URL Scanner tab."
+        )
+    else:
+        # ── Controls ──────────────────────────────────────────────────────────
+        _pf_col_sort, _pf_col_filter, _ = st.columns([2, 2, 6])
+        with _pf_col_sort:
+            _pf_sort = st.selectbox(
+                "Sort by",
+                ["Score ↑", "Score ↓", "Last scan", "Grade", "Critical count"],
+                label_visibility="collapsed",
+                key="pf_sort",
+            )
+        with _pf_col_filter:
+            _pf_grade_filter = st.multiselect(
+                "Grade filter",
+                ["A", "B", "C", "D", "F"],
+                default=["A", "B", "C", "D", "F"],
+                label_visibility="collapsed",
+                key="pf_grade_filter",
+            )
+
+        # ── Build portfolio rows ──────────────────────────────────────────────
+        _pf_rows = []
+        for _pu in _pf_urls:
+            _ph = _pf.get_scan_history(_pu, limit=2)
+            if not _ph:
+                continue
+            _latest = _ph[0]
+            _prev   = _ph[1] if len(_ph) > 1 else None
+            _delta  = (_latest.overall_score - _prev.overall_score) if _prev else None
+            _pf_rows.append({
+                "url":          _pu,
+                "grade":        _latest.overall_grade,
+                "score":        _latest.overall_score,
+                "delta":        _delta,
+                "last_scan":    _latest.scan_timestamp[:10],
+                "critical":     len(_latest.critical_findings),
+                "scan_id":      _latest.scan_id,
+            })
+
+        # Filter by grade
+        _pf_rows = [r for r in _pf_rows if r["grade"] in _pf_grade_filter]
+
+        # Sort
+        _sort_key = {
+            "Score ↑":       lambda r: r["score"],
+            "Score ↓":       lambda r: -r["score"],
+            "Last scan":     lambda r: r["last_scan"],
+            "Grade":         lambda r: "ABCDF".index(r["grade"]) if r["grade"] in "ABCDF" else 9,
+            "Critical count": lambda r: -r["critical"],
+        }.get(_pf_sort, lambda r: -r["score"])
+        _pf_rows.sort(key=_sort_key)
+
+        # ── Summary metrics ───────────────────────────────────────────────────
+        _m1, _m2, _m3, _m4 = st.columns(4)
+        _avg_score  = int(sum(r["score"] for r in _pf_rows) / len(_pf_rows)) if _pf_rows else 0
+        _a_count    = sum(1 for r in _pf_rows if r["grade"] == "A")
+        _crit_total = sum(r["critical"] for r in _pf_rows)
+        _improved   = sum(1 for r in _pf_rows if r["delta"] and r["delta"] > 0)
+        _m1.metric("Domains", len(_pf_rows))
+        _m2.metric("Avg Score", f"{_avg_score}/100")
+        _m3.metric("Grade A", _a_count)
+        _m4.metric("Total Critical", _crit_total)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # ── Domain cards ──────────────────────────────────────────────────────
+        _grade_styles = {
+            "A": ("#0c4a6e", "#22d3ee"), "B": ("#1e3a5f", "#3b82f6"),
+            "C": ("#4a2800", "#f59e0b"), "D": ("#3b0a0a", "#ef4444"),
+            "F": ("#1a0000", "#dc2626"),
+        }
+
+        for _row in _pf_rows:
+            _bg, _fg = _grade_styles.get(_row["grade"], ("#0d1421", "#64748b"))
+            _delta_str = ""
+            _delta_col = "#22d3ee"
+            if _row["delta"] is not None:
+                _delta_col = "#22d3ee" if _row["delta"] >= 0 else "#ef4444"
+                _delta_str = (f"▲+{_row['delta']}" if _row["delta"] > 0
+                              else f"▼{_row['delta']}" if _row["delta"] < 0
+                              else "→ no change")
+            _crit_badge = (f'<span style="color:#ef4444;font-weight:700">{_row["critical"]} critical</span>'
+                           if _row["critical"] > 0 else
+                           '<span style="color:#22d3ee">✓ 0 critical</span>')
+            _disp_url = _row["url"].replace("https://", "").replace("http://", "").rstrip("/")[:60]
+
+            _card_col, _btn_col = st.columns([10, 2])
+            with _card_col:
+                st.markdown(f"""
+<div style="background:{_bg};border:1px solid #1e2d3d;border-left:4px solid {_fg};
+            border-radius:8px;padding:12px 16px;margin-bottom:6px;
+            display:flex;align-items:center;gap:16px">
+  <div style="background:{_fg};color:#060b14;font-weight:900;font-size:1.1rem;
+              width:40px;height:40px;border-radius:50%;display:flex;
+              align-items:center;justify-content:center;flex-shrink:0">{_row["grade"]}</div>
+  <div style="flex:1;min-width:0">
+    <div style="color:#e2e8f0;font-weight:700;font-family:'Courier New',monospace;
+                font-size:.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{_disp_url}</div>
+    <div style="display:flex;gap:16px;margin-top:4px;font-size:.75rem">
+      <span style="color:{_fg};font-weight:700">{_row["score"]}/100</span>
+      <span style="color:{_delta_col}">{_delta_str}</span>
+      {_crit_badge}
+      <span style="color:#475569">last: {_row["last_scan"]}</span>
+    </div>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+            with _btn_col:
+                if st.button("↻ Rescan", key=f"pf_rescan_{_row['scan_id'][:8]}",
+                             use_container_width=True):
+                    st.session_state["hero_target_url"]   = _row["url"]
+                    st.session_state["_pf_rescan_target"] = _row["url"]
+                    st.rerun()
+
+        # Handle rescan redirect (goes to URL scanner tab with pre-filled URL)
+        if st.session_state.get("_pf_rescan_target"):
+            _t = st.session_state.pop("_pf_rescan_target")
+            st.session_state["url_input_main"] = _t
+            st.info(f"Target URL pre-filled: {_t} — switch to the URL Scanner tab to scan.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

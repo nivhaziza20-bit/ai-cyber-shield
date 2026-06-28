@@ -165,6 +165,7 @@ _T: dict[str, dict[str, str]] = {
     "res_active_verify":    {"he": "אימות פעיל — תוצאות בדיקות",   "en": "ACTIVE VERIFICATION — LIVE PROBE RESULTS"},
     "res_passive_title":    {"he": "🔵 PASSIVE RECON — תוצאות (מיון לפי חומרה)", "en": "🔵 PASSIVE RECON — RESULTS (by severity)"},
     "fix_snippet_label":    {"he": "תקן את זה",                      "en": "Fix this"},
+    "tab_portfolio":        {"he": "🏢 פורטפוליו",                   "en": "🏢 Portfolio"},
     "badge_title":          {"he": "SECURITY BADGE — הטמע באתר שלך", "en": "SECURITY BADGE — Embed on your site"},
     "badge_subtitle":       {
         "he": "שתף את התג הזה באתר שלך — מבקרים יידעו שאתה לוקח אבטחה ברצינות.",

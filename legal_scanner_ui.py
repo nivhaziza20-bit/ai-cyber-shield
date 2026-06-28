@@ -882,5 +882,48 @@ def show_legal_scanner(prefill_url: str = "") -> None:
                     [f for f in result.findings if fw_filter[key](f)]
                 )
 
+        # ── Framework-filtered PDF exports ─────────────────────────────────
+        st.markdown("---")
+        _lc_lang = _get_lang()
+        _export_label = "ייצוא דוחות תאימות" if _lc_lang == "he" else "Export Compliance Reports"
+        _pdf_caption  = ("הורד דוח PDF נפרד לכל מסגרת משפטית — מסומן CONFIDENTIAL, כולל ציון, ממצאים, המלצות ואומדן קנסות."
+                         if _lc_lang == "he" else
+                         "Download a separate compliance PDF per legal framework — marked CONFIDENTIAL, includes score, findings, recommendations and fine estimates.")
+        st.markdown(f'<div class="section-label">{_export_label}</div>', unsafe_allow_html=True)
+        st.caption(_pdf_caption)
+
+        try:
+            from reports.legal_compliance_pdf import generate_legal_pdf
+            _safe_domain = "".join(c for c in raw_url.replace("https://","").replace("http://","") if c.isalnum() or c in ".-_")[:30]
+            _pdf_cols = st.columns(len(active_frameworks) + 1)
+
+            # Per-framework PDFs
+            _fw_labels = {"IL": "🇮🇱 IL", "GDPR": "🇪🇺 GDPR", "US": "🇺🇸 US"}
+            for _ci, _fw in enumerate(active_frameworks):
+                with _pdf_cols[_ci]:
+                    _pdf_b = generate_legal_pdf(result, _fw)
+                    st.download_button(
+                        label=f"📄 {_fw_labels.get(_fw, _fw)} PDF",
+                        data=_pdf_b,
+                        file_name=f"compliance_{_fw.lower()}_{_safe_domain}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True,
+                        key=f"legal_pdf_{_fw}",
+                    )
+
+            # Combined all-frameworks PDF
+            with _pdf_cols[-1]:
+                _pdf_all = generate_legal_pdf(result, "ALL")
+                st.download_button(
+                    label="🌐 Combined PDF",
+                    data=_pdf_all,
+                    file_name=f"compliance_all_{_safe_domain}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key="legal_pdf_all",
+                )
+        except Exception as _pdf_err:
+            st.info(f"PDF export unavailable: {_pdf_err}")
+
         # Repeat disclaimer at bottom
         st.markdown(_disclaimer_html(), unsafe_allow_html=True)
