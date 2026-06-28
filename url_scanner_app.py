@@ -29,7 +29,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Security meta tags — injected once at page load
+# Security + SEO meta tags — injected once at page load
 # (HTTP-level headers require Cloudflare/reverse-proxy; these cover what's possible in Streamlit)
 st.html("""
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -43,6 +43,36 @@ st.html("""
            img-src    'self' https: data: blob:;
            connect-src 'self' https: wss:;
            frame-ancestors 'none';">
+
+<!-- SEO + social sharing -->
+<meta name="description" content="AI Cyber Shield — Free website security scanner. 18 OSINT tools: SSL, headers, CVE, DNS, WAF, cookies, subdomains, secrets and more. Get a grade A–F in 60 seconds.">
+<meta name="keywords" content="website security scanner, SSL check, security headers, CVE scan, OWASP, penetration testing, GDPR compliance, Israeli law compliance">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="AI Cyber Shield — Web Security Scanner">
+<meta property="og:description" content="18-tool security audit: SSL, headers, DNS, CVE correlation, secrets, cookies and more. Grade A–F in 60 seconds. Free.">
+<meta property="og:image" content="https://aicybershield.streamlit.app/og-image.png">
+<meta property="og:locale" content="he_IL">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AI Cyber Shield — Free Website Security Scanner">
+<meta name="twitter:description" content="18 OSINT tools · SSL · Headers · CVE · DNS · WAF · Grade in 60s">
+
+<!-- Keyboard shortcut: Ctrl+Enter / Cmd+Enter triggers scan button -->
+<script>
+(function(){
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      var btns = document.querySelectorAll('button[kind="primary"]');
+      // Click the first visible primary button (the Scan button)
+      for (var i = 0; i < btns.length; i++) {
+        if (btns[i].offsetParent !== null) { btns[i].click(); break; }
+      }
+    }
+  });
+})();
+</script>
 """)
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -702,8 +732,8 @@ button[kind="secondary"]:hover {
     flex-shrink: 0;
     font-family: 'JetBrains Mono', 'Courier New', monospace;
 }
-.grade-A { background: #0c4a6e; color: #22d3ee; border: 3px solid #22d3ee; }
-.grade-B { background: #1e3a5f; color: #3b82f6; border: 3px solid #3b82f6; }
+.grade-A { background: #0c4a6e; color: #22d3ee; border: 3px solid #22d3ee; box-shadow: 0 0 28px rgba(34,211,238,0.35), inset 0 0 20px rgba(34,211,238,0.08); }
+.grade-B { background: #1e3a5f; color: #3b82f6; border: 3px solid #3b82f6; box-shadow: 0 0 20px rgba(59,130,246,0.25); }
 .grade-C { background: #4a2800; color: #f59e0b; border: 3px solid #f59e0b; }
 .grade-D { background: #3b0a0a; color: #ef4444; border: 3px solid #ef4444; }
 .grade-F { background: #1a0000; color: #dc2626; border: 3px solid #dc2626; }
@@ -912,9 +942,9 @@ code, pre {
 /* ── Section dividers ─────────────────────────────────────────────────────── */
 .section-label {
     color: #475569;
-    font-size: 0.58rem;
+    font-size: 0.65rem;   /* was 0.58rem — 9.3px too small to read comfortably */
     text-transform: uppercase;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.18em;
     font-family: 'JetBrains Mono', 'Courier New', monospace;
     padding: 6px 0 4px;
     border-bottom: 1px solid #1f2d3d;
@@ -1484,7 +1514,8 @@ def _render_grade_banner(grade: str, score: int, url: str) -> None:
                 height:5px;overflow:hidden;max-width:400px">
       <div style="height:5px;width:{score}%;border-radius:4px;
                   background:linear-gradient(90deg,{color},{color}80);
-                  box-shadow:0 0 10px {color}55"></div>
+                  box-shadow:0 0 10px {color}55;
+                  animation:score-bar-enter 1.2s cubic-bezier(0.16,1,0.3,1) forwards"></div>
     </div>
     <div style="color:#334155;font-size:0.68rem;margin-top:8px;
                 font-family:JetBrains Mono,Courier New,monospace;letter-spacing:0.04em">
@@ -1867,12 +1898,12 @@ def _render_report_sections(report_markdown: str) -> None:
         elif "hsts" in tl:
             section_icon = "📌"
 
-        label_html = f"{section_icon} &nbsp; {title} &nbsp; {score_str} {badge}"
-
         # Default open for Executive Summary and Recommendations
         default_open = any(k in tl for k in ("executive", "summary", "recommendation", "owasp", "overall"))
 
-        with st.expander(f"{section_icon} {title}", expanded=default_open):
+        # Include score in expander label so users can see it without expanding
+        _expander_score = f"  {score}/100" if score is not None else ""
+        with st.expander(f"{section_icon} {title}{_expander_score}", expanded=default_open):
             st.markdown(f'<div class="report-body">', unsafe_allow_html=True)
             st.markdown(body)
             st.markdown("</div>", unsafe_allow_html=True)
@@ -1994,13 +2025,27 @@ with st.sidebar:
         _quota = check_quota(_current_user)
         _limit = _quota.get("limit", 5)
         _used  = _quota.get("used", 0)
+        _remaining = max(0, _limit - _used) if _limit > 0 else 999
         if _quota.get("allowed"):
             if _limit > 0:
-                st.progress(min(_used / _limit, 1.0), text=f"{_used}/{_limit} scans today")
+                _q_pct  = min(int(_used / _limit * 100), 100)
+                _q_col  = "#22d3ee" if _q_pct < 60 else "#f59e0b" if _q_pct < 90 else "#ef4444"
+                st.markdown(f"""
+<div style="margin:4px 0 8px;font-family:monospace">
+  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+    <span style="color:#475569;font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em">Scans today</span>
+    <span style="color:{_q_col};font-size:0.68rem;font-weight:700">{_used}/{_limit}</span>
+  </div>
+  <div style="background:#1f2d3d;border-radius:3px;height:3px;overflow:hidden">
+    <div style="background:{_q_col};height:3px;width:{_q_pct}%;border-radius:3px;
+                transition:width .4s ease"></div>
+  </div>
+  <div style="color:#334155;font-size:0.62rem;margin-top:3px">{_remaining} remaining today</div>
+</div>""", unsafe_allow_html=True)
             else:
-                st.success("♾ Unlimited scans")
+                st.markdown('<div style="color:#22d3ee;font-size:0.7rem;margin:4px 0 8px">♾ Unlimited scans</div>', unsafe_allow_html=True)
         else:
-            st.error(f"⛔ Daily limit reached ({_limit}/day)")
+            st.markdown(f'<div style="color:#ef4444;font-size:0.7rem;margin:4px 0 8px">⛔ Daily limit reached ({_limit}/day)</div>', unsafe_allow_html=True)
 
         col_up, col_lo = st.columns(2)
         with col_up:
@@ -2150,7 +2195,7 @@ Check the legal confirmation above to unlock active probes.
     st.markdown(f'<div class="section-label">{t("sidebar_about")}</div>', unsafe_allow_html=True)
     st.markdown("""
 <small style="color:#475569;line-height:1.7">
-<b style="color:#22d3ee">17 security tools</b> run in parallel:<br>
+<b style="color:#22d3ee">18 security tools</b> run in parallel:<br>
 🔒 SSL/TLS · 📋 Headers · 🌐 HTML/JS<br>
 ⚙️ Tech Stack · 🕷️ Crawler · 🔀 CORS<br>
 🌍 DNS · 📂 Exposure · 📌 HSTS<br>
@@ -2482,7 +2527,13 @@ button[kind="primary"]:hover {
         elif scan_mode in ("standard", "pt") and not _active_scan_consent:
             st.caption(t("disclosure_required"))
         else:
-            st.caption(f"🟢 {_btn_caption}")
+            st.markdown(
+                f'<span style="color:#475569;font-size:0.72rem">🟢 {_btn_caption}'
+                ' &nbsp;·&nbsp; <kbd style="background:#111827;border:1px solid #1f2d3d;'
+                'border-radius:3px;padding:1px 5px;font-size:0.65rem;color:#64748b">'
+                'Ctrl+↵</kbd></span>',
+                unsafe_allow_html=True,
+            )
 
     if clear_btn:
         for k in ("url_report", "url_meta", "url_target", "url_tool_results",
@@ -4407,17 +4458,19 @@ with tab_portfolio:
 </div>""", unsafe_allow_html=True)
 
             with _btn_col:
-                if st.button("↻ Rescan", key=f"pf_rescan_{_row['scan_id'][:8]}",
+                # Unique key: prefer scan_id, fall back to url hash so keys never collide
+                _pf_key = _row["scan_id"][:8] if _row["scan_id"] else str(abs(hash(_row["url"])))[:8]
+                if st.button("↻ Rescan", key=f"pf_rescan_{_pf_key}",
                              use_container_width=True):
                     st.session_state["hero_target_url"]   = _row["url"]
                     st.session_state["_pf_rescan_target"] = _row["url"]
                     st.rerun()
 
-        # Handle rescan redirect (goes to URL scanner tab with pre-filled URL)
+        # Rescan sets hero_target_url so the URL Scanner tab pre-fills it on rerun.
+        # The _pf_rescan_target key is cleared here to prevent the info banner looping.
         if st.session_state.get("_pf_rescan_target"):
-            _t = st.session_state.pop("_pf_rescan_target")
-            st.session_state["url_input_main"] = _t
-            st.info(f"Target URL pre-filled: {_t} — switch to the URL Scanner tab to scan.")
+            st.session_state.pop("_pf_rescan_target")
+            st.info("Target URL pre-filled in the URL Scanner tab — click that tab to scan.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

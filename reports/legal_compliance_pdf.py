@@ -161,25 +161,25 @@ def generate_legal_pdf(result, framework: Framework = "ALL") -> bytes:
     col_w = (210 - 32) / 3
     x_start = 16
 
-    for label, value, color in [
+    _stats_y = pdf.get_y()
+    for count_str, category_label, color in [
         (f"{len(fails)}", "FAILURES", _RED),
         (f"{len(warns)}", "WARNINGS", _AMBER),
         (f"{len(passes)}", "PASSING",  _GREEN),
     ]:
-        pdf.set_xy(x_start, pdf.get_y())
         pdf.set_fill_color(*_CARD)
-        pdf.rect(x_start, pdf.get_y(), col_w - 2, 24, "F")
+        pdf.rect(x_start, _stats_y, col_w - 2, 22, "F")
         pdf.set_font("Helvetica", "B", 20)
         pdf.set_text_color(*color)
-        pdf.set_xy(x_start, pdf.get_y() + 3)
-        pdf.cell(col_w - 2, 10, label, align="C")
+        pdf.set_xy(x_start, _stats_y + 2)
+        pdf.cell(col_w - 2, 10, count_str, align="C")
         pdf.set_font("Helvetica", "", 8)
         pdf.set_text_color(*_MUTED)
-        pdf.set_xy(x_start, pdf.get_y() + 13)
-        pdf.cell(col_w - 2, 5, label, align="C")
+        pdf.set_xy(x_start, _stats_y + 13)
+        pdf.cell(col_w - 2, 5, category_label, align="C")
         x_start += col_w
 
-    pdf.ln(30)
+    pdf.set_y(_stats_y + 28)
 
     # Target & metadata
     pdf.set_font("Helvetica", "", 9)
