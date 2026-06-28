@@ -639,11 +639,9 @@ def _auth_card_top(headline: str, sub: str) -> str:
   <div class="auth-card-sub">{sub}</div>
 </div>"""
 
-_AUTH_CARD_FOOTER = """
-<div class="auth-card-footer">
-    🛡 Authorized use only &nbsp;·&nbsp; Scanning targets without permission violates our <a href="/?legal=tos" style="color:#334155;text-decoration:underline">Terms</a>
-</div>
-"""
+def _get_auth_card_footer(lang: str = "he") -> str:
+    from translations import t as _t2
+    return f'<div class="auth-card-footer">{_t2("auth_card_footer_legal")}</div>'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Social proof bar  (self-contained inline styles → st.html)
@@ -1222,17 +1220,20 @@ _SHOWCASE_HTML = """
 # Footer  (self-contained inline styles → st.html)
 # ─────────────────────────────────────────────────────────────────────────────
 
-_FOOTER_HTML = """
-<div style="text-align:center;color:#334155;font-size:0.71rem;padding:20px 0 40px;border-top:1px solid #1e2d3d;line-height:2">
-  <a href="/?legal=tos" style="color:#475569;text-decoration:none">Terms of Service</a>
+def _get_footer_html(lang: str = "he") -> str:
+    from translations import t as _t2
+    tos     = _t2("tos_link")
+    privacy = _t2("privacy_link")
+    contact = _t2("contact_link")
+    disc    = _t2("footer_disclaimer")
+    return f"""<div style="text-align:center;color:#334155;font-size:0.71rem;padding:20px 0 40px;border-top:1px solid #1e2d3d;line-height:2">
+  <a href="/?legal=tos" style="color:#475569;text-decoration:none">{tos}</a>
   &nbsp;·&nbsp;
-  <a href="/?legal=privacy" style="color:#475569;text-decoration:none">Privacy Policy</a>
+  <a href="/?legal=privacy" style="color:#475569;text-decoration:none">{privacy}</a>
   &nbsp;·&nbsp;
-  <a href="mailto:support@aicybershield.com" style="color:#475569;text-decoration:none">Contact</a>
-  <br>
-  🛡 AI Cyber Shield — Authorized use only. Unauthorized scanning is illegal and against our Terms of Service.
-</div>
-"""
+  <a href="mailto:support@aicybershield.com" style="color:#475569;text-decoration:none">{contact}</a>
+  <br>{disc}
+</div>"""
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Validation helpers
@@ -1507,7 +1508,7 @@ def show_auth_page() -> None:
 
         # ── Card footer + JS column marker ────────────────────────────────────
         st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
-        st.markdown(_AUTH_CARD_FOOTER, unsafe_allow_html=True)
+        st.markdown(_get_auth_card_footer(_get_lang()), unsafe_allow_html=True)
 
         # JS: mark auth column + apply Google button white styling
         st.html("""<script>
@@ -1538,7 +1539,7 @@ def show_auth_page() -> None:
     # ── FULL WIDTH: social proof → pricing → footer ───────────────────────────
     st.html(_SOCIAL_PROOF_HTML)
     st.html(_PRICING_HTML)
-    st.html(_FOOTER_HTML)
+    st.html(_get_footer_html(_get_lang()))
 
 
 # ─────────────────────────────────────────────────────────────────────────────

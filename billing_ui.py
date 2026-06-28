@@ -46,7 +46,7 @@ PLANS = [
             "❌ Slack / Jira / PagerDuty",
         ],
         "cta":        "Start Free Trial",
-        "color":      "#10b981",
+        "color":      "#22d3ee",
         "highlight":  False,
         "stripe_key": "STRIPE_PRICE_STARTER",
     },

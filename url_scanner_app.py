@@ -1840,28 +1840,28 @@ with st.sidebar:
         lang_switcher("sidebar")
 
         # ── Scan history (primary action — stays visible) ────────────────────
-        if st.button("📊 Scan History", use_container_width=True, key="history_btn"):
+        if st.button(t("sidebar_history"), use_container_width=True, key="history_btn", type="primary"):
             st.session_state["_show_history"] = not st.session_state.get("_show_history", False)
 
         # ── Secondary tools — collapsed by default ────────────────────────────
-        with st.expander("⋯ More tools"):
-            if st.button("🕐 Schedules", use_container_width=True, key="schedule_btn"):
+        with st.expander(t("sidebar_more_tools")):
+            if st.button(t("sidebar_schedule"), use_container_width=True, key="schedule_btn"):
                 st.session_state["_show_schedules"] = not st.session_state.get("_show_schedules", False)
-            if st.button("📡 API Docs", use_container_width=True, key="api_docs_btn"):
+            if st.button(t("sidebar_api_docs"), use_container_width=True, key="api_docs_btn"):
                 st.session_state["_show_api_docs"] = not st.session_state.get("_show_api_docs", False)
-            if st.button("👥 Team", use_container_width=True, key="team_btn"):
+            if st.button(t("sidebar_team"), use_container_width=True, key="team_btn"):
                 st.session_state["_show_team"] = not st.session_state.get("_show_team", False)
             if _current_user.is_admin:
-                if st.button("🔐 Admin Panel", use_container_width=True, key="admin_panel_btn"):
+                if st.button(t("sidebar_admin_panel"), use_container_width=True, key="admin_panel_btn"):
                     st.session_state["_show_admin"] = not st.session_state.get("_show_admin", False)
 
     # ── Demo / Live toggle (hidden in dev tools expander) ────────────────────
-    with st.expander("⚙ Dev Tools"):
-        demo_mode = st.toggle("Demo Mode (no API call)", value=False, key="demo_mode_toggle")
+    with st.expander(t("sidebar_dev_tools")):
+        demo_mode = st.toggle(t("demo_mode_toggle"), value=False, key="demo_mode_toggle")
         if demo_mode:
-            st.success("✅ Demo Mode active — no real requests sent")
+            st.success(t("demo_mode_active_msg"))
         else:
-            st.caption("🔑 Live Mode — Groq API key required")
+            st.caption(t("live_mode_caption"))
 
     st.divider()
 
@@ -1870,14 +1870,14 @@ with st.sidebar:
         "Scan mode",
         options=["passive", "standard", "pt"],
         format_func=lambda x: {
-            "passive":  "🔵  Passive Recon (OSINT)",
-            "standard": "🟢  Standard Scan",
-            "pt":       "🔴  Active PT Mode",
+            "passive":  t("scan_mode_passive"),
+            "standard": t("scan_mode_standard"),
+            "pt":       t("scan_mode_pt"),
         }.get(x, x),
         index=0,
         label_visibility="collapsed",
         key="scan_mode_radio",
-        help="Passive: 10 OSINT tools, safe on any site. Standard: 17-tool full scan. PT Mode: live probes (needs permission).",
+        help=t("scan_mode_help"),
     )
 
     if scan_mode == "passive":
@@ -2028,12 +2028,12 @@ if "auth_scan_auth" not in st.session_state:
     st.session_state["auth_scan_auth"] = None
 
 tab_url, tab_legal, tab_our_legal, tab_code, tab_history, tab_diff = st.tabs([
-    "🌐  URL Security Scanner",
-    "⚖️  Legal Compliance",
-    "📋  Legal Docs",
-    "💻  Source Code Scanner",
-    "📈  Scan History",
-    "🔄  Compare Scans",
+    t("tab_url_scanner"),
+    t("tab_legal"),
+    t("tab_legal_docs"),
+    t("tab_code_scanner"),
+    t("tab_scan_history"),
+    t("tab_compare_scans"),
 ])
 
 
@@ -2053,7 +2053,7 @@ with tab_url:
         t("scan_input_label"),
         value=_demo_default,
         placeholder=t("scan_input_ph"),
-        help="Enter the full URL of a website you own or have written permission to scan.",
+        help=t("scan_input_help"),
         label_visibility="collapsed",
     )
     if demo_mode:
@@ -2279,7 +2279,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
     # ── Pricing page overlay ──────────────────────────────────────────────────
     if st.session_state.get("_show_pricing"):
         show_pricing_page()
-        if st.button("← Back to Scanner", key="pricing_back_btn"):
+        if st.button(t("back_to_scanner"), key="pricing_back_btn"):
             st.session_state["_show_pricing"] = False
             st.rerun()
         st.stop()
@@ -2297,7 +2297,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
     # ── API docs overlay ──────────────────────────────────────────────────────
     if st.session_state.get("_show_api_docs"):
         show_api_docs()
-        if st.button("← Close API Docs", key="api_docs_close"):
+        if st.button(t("close_api_docs"), key="api_docs_close"):
             st.session_state.pop("_show_api_docs"); st.rerun()
         st.stop()
 

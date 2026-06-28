@@ -165,8 +165,8 @@ def show_scan_history_panel(user_id: str) -> None:
 
     def _color_grade(val: str) -> str:
         return {
-            "A+": "color:#10b981;font-weight:700",
-            "A":  "color:#10b981;font-weight:700",
+            "A+": "color:#22d3ee;font-weight:700",
+            "A":  "color:#22d3ee;font-weight:700",
             "B":  "color:#3b82f6",
             "C":  "color:#f59e0b",
             "D":  "color:#f97316",
@@ -219,7 +219,7 @@ def _render_comparison(diff: dict) -> None:
 
     score_delta = diff["score_delta"]
     delta_sign  = "+" if score_delta >= 0 else ""
-    delta_color = "#10b981" if score_delta >= 0 else "#ef4444"
+    delta_color = "#22d3ee" if score_delta >= 0 else "#ef4444"
 
     st.markdown(f"""
 <div style="background:#0d1117;border:1px solid #1f2d3d;border-radius:12px;padding:24px;margin-top:16px;">
@@ -254,7 +254,7 @@ def _render_comparison(diff: dict) -> None:
     if not cat_df.empty:
         def _delta_color(val):
             if isinstance(val, (int, float)):
-                if val > 5:  return "color:#10b981"
+                if val > 5:  return "color:#22d3ee"
                 if val < -5: return "color:#ef4444"
             return ""
         st.dataframe(

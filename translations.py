@@ -96,7 +96,78 @@ _T: dict[str, dict[str, str]] = {
     # ── Legal ─────────────────────────────────────────────────────────────────
     "tos_link":          {"he": "תנאי שימוש",              "en": "Terms of Service"},
     "privacy_link":      {"he": "מדיניות פרטיות",          "en": "Privacy Policy"},
+    "contact_link":      {"he": "צור קשר",                 "en": "Contact"},
     "back_btn":          {"he": "← חזרה לאפליקציה",        "en": "← Back to app"},
+    "back_to_scanner":   {"he": "← חזרה לסורק",            "en": "← Back to Scanner"},
+    "close_api_docs":    {"he": "סגור מסמכי API ←",        "en": "← Close API Docs"},
+
+    # ── Tab names ─────────────────────────────────────────────────────────────
+    "tab_url_scanner":   {"he": "🌐  סורק אבטחה",          "en": "🌐  URL Security Scanner"},
+    "tab_legal":         {"he": "⚖️  ציות משפטי",          "en": "⚖️  Legal Compliance"},
+    "tab_legal_docs":    {"he": "📋  מסמכים משפטיים",      "en": "📋  Legal Docs"},
+    "tab_code_scanner":  {"he": "💻  סורק קוד מקור",       "en": "💻  Source Code Scanner"},
+    "tab_scan_history":  {"he": "📈  היסטוריית סריקות",    "en": "📈  Scan History"},
+    "tab_compare_scans": {"he": "🔄  השוואת סריקות",       "en": "🔄  Compare Scans"},
+
+    # ── Sidebar secondary ─────────────────────────────────────────────────────
+    "sidebar_more_tools":    {"he": "⋯ כלים נוספים",       "en": "⋯ More tools"},
+    "sidebar_api_docs":      {"he": "📡 תיעוד API",         "en": "📡 API Docs"},
+    "sidebar_team":          {"he": "👥 צוות",              "en": "👥 Team"},
+    "sidebar_admin_panel":   {"he": "🔐 לוח ניהול",        "en": "🔐 Admin Panel"},
+    "sidebar_dev_tools":     {"he": "⚙ כלי פיתוח",         "en": "⚙ Dev Tools"},
+
+    # ── Scan input ────────────────────────────────────────────────────────────
+    "scan_input_help":   {
+        "he": "הכנס את הכתובת המלאה של האתר שאתה מחזיק בו או קיבלת אישור לסרוק.",
+        "en": "Enter the full URL of a website you own or have written permission to scan.",
+    },
+    "demo_mode_caption": {
+        "he": "🎮 מצב הדגמה: מציג דו\"ח מוכן מראש עבור example.com — לא נשלחות בקשות אמיתיות.",
+        "en": "🎮 Demo Mode: showing a pre-built report for example.com — no real requests sent.",
+    },
+    "demo_mode_toggle":    {"he": "מצב הדגמה (ללא קריאת API)",  "en": "Demo Mode (no API call)"},
+    "demo_mode_active_msg":{"he": "✅ מצב הדגמה פעיל — לא נשלחות בקשות אמיתיות", "en": "✅ Demo Mode active — no real requests sent"},
+    "live_mode_caption":   {"he": "🔑 מצב חי — נדרש מפתח Groq API",             "en": "🔑 Live Mode — Groq API key required"},
+
+    # ── Authenticated scan ────────────────────────────────────────────────────
+    "auth_scan_label":   {"he": "🔐 סריקה מאומתת (אופציונלי)",  "en": "🔐 Authenticated Scan (Optional)"},
+    "auth_scan_help":    {
+        "he": "הזן עוגיות סשן או Bearer token כדי שהסורק יגיע לדפים מוגנים.",
+        "en": "Inject session cookies or a Bearer token so the scanner can reach protected pages.",
+    },
+    "auth_method_label": {"he": "שיטת אימות",                   "en": "Authentication method"},
+    "auth_opt_none":     {"he": "ללא",                           "en": "None"},
+    "auth_opt_bearer":   {"he": "Bearer Token",                  "en": "Bearer Token"},
+    "auth_opt_upload":   {"he": "העלאת קובץ סשן / פרופיל",      "en": "Upload Session / Profile File"},
+    "auth_unauthenticated_caption": {
+        "he": "לא מאומת — הסורק ניגש לנקודות קצה ציבוריות בלבד.",
+        "en": "Unauthenticated — scanner accesses public endpoints only.",
+    },
+
+    # ── Scan mode ─────────────────────────────────────────────────────────────
+    "scan_mode_passive":  {"he": "🔵  סריקה פסיבית (OSINT)",    "en": "🔵  Passive Recon (OSINT)"},
+    "scan_mode_standard": {"he": "🟡  סריקה רגילה",              "en": "🟡  Standard Scan"},
+    "scan_mode_pt":       {"he": "🔴  מצב PT פעיל",              "en": "🔴  Active PT Mode"},
+    "scan_mode_help":     {
+        "he": "פסיבית: 10 כלי OSINT, בטוחה לכל אתר. רגילה: 17 כלים. PT: בדיקות חיות (דורש אישור).",
+        "en": "Passive: 10 OSINT tools, safe on any site. Standard: 17-tool full scan. PT Mode: live probes (needs permission).",
+    },
+
+    # ── Auth page (password fallback) ─────────────────────────────────────────
+    "auth_only_heading":  {"he": "גישה מורשית בלבד",             "en": "AUTHORIZED ACCESS ONLY"},
+    "password_label":     {"he": "סיסמת גישה",                   "en": "Access password"},
+    "auth_enter_btn":     {"he": "כניסה",                         "en": "Enter"},
+    "auth_incorrect_pw":  {"he": "סיסמה שגויה.",                  "en": "Incorrect password."},
+
+    # ── Footer / legal disclaimer ─────────────────────────────────────────────
+    "auth_card_footer_legal": {
+        "he": "🛡 לשימוש מורשה בלבד · סריקת יעדים ללא אישור מפרה את <a href='/?legal=tos' style='color:#334155;text-decoration:underline'>התנאים שלנו</a>",
+        "en": "🛡 Authorized use only · Scanning targets without permission violates our <a href='/?legal=tos' style='color:#334155;text-decoration:underline'>Terms</a>",
+    },
+    "footer_disclaimer":  {
+        "he": "🛡 AI Cyber Shield — לשימוש מורשה בלבד. סריקה לא מורשית אסורה ומפרה את תנאי השירות שלנו.",
+        "en": "🛡 AI Cyber Shield — Authorized use only. Unauthorized scanning is illegal and against our Terms of Service.",
+    },
 }
 
 

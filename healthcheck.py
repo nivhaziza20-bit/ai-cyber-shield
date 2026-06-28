@@ -49,7 +49,7 @@ def show_health_page() -> None:
         },
     }
 
-    color = "#10b981" if overall == "ok" else "#f59e0b"
+    color = "#22d3ee" if overall == "ok" else "#f59e0b"
 
     st.markdown(f"# 🛡 AI Cyber Shield — Health Check")
     st.markdown(f"""

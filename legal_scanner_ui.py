@@ -82,7 +82,7 @@ _STRINGS: dict[str, dict] = {
             "no_flags":        "⚠️ ללא דגלים",
         },
         "cookie_cat": {
-            "strictly_necessary": ("✅ הכרחי",       "#10b981"),
+            "strictly_necessary": ("✅ הכרחי",       "#22d3ee"),
             "functional":         ("⚙️ פונקציונלי",  "#3b82f6"),
             "analytics":          ("📊 אנליטיקה",    "#f59e0b"),
             "marketing":          ("📢 שיווקי",       "#ef4444"),
@@ -205,7 +205,7 @@ _STRINGS: dict[str, dict] = {
             "no_flags":        "⚠️ No flags",
         },
         "cookie_cat": {
-            "strictly_necessary": ("✅ Strictly Necessary", "#10b981"),
+            "strictly_necessary": ("✅ Strictly Necessary", "#22d3ee"),
             "functional":         ("⚙️ Functional",         "#3b82f6"),
             "analytics":          ("📊 Analytics",           "#f59e0b"),
             "marketing":          ("📢 Marketing",           "#ef4444"),
@@ -296,7 +296,7 @@ _FRAMEWORK_INFO = {
     },
 }
 
-_STATUS_COLOR = {"PASS": "#10b981", "FAIL": "#ef4444", "WARN": "#f59e0b", "SKIP": "#475569"}
+_STATUS_COLOR = {"PASS": "#22d3ee", "FAIL": "#ef4444", "WARN": "#f59e0b", "SKIP": "#475569"}
 _STATUS_ICON  = {"PASS": "✅", "FAIL": "❌", "WARN": "⚠️", "SKIP": "⏭"}
 _SEV_COLOR    = {"HIGH": "#ef4444", "MEDIUM": "#f59e0b", "LOW": "#64748b"}
 _SEV_BG       = {"HIGH": "rgba(239,68,68,0.1)", "MEDIUM": "rgba(245,158,11,0.1)", "LOW": "rgba(100,116,139,0.1)"}
@@ -309,7 +309,7 @@ _SEV_BG       = {"HIGH": "rgba(239,68,68,0.1)", "MEDIUM": "rgba(245,158,11,0.1)"
 def _risk_label(score: int) -> tuple[str, str]:
     lang = _get_lang()
     s = _STRINGS[lang]["score"]
-    if score <= 20: return s["low"],      "#10b981"
+    if score <= 20: return s["low"],      "#22d3ee"
     if score <= 50: return s["medium"],   "#f59e0b"
     if score <= 75: return s["high"],     "#ef4444"
     return               s["critical"],  "#dc2626"
@@ -322,7 +322,7 @@ def _score_gauge_svg(score: int, label: str, color: str, size: int = 120) -> str
     fill_pct   = score / 100
     dash_fill  = circumference * fill_pct
     dash_empty = circumference * (1 - fill_pct)
-    safe_color = "#10b981" if score <= 20 else ("#f59e0b" if score <= 50 else "#ef4444")
+    safe_color = "#22d3ee" if score <= 20 else ("#f59e0b" if score <= 50 else "#ef4444")
     return f"""<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}">
   <circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="#1e293b" stroke-width="8"/>
   <circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="{safe_color}" stroke-width="8"
@@ -432,9 +432,9 @@ def _render_score_dashboard(result: LegalScanResult, active_frameworks: list[str
               help=f"{'Playwright' if method == 'playwright' else 'Static HTML'}")
 
     badge_html = m["playwright_ok"] if method == "playwright" else m["playwright_warn"]
-    badge_color = "#10b981" if method == "playwright" else "#f59e0b"
-    badge_bg    = "rgba(16,185,129,0.12)" if method == "playwright" else "rgba(245,158,11,0.10)"
-    badge_border= "rgba(16,185,129,0.4)"  if method == "playwright" else "rgba(245,158,11,0.35)"
+    badge_color = "#22d3ee" if method == "playwright" else "#f59e0b"
+    badge_bg    = "rgba(34,211,238,0.10)" if method == "playwright" else "rgba(245,158,11,0.10)"
+    badge_border= "rgba(34,211,238,0.35)" if method == "playwright" else "rgba(245,158,11,0.35)"
     st.markdown(
         f'<div style="display:inline-block;background:{badge_bg};'
         f'border:1px solid {badge_border};border-radius:6px;padding:3px 12px;'
@@ -558,7 +558,7 @@ def _render_findings_by_category(findings: list[LegalFinding]) -> None:
             lbl = ss["warn_s"].format(n=warns) if warns == 1 else ss["warn_p"].format(n=warns)
             status_summary += f'<span style="color:#f59e0b">{lbl}</span>  '
         if passes:
-            status_summary += f'<span style="color:#10b981">{ss["pass"].format(n=passes)}</span>'
+            status_summary += f'<span style="color:#22d3ee">{ss["pass"].format(n=passes)}</span>'
 
         with st.expander(f"{label} — {status_summary}", expanded=(fails > 0)):
             for f in sorted(cat_findings, key=lambda x: {"FAIL": 0, "WARN": 1, "PASS": 2, "SKIP": 3}[x.status]):
@@ -626,7 +626,7 @@ def _render_cookie_table(cookies: list[CookieRecord]) -> None:
             label, col = cc[c.category]
             cat_badge  = f'<span style="color:{col};font-size:0.83rem;font-weight:700">{label}</span>'
             flags = []
-            if c.secure:    flags.append('<span style="color:#10b981">Secure</span>')
+            if c.secure:    flags.append('<span style="color:#22d3ee">Secure</span>')
             if c.http_only: flags.append('<span style="color:#3b82f6">HttpOnly</span>')
             if c.same_site: flags.append(f'<span style="color:#64748b">SameSite={c.same_site}</span>')
             flags_html  = " ".join(flags) or f'<span style="color:#ef4444">{ck["no_flags"]}</span>'

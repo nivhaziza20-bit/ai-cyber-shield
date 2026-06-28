@@ -39,7 +39,7 @@ _ENDPOINTS = [
         },
         "auth":   "Bearer JWT",
         "tier":   "All tiers",
-        "color":  "#10b981",
+        "color":  "#22d3ee",
     },
     {
         "method": "GET",
@@ -53,7 +53,7 @@ _ENDPOINTS = [
         },
         "auth":   "Bearer JWT",
         "tier":   "All tiers",
-        "color":  "#10b981",
+        "color":  "#22d3ee",
     },
     {
         "method": "GET",
@@ -69,7 +69,7 @@ _ENDPOINTS = [
         },
         "auth":   "Bearer JWT",
         "tier":   "All tiers",
-        "color":  "#10b981",
+        "color":  "#22d3ee",
     },
     {
         "method": "POST",
@@ -113,12 +113,12 @@ _ENDPOINTS = [
         },
         "auth":   "None",
         "tier":   "All tiers",
-        "color":  "#10b981",
+        "color":  "#22d3ee",
     },
 ]
 
 _METHOD_COLORS = {
-    "GET":    "#10b981",
+    "GET":    "#22d3ee",
     "POST":   "#3b82f6",
     "DELETE": "#ef4444",
     "PUT":    "#f59e0b",
