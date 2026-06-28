@@ -52,7 +52,7 @@ from monitoring import init_sentry, set_user_context
 from legal_pages import show_terms_of_service, show_privacy_policy, show_legal_nav
 from healthcheck import maybe_show_health
 from ip_rate_limit import enforce_rate_limit
-from translations import t, lang_switcher, inject_rtl_css
+from translations import t, lang_switcher, inject_rtl_css, get_lang
 init_sentry()  # Must be before any other imports that might throw
 maybe_show_health()   # ?health=1 → status page, no auth needed
 enforce_rate_limit()  # Block abusive sessions before auth
@@ -2479,7 +2479,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
                         _prog.progress(72, text="🔓 Port scanning · 🍪 Cookie security…")
                         st.write("🔓 Port scan · 🍪 Cookie audit · ⚡ SPA/Deep JS crawler…")
                         _prog.progress(85, text="🤖 Running AI analysis and generating report…")
-                        result = run_url_security_audit(target, scan_auth=_active_scan_auth)
+                        result = run_url_security_audit(target, scan_auth=_active_scan_auth, lang=get_lang())
                         _prog.progress(100, text="✅ Scan complete!")
                         st.write("🤖 LLM analysis complete — generating report…")
                         meta = {

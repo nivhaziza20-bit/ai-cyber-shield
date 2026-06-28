@@ -12,47 +12,48 @@ Why no tools?
   the Scanner's output. Reasoning-only is correct for this stage.
 """
 
-from langchain_core.messages import SystemMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from langchain_core.runnables import Runnable
+from langchain_core.messages import HumanMessage, SystemMessage
 
-from agents.llm import get_llm
-from agents.prompts import ANALYST_SYSTEM_PROMPT
+from agents.llm import get_llm, invoke_llm
+from agents.prompts import ANALYST_SYSTEM_PROMPT, get_analyst_prompt
 
 
-def build_analyst_chain() -> Runnable:
+def build_analyst_chain():
     """
-    Constructs the Analyst LCEL chain.
+    Backwards-compatible stub that verifies LLM connectivity.
 
-    Chain: prompt → LLM → StrOutputParser
-    Input variables: {"scanner_output": "<JSON string from Scanner>"}
-    Output: Markdown vulnerability report string
+    Tests call this to confirm the agent is importable and that any failure
+    is due to API credentials (not code errors). The returned chain-like
+    object delegates to run_analyst via a simple wrapper.
     """
-    llm = get_llm()
+    llm = get_llm()  # raises if GROQ_API_KEY missing — expected by tests
 
-    # SystemMessage bypasses template-variable parsing so the literal { }
-    # characters in the prompt text are not treated as Jinja/f-string slots.
-    prompt = ChatPromptTemplate.from_messages([
-        SystemMessage(content=ANALYST_SYSTEM_PROMPT),
-        HumanMessagePromptTemplate.from_template(
-            "Here is the raw scanner output. Analyse it and produce the vulnerability report.\n\n"
-            "```json\n{scanner_output}\n```"
-        ),
-    ])
+    class _AnalystChain:
+        def invoke(self, inputs: dict) -> str:
+            return run_analyst(inputs.get("scanner_output", ""))
 
-    return prompt | llm | StrOutputParser()
+    return _AnalystChain()
 
 
-def run_analyst(scanner_output: str) -> str:
+def run_analyst(scanner_output: str, lang: str = "en") -> str:
     """
-    Convenience wrapper: runs the analyst chain and returns the report.
+    Run the Analyst agent and return the vulnerability report.
 
     Args:
         scanner_output: The JSON string produced by the Scanner Agent.
+        lang: UI language code — "he" (Hebrew, Claude primary) or "en" (English, LLaMA primary).
 
     Returns:
         Markdown vulnerability report string.
     """
-    chain = build_analyst_chain()
-    return chain.invoke({"scanner_output": scanner_output})
+    system_prompt = get_analyst_prompt(lang)
+    human_content = (
+        "Here is the raw scanner output. Analyse it and produce the vulnerability report.\n\n"
+        f"```json\n{scanner_output}\n```"
+    )
+
+    return invoke_llm(
+        [SystemMessage(content=system_prompt), HumanMessage(content=human_content)],
+        temperature=0.0,
+        lang=lang,
+    )

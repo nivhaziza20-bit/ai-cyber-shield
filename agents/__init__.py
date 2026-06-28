@@ -13,7 +13,7 @@ except ImportError as _exc:
     build_scanner_agent = None  # type: ignore[assignment]
     run_scanner         = None  # type: ignore[assignment]
 
-from .analyst_agent    import build_analyst_chain, run_analyst
+from .analyst_agent     import build_analyst_chain, run_analyst
 from .remediation_agent import build_remediation_chain, run_remediation
 
 __all__ = [

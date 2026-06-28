@@ -55,6 +55,8 @@ _TOOL_TIMEOUT_SECONDS = 90  # per-tool hard cap; prevents one slow tool stalling
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
 
+from agents.llm import invoke_llm
+from agents.prompts import _HEBREW_DIRECTIVE
 from config import get_settings
 from tools.ssl_analyzer              import analyze_ssl
 from tools.web_tools                 import check_security_headers
@@ -367,8 +369,9 @@ Numbered, most critical first. WHAT to do + WHY it matters + HOW (config snippet
 
 
 def _build_llm_prompt(url: str, tool_results: dict,
-                      overall_score: int, category_scores: dict) -> tuple[str, str]:
-    system = _SYSTEM_PROMPT.format(
+                      overall_score: int, category_scores: dict,
+                      lang: str = "en") -> tuple[str, str]:
+    base_system = _SYSTEM_PROMPT.format(
         url=url,
         grade=_grade(overall_score),
         score=overall_score,
@@ -390,6 +393,8 @@ def _build_llm_prompt(url: str, tool_results: dict,
         cookie_security_score=category_scores["cookie_security"],
         deep_js_crawler_score=category_scores["deep_js_crawler"],
     )
+
+    system = (_HEBREW_DIRECTIVE + base_system) if lang == "he" else base_system
 
     human = (
         f"Target URL: {url}\n"
@@ -518,9 +523,10 @@ def _run_tools_parallel(url: str, scan_auth: "ScanAuth | None" = None) -> dict:
 def run_url_security_audit(
     url: str,
     scan_auth: "ScanAuth | None" = None,
+    lang: str = "en",
 ) -> dict:
     """
-    Full URL security pipeline (17 tools → Groq LLM → unified report).
+    Full URL security pipeline (17 tools → LLM → unified report).
 
     Args:
         url:       Target URL (http:// or https://)
@@ -528,6 +534,8 @@ def run_url_security_audit(
                    When provided, every tool runs with session cookies and
                    auth headers injected via thread-local context.
                    Build with auth/session_loader.py helpers.
+        lang:      UI language code. "he" → Claude Haiku primary (superior Hebrew),
+                   narrative output in Hebrew. "en" → LLaMA primary (default).
 
     Returns:
         {
@@ -567,17 +575,17 @@ def run_url_security_audit(
     overall_grade     = _grade(overall_score)
     critical_findings = _extract_critical_findings(tool_results)
 
-    logger.info("Tools complete — running LLM analysis")
+    logger.info("Tools complete — running LLM analysis (lang=%s)", lang)
 
-    llm = _get_llm()
     system_prompt, human_prompt = _build_llm_prompt(
-        url, tool_results, overall_score, category_scores
+        url, tool_results, overall_score, category_scores, lang=lang
     )
     try:
-        llm_response = llm.invoke([
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=human_prompt),
-        ])
+        llm_raw_output = invoke_llm(
+            [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)],
+            temperature=0.1,
+            lang=lang,
+        )
     except Exception as _llm_exc:
         _msg = str(_llm_exc).lower()
         if any(k in _msg for k in ("rate", "quota", "429", "limit", "exceeded")):
@@ -607,7 +615,7 @@ def run_url_security_audit(
     except Exception as exc:
         logger.warning("Vulnerability chainer failed (non-fatal): %s", exc)
 
-    raw_output = llm_response.content
+    raw_output = llm_raw_output
     if chain_section:
         raw_output = raw_output + "\n\n" + chain_section
 

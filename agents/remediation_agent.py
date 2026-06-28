@@ -1,5 +1,5 @@
 """
-Remediation Agent — Phase 2
+Remediation Agent — Phase 3
 A pure-reasoning LCEL chain: no tools, just structured LLM code generation.
 
 The Remediation Agent receives the Analyst's Markdown report and produces
@@ -13,48 +13,48 @@ Why no tools?
   proposes; the human disposes.
 """
 
-from langchain_core.messages import SystemMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from langchain_core.runnables import Runnable
+from langchain_core.messages import HumanMessage, SystemMessage
 
-from agents.llm import get_llm
-from agents.prompts import REMEDIATION_SYSTEM_PROMPT
+from agents.llm import get_llm, invoke_llm
+from agents.prompts import REMEDIATION_SYSTEM_PROMPT, get_remediation_prompt
 
 
-def build_remediation_chain() -> Runnable:
+def build_remediation_chain():
     """
-    Constructs the Remediation LCEL chain.
+    Backwards-compatible stub that verifies LLM connectivity.
 
-    Chain: prompt → LLM → StrOutputParser
-    Input variables: {"analyst_report": "<Markdown report from Analyst>"}
-    Output: Markdown remediation playbook string
+    Tests call this to confirm the agent is importable and that any failure
+    is due to API credentials (not code errors).
     """
-    llm = get_llm()
+    llm = get_llm()  # raises if GROQ_API_KEY missing — expected by tests
 
-    # SystemMessage bypasses template-variable parsing so the literal { }
-    # characters in the prompt text are not treated as Jinja/f-string slots.
-    prompt = ChatPromptTemplate.from_messages([
-        SystemMessage(content=REMEDIATION_SYSTEM_PROMPT),
-        HumanMessagePromptTemplate.from_template(
-            "Here is the triaged vulnerability report from the Analyst Agent.\n"
-            "Generate the complete remediation playbook for every confirmed VID.\n\n"
-            "{analyst_report}"
-        ),
-    ])
+    class _RemediationChain:
+        def invoke(self, inputs: dict) -> str:
+            return run_remediation(inputs.get("analyst_report", ""))
 
-    return prompt | llm | StrOutputParser()
+    return _RemediationChain()
 
 
-def run_remediation(analyst_report: str) -> str:
+def run_remediation(analyst_report: str, lang: str = "en") -> str:
     """
-    Convenience wrapper: runs the remediation chain and returns the playbook.
+    Run the Remediation agent and return the playbook.
 
     Args:
         analyst_report: The Markdown string produced by the Analyst Agent.
+        lang: UI language code — "he" (Hebrew, Claude primary) or "en" (English, LLaMA primary).
 
     Returns:
         Markdown remediation playbook string.
     """
-    chain = build_remediation_chain()
-    return chain.invoke({"analyst_report": analyst_report})
+    system_prompt = get_remediation_prompt(lang)
+    human_content = (
+        "Here is the triaged vulnerability report from the Analyst Agent.\n"
+        "Generate the complete remediation playbook for every confirmed VID.\n\n"
+        f"{analyst_report}"
+    )
+
+    return invoke_llm(
+        [SystemMessage(content=system_prompt), HumanMessage(content=human_content)],
+        temperature=0.0,
+        lang=lang,
+    )
