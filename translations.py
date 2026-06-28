@@ -338,6 +338,23 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
     "empty_headline_standard":{"he": "מה הפגיעויות שהאתר שלך חושף?",  "en": "What vulnerabilities is your site exposing?"},
     "empty_headline_pt":      {"he": "מוכן לאמת ממצאים בזמן אמת?",    "en": "Ready to verify these findings live?"},
 
+    # ── Sidebar labels ────────────────────────────────────────────────────────
+    "sidebar_about":           {"he": "ℹ מידע",                         "en": "ℹ About"},
+    "sidebar_engine":          {"he": "⚡ יכולות המנוע",                  "en": "⚡ Engine Capabilities"},
+    "sidebar_change_hint":     {"he": "→ שנה בסרגל הצד",                 "en": "← Change in sidebar"},
+
+    # ── Tab diff section labels ───────────────────────────────────────────────
+    "diff_category_deltas":    {"he": "שינויים לפי קטגוריה",            "en": "CATEGORY DELTAS"},
+    "diff_findings_delta":     {"he": "שינויים בממצאים קריטיים",        "en": "CRITICAL FINDINGS DELTA"},
+    "diff_new_findings":       {"he": "**ממצאים חדשים בסריקה B:**",      "en": "**New findings in Scan B:**"},
+    "diff_resolved":           {"he": "**ממצאים שנפתרו מאז סריקה A:**", "en": "**Resolved since Scan A:**"},
+    "diff_score_a":            {"he": "ציון — סריקה A",                  "en": "Scan A Score"},
+    "diff_score_b":            {"he": "ציון — סריקה B",                  "en": "Scan B Score"},
+    "diff_delta":              {"he": "שינוי",                           "en": "Delta"},
+
+    # ── Disclosure email template ─────────────────────────────────────────────
+    "disclosure_email_tpl":    {"he": "📨 גילוי אחראי — תבנית מייל",    "en": "📨 RESPONSIBLE DISCLOSURE — EMAIL TEMPLATE"},
+
     # ── Footer / legal disclaimer ─────────────────────────────────────────────
     "auth_card_footer_legal": {
         "he": "🛡 לשימוש מורשה בלבד · סריקת יעדים ללא אישור מפרה את <a href='/?legal=tos' style='color:#334155;text-decoration:underline'>התנאים שלנו</a>",

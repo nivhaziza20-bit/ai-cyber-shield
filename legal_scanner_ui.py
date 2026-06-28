@@ -13,7 +13,8 @@ from tools.legal_scanner import LegalFinding, LegalScanResult, CookieRecord, run
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _get_lang() -> str:
-    return st.session_state.get("cs_lang", "he")
+    # Sync with main app language; fall back to cs_lang local toggle if set
+    return st.session_state.get("cs_lang", st.session_state.get("_lang", "he"))
 
 
 _STRINGS: dict[str, dict] = {
@@ -685,9 +686,9 @@ def _render_framework_cards() -> None:
 def show_legal_scanner(prefill_url: str = "") -> None:
     """Main Compliance Shield UI. Call from a Streamlit tab or section."""
 
-    # ── Language toggle (top-right) ───────────────────────────────────────────
+    # ── Language — sync from main app, allow local override via toggle ───────
     if "cs_lang" not in st.session_state:
-        st.session_state.cs_lang = "he"
+        st.session_state.cs_lang = st.session_state.get("_lang", "he")
 
     lang        = _get_lang()
     toggle_lbl  = _STRINGS[lang]["lang_toggle"]
