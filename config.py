@@ -94,6 +94,28 @@ def get_settings() -> Settings:
     return Settings()  # type: ignore[call-arg]
 
 
+# ── Brand & Contact ───────────────────────────────────────────────────────────
+# All UI references to brand name, contact info, and pricing must use these
+# constants. Never hardcode phone numbers or email addresses in UI files.
+
+import os as _os
+
+APP_NAME            = _os.environ.get("APP_NAME",        "AI Cyber Shield")
+APP_VERSION         = "6.0"
+APP_TAGLINE         = _os.environ.get("APP_TAGLINE",     "Web Application Security Intelligence Platform")
+
+CONTACT_PHONE       = _os.environ.get("CONTACT_PHONE",   "054-696-2565")
+CONTACT_PHONE_RAW   = _os.environ.get("CONTACT_PHONE_RAW","0546962565")   # for tel: href
+CONTACT_EMAIL       = _os.environ.get("CONTACT_EMAIL",   "nivhaziza20@gmail.com")
+SUPPORT_EMAIL       = _os.environ.get("SUPPORT_EMAIL",   CONTACT_EMAIL)
+APP_URL             = _os.environ.get("APP_URL",          "https://aicybershield.streamlit.app")
+
+# Guest scan limits (also read by ip_rate_limit.py)
+GUEST_DAILY_LIMIT   = int(_os.environ.get("GUEST_DAILY_LIMIT",  "3"))
+SCAN_RATE_PER_MIN   = int(_os.environ.get("SCAN_RATE_PER_MIN",  "5"))
+PAGE_RATE_PER_MIN   = int(_os.environ.get("PAGE_RATE_PER_MIN",  "30"))
+
+
 def is_benchmark_mode() -> bool:
     """
     Returns True when the accuracy benchmark test suite is running.

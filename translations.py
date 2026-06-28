@@ -164,8 +164,15 @@ _T: dict[str, dict[str, str]] = {
     "res_full_report":      {"he": "דוח מלא — לפי קטגוריה",        "en": "FULL REPORT — BY CATEGORY"},
     "res_active_verify":    {"he": "אימות פעיל — תוצאות בדיקות",   "en": "ACTIVE VERIFICATION — LIVE PROBE RESULTS"},
     "res_passive_title":    {"he": "🔵 PASSIVE RECON — תוצאות (מיון לפי חומרה)", "en": "🔵 PASSIVE RECON — RESULTS (by severity)"},
+    "fix_snippet_label":    {"he": "תקן את זה",                      "en": "Fix this"},
+    "badge_title":          {"he": "SECURITY BADGE — הטמע באתר שלך", "en": "SECURITY BADGE — Embed on your site"},
+    "badge_subtitle":       {
+        "he": "שתף את התג הזה באתר שלך — מבקרים יידעו שאתה לוקח אבטחה ברצינות.",
+        "en": "Share this badge on your site — visitors will know you take security seriously.",
+    },
     "res_export":           {"he": "ייצוא",                         "en": "EXPORT"},
-    "res_download_pdf":     {"he": "📥  הורד דוח מלא כ-PDF",       "en": "📥  Download Full Report as PDF"},
+    "res_download_pdf":     {"he": "הורד דוח PDF",                  "en": "Download PDF Report"},
+    "res_export_json":      {"he": "ייצוא JSON",                    "en": "Export JSON"},
     "res_download_html":    {"he": "📥  הורד דוח (HTML)",           "en": "📥  Download Report (HTML)"},
     "res_pdf_unavailable":  {"he": "ייצוא PDF אינו זמין — הדוח לעיל הוא הפלט המלא.", "en": "PDF export unavailable — the report above is the full output."},
 
@@ -289,8 +296,8 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
     # ── PT mode UI ───────────────────────────────────────────────────────────
     "pt_request_btn":       {"he": "📩 בקש גישה ל-PT Mode",          "en": "📩 Request PT Access"},
     "pt_request_success":   {
-        "he": "הבקשה נרשמה — צור קשר עם nivhaziza20@gmail.com להשלמת האישור.",
-        "en": "Request logged — contact nivhaziza20@gmail.com to complete approval.",
+        "he": "הבקשה נרשמה — ניצור איתך קשר להשלמת האישור.",
+        "en": "Request logged — we will contact you to complete approval.",
     },
     "pt_legal_confirm":     {
         "he": "✅ אני מאשר שאני הבעלים של הדומיין הזה או מחזיק אישור כתוב חתום מבעל הדומיין.",

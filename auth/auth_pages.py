@@ -10,7 +10,17 @@ while new visitors absorb the product before signing up.
 from __future__ import annotations
 
 import re
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 import streamlit as st
+try:
+    from config import CONTACT_PHONE, CONTACT_PHONE_RAW, CONTACT_EMAIL
+except ImportError:
+    CONTACT_PHONE     = "054-696-2565"
+    CONTACT_PHONE_RAW = "0546962565"
+    CONTACT_EMAIL     = "nivhaziza20@gmail.com"
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _PW_MIN = 8
@@ -1231,11 +1241,11 @@ def _get_footer_html(lang: str = "he") -> str:
   &nbsp;·&nbsp;
   <a href="/?legal=privacy" style="color:#475569;text-decoration:none">{privacy}</a>
   &nbsp;·&nbsp;
-  <a href="mailto:nivhaziza20@gmail.com" style="color:#475569;text-decoration:none">{contact}</a>
+  <a href="mailto:{CONTACT_EMAIL}" style="color:#475569;text-decoration:none">{contact}</a>
   <br>
-  <a href="tel:0546962565" style="color:#475569;text-decoration:none">📞 054-696-2565</a>
+  <a href="tel:{CONTACT_PHONE_RAW}" style="color:#475569;text-decoration:none">📞 {CONTACT_PHONE}</a>
   &nbsp;·&nbsp;
-  <a href="mailto:nivhaziza20@gmail.com" style="color:#475569;text-decoration:none">✉️ nivhaziza20@gmail.com</a>
+  <a href="mailto:{CONTACT_EMAIL}" style="color:#475569;text-decoration:none">✉️ {CONTACT_EMAIL}</a>
   <br>{disc}
 </div>"""
 

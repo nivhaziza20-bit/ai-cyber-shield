@@ -52,8 +52,12 @@ st.html("""
 from monitoring import init_sentry, set_user_context
 from legal_pages import show_terms_of_service, show_privacy_policy, show_legal_nav
 from healthcheck import maybe_show_health
-from ip_rate_limit import enforce_rate_limit
+from ip_rate_limit import (
+    enforce_rate_limit, check_scan_rate,
+    check_guest_quota, increment_guest_quota, get_guest_quota_info,
+)
 from translations import t, lang_switcher, inject_rtl_css, get_lang
+from config import CONTACT_PHONE, CONTACT_PHONE_RAW, CONTACT_EMAIL, APP_NAME
 init_sentry()  # Must be before any other imports that might throw
 maybe_show_health()   # ?health=1 → status page, no auth needed
 enforce_rate_limit()  # Block abusive sessions before auth
@@ -65,13 +69,13 @@ from auth.streamlit_auth import (
 )
 from audit_log import log_action
 from billing_ui import show_pricing_page, show_upgrade_prompt, PLANS
-from scan_history import save_scan, show_scan_history_panel
+from scan_history import show_scan_history_panel, save_scan as _save_scan_rich
 from notifications import notify_scan_complete, should_notify
 from scheduled_scans_ui import show_scheduled_scans_panel
 from api_docs_ui import show_api_docs
 from team_ui import show_team_panel
 from scan_cache import get_cached_scan, set_cached_scan
-from ip_rate_limit import check_scan_rate
+# ip_rate_limit already imported above with full public API
 
 # ─────────────────────────────────────────────────────────────────────────────
 # URL input validation — called before every scan
@@ -253,6 +257,37 @@ html,body,[data-testid="stAppViewContainer"]{background:#060b14!important}
         st.session_state.get("_guest_scan_url") == target
     )
 
+    # ── Guest quota gate ─────────────────────────────────────────────────────
+    if not _done:
+        _gq = check_guest_quota()
+        if not _gq["allowed"]:
+            st.markdown(f"""
+<div class="gs-wall">
+  <div class="gs-wall-lock">🔒</div>
+  <div class="gs-wall-title">Daily Scan Limit Reached</div>
+  <div class="gs-wall-sub">
+    You've used <b>{_gq["used"]} of {_gq["limit"]}</b> free guest scans today.<br>
+    Limits reset at midnight UTC.<br><br>
+    <b>Create a free account</b> for 2 scans/day — or upgrade for unlimited access.
+  </div>
+</div>""", unsafe_allow_html=True)
+            col_a, col_b = st.columns(2)
+            with col_a:
+                if st.button("Create Free Account →", type="primary",
+                             use_container_width=True, key="gs_quota_signup"):
+                    for k in ("_run_guest_scan", "_guest_scan_done",
+                              "_guest_scan_results", "_guest_scan_url"):
+                        st.session_state.pop(k, None)
+                    st.rerun()
+            with col_b:
+                if st.button("← Back to Homepage", use_container_width=True,
+                             key="gs_quota_back"):
+                    for k in ("_run_guest_scan", "_guest_scan_done",
+                              "_guest_scan_results", "_guest_scan_url"):
+                        st.session_state.pop(k, None)
+                    st.rerun()
+            return
+
     if not _done:
         _pr_tool_labels = {
             "ssl_passive":        "🔒 SSL/TLS Certificate",
@@ -303,6 +338,7 @@ html,body,[data-testid="stAppViewContainer"]{background:#060b14!important}
                 st.session_state["_guest_scan_results"] = _pr
                 st.session_state["_guest_scan_url"]     = target
                 st.session_state["_guest_scan_done"]    = True
+                increment_guest_quota()   # record usage against IP quota
                 _c = sum(1 for r in _pr_results.values() if r.get("severity") == "CRITICAL")
                 _h = sum(1 for r in _pr_results.values() if r.get("severity") == "HIGH")
                 _gs.update(label=f"✅ Scan complete — {_c} critical · {_h} high", state="complete")
@@ -527,6 +563,12 @@ html[lang="he"] span:not([class*="badge"]):not([class*="tag"]) {
   font-family: 'Heebo', 'Segoe UI', sans-serif !important;
 }
 
+/* ── Score bar grow animation ─────────────────────────────────────────────── */
+/* Triggers on initial render (unlike transition:width which needs a state change) */
+@keyframes score-bar-enter {
+  from { width: 0 !important; }
+}
+
 /* ── Glow animation ───────────────────────────────────────────────────────── */
 @keyframes cyanPulse {
   0%,100% { box-shadow: 0 0 18px rgba(34,211,238,0.15); }
@@ -541,7 +583,7 @@ html[lang="he"] span:not([class*="badge"]):not([class*="tag"]) {
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */
 html, body, .stApp {
-    background-color: #0a0e1a !important;
+    background-color: #060b14 !important;
     color: #c9d1d9 !important;
     font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
@@ -679,7 +721,7 @@ button[kind="secondary"]:hover {
 .grade-score-bar-fill {
     height: 8px;
     border-radius: 4px;
-    transition: width 0.8s ease;
+    animation: score-bar-enter 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* ── Score grid cards ─────────────────────────────────────────────────────── */
@@ -710,9 +752,9 @@ button[kind="secondary"]:hover {
 .score-val-ok    { color: #f59e0b; }
 .score-val-bad   { color: #ef4444; }
 .score-bar-bg    { background: #1f2d3d; border-radius: 3px; height: 4px; margin-top: 8px; overflow: hidden; }
-.score-bar-good  { height: 4px; border-radius: 3px; background: #22d3ee; }
-.score-bar-ok    { height: 4px; border-radius: 3px; background: #f59e0b; }
-.score-bar-bad   { height: 4px; border-radius: 3px; background: #ef4444; }
+.score-bar-good  { height: 4px; border-radius: 3px; background: #22d3ee; animation: score-bar-enter 0.9s cubic-bezier(0.16,1,0.3,1) forwards; }
+.score-bar-ok    { height: 4px; border-radius: 3px; background: #f59e0b; animation: score-bar-enter 0.9s cubic-bezier(0.16,1,0.3,1) 0.05s forwards; }
+.score-bar-bad   { height: 4px; border-radius: 3px; background: #ef4444; animation: score-bar-enter 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s  forwards; }
 
 /* ── Critical findings ────────────────────────────────────────────────────── */
 .crit-box {
@@ -857,7 +899,7 @@ code, pre {
 
 /* ── Scrollbar ────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #0a0e1a; }
+::-webkit-scrollbar-track { background: #060b14; }
 ::-webkit-scrollbar-thumb { background: #1f2d3d; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #2d3748; }
 
@@ -1530,6 +1572,133 @@ def _map_finding_priority(text: str) -> tuple[str, str]:
     return "optional", "Optional"
 
 
+_FIX_SNIPPETS: dict[str, dict] = {
+    "Content-Security-Policy": {
+        "title": "Add Content-Security-Policy header",
+        "lang": "nginx",
+        "before": "# No CSP header — XSS attacks can inject arbitrary scripts",
+        "after": (
+            "# nginx — add to your server {} block:\n"
+            "add_header Content-Security-Policy\n"
+            "  \"default-src 'self'; script-src 'self' 'nonce-{RANDOM}'; "
+            "object-src 'none'; base-uri 'self';\" always;"
+        ),
+    },
+    "X-Frame-Options": {
+        "title": "Prevent clickjacking with X-Frame-Options",
+        "lang": "nginx",
+        "before": "# Missing — your page can be embedded in iframes for UI redressing attacks",
+        "after": "add_header X-Frame-Options \"SAMEORIGIN\" always;  # nginx\n# Apache: Header always set X-Frame-Options SAMEORIGIN",
+    },
+    "Strict-Transport-Security": {
+        "title": "Enable HSTS — force HTTPS permanently",
+        "lang": "nginx",
+        "before": "# Missing HSTS — browsers may downgrade to HTTP",
+        "after": "add_header Strict-Transport-Security \"max-age=31536000; includeSubDomains; preload\" always;",
+    },
+    "X-Content-Type-Options": {
+        "title": "Stop MIME-type sniffing",
+        "lang": "nginx",
+        "before": "# Missing — browsers may misinterpret content types (MIME sniffing attacks)",
+        "after": "add_header X-Content-Type-Options \"nosniff\" always;",
+    },
+    "Referrer-Policy": {
+        "title": "Limit referrer information leakage",
+        "lang": "nginx",
+        "before": "# Full referrer URL sent to third parties by default",
+        "after": "add_header Referrer-Policy \"strict-origin-when-cross-origin\" always;",
+    },
+    "security.txt": {
+        "title": "Create a security.txt disclosure file",
+        "lang": "text",
+        "before": "# Missing — security researchers can't report vulnerabilities to you",
+        "after": (
+            "# Create /.well-known/security.txt:\n"
+            "Contact: mailto:security@yourcompany.com\n"
+            "Expires: 2027-01-01T00:00:00.000Z\n"
+            "Preferred-Languages: en, he\n"
+            "Policy: https://yourcompany.com/security-policy"
+        ),
+    },
+    "WAF": {
+        "title": "Add a Web Application Firewall",
+        "lang": "bash",
+        "before": "# No WAF — all traffic reaches your application unfiltered",
+        "after": (
+            "# Option 1: Free Cloudflare WAF (no code change)\n"
+            "#   → dashboard.cloudflare.com → Security → WAF → enable OWASP ruleset\n\n"
+            "# Option 2: nginx + ModSecurity (self-hosted)\n"
+            "# apt install libnginx-mod-security2\n"
+            "# include /etc/nginx/modsec/modsecurity.conf;"
+        ),
+    },
+    "jQuery": {
+        "title": "Upgrade vulnerable jQuery",
+        "lang": "html",
+        "before": '<script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>\n<!-- CVE-2019-11358 prototype pollution, CVSS 6.1 -->',
+        "after": '<script src="https://code.jquery.com/jquery-3.7.1.min.js"\n        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="\n        crossorigin="anonymous"></script>',
+    },
+    "SPF": {
+        "title": "Add SPF record to prevent email spoofing",
+        "lang": "text",
+        "before": "# Missing SPF record — anyone can spoof email from your domain",
+        "after": '# Add DNS TXT record for your domain:\n"v=spf1 include:_spf.google.com include:sendgrid.net ~all"\n# Replace with your actual mail providers',
+    },
+    "DMARC": {
+        "title": "Add DMARC policy",
+        "lang": "text",
+        "before": "# Missing DMARC — spoofed emails are not rejected",
+        "after": '# Add DNS TXT record at _dmarc.yourdomain.com:\n"v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@yourdomain.com; pct=100"',
+    },
+    "DKIM": {
+        "title": "Enable DKIM email signing",
+        "lang": "bash",
+        "before": "# No DKIM — email authenticity cannot be verified",
+        "after": (
+            "# Generate DKIM key pair:\n"
+            "opendkim-genkey -t -s mail -d yourdomain.com\n\n"
+            "# Publish public key as DNS TXT record:\n"
+            "# mail._domainkey.yourdomain.com → 'v=DKIM1; k=rsa; p=<public_key>'"
+        ),
+    },
+    "exposed": {
+        "title": "Block access to exposed sensitive files",
+        "lang": "nginx",
+        "before": "# .env / .git / backup files accessible publicly",
+        "after": (
+            "location ~* \\.(env|git|svn|htpasswd|sql|bak|backup|log)$ {\n"
+            "    deny all;\n"
+            "    return 404;\n"
+            "}\nlocation ~ /\\. { deny all; }"
+        ),
+    },
+    "cookie": {
+        "title": "Harden cookie security flags",
+        "lang": "python",
+        "before": "# Insecure cookie — missing Secure, HttpOnly, SameSite\nresponse.set_cookie('session', value)",
+        "after": (
+            "# Flask/Python example:\n"
+            "response.set_cookie(\n"
+            "    'session', value,\n"
+            "    httponly=True,   # no JS access\n"
+            "    secure=True,     # HTTPS only\n"
+            "    samesite='Lax',  # CSRF protection\n"
+            "    max_age=3600\n"
+            ")"
+        ),
+    },
+}
+
+
+def _get_fix_snippet(finding_text: str) -> dict | None:
+    """Match finding text against known remediation templates."""
+    fl = finding_text.lower()
+    for keyword, snippet in _FIX_SNIPPETS.items():
+        if keyword.lower() in fl:
+            return snippet
+    return None
+
+
 def _render_inline_findings(findings: list[str]) -> None:
     """Render critical findings in TraffixNet style — inline, no expanders."""
     if not findings:
@@ -1560,20 +1729,27 @@ def _render_inline_findings(findings: list[str]) -> None:
   <div class="tf-msg">{readiness}</div>
 </div>""", unsafe_allow_html=True)
 
-    items_html = ""
-    for (pri_cls, pri_label), f in classified:
+    st.markdown('<div class="tf-group"><div class="tf-group-header">Key Findings — fix in this order</div>', unsafe_allow_html=True)
+
+    for idx, ((pri_cls, pri_label), f) in enumerate(classified):
         clean = re.sub(r'^\[.*?\]\s*', '', f).strip()
-        items_html += f"""
+        st.markdown(f"""
 <div class="tf-item">
   <span class="tf-pri-badge tf-pri-{pri_cls}">{pri_label}</span>
   <div><div class="tf-item-name">{clean}</div></div>
-</div>"""
-
-    st.markdown(f"""
-<div class="tf-group">
-  <div class="tf-group-header">Key Findings — fix in this order</div>
-  {items_html}
 </div>""", unsafe_allow_html=True)
+        fix = _get_fix_snippet(clean)
+        if fix:
+            with st.expander(f"🔧 {t('fix_snippet_label')} — {fix['title']}", expanded=False):
+                _before_col, _after_col = st.columns(2)
+                with _before_col:
+                    st.markdown(f'<div style="color:#ef4444;font-size:0.7rem;font-weight:700;letter-spacing:.1em;margin-bottom:4px">BEFORE (VULNERABLE)</div>', unsafe_allow_html=True)
+                    st.code(fix["before"], language=fix["lang"])
+                with _after_col:
+                    st.markdown(f'<div style="color:#22d3ee;font-size:0.7rem;font-weight:700;letter-spacing:.1em;margin-bottom:4px">AFTER (FIXED)</div>', unsafe_allow_html=True)
+                    st.code(fix["after"], language=fix["lang"])
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 def _render_mode_selector(pt_mode_active: bool) -> None:
@@ -1916,9 +2092,9 @@ with st.sidebar:
 is a criminal offence under Israeli law (חוק המחשבים, 1995).<br>
 <br>
 To request access, contact the system owner:<br>
-📞 <a href="tel:0546962565" style="color:#22d3ee;text-decoration:none">054-696-2565</a>&nbsp;&nbsp;
-✉️ <a href="mailto:nivhaziza20@gmail.com" style="color:#22d3ee;text-decoration:none">nivhaziza20@gmail.com</a>
-</div>""", unsafe_allow_html=True)
+📞 <a href="tel:{CONTACT_PHONE_RAW}" style="color:#22d3ee;text-decoration:none">{CONTACT_PHONE}</a>&nbsp;&nbsp;
+✉️ <a href="mailto:{CONTACT_EMAIL}" style="color:#22d3ee;text-decoration:none">{CONTACT_EMAIL}</a>
+</div>""".format(CONTACT_PHONE_RAW=CONTACT_PHONE_RAW, CONTACT_PHONE=CONTACT_PHONE, CONTACT_EMAIL=CONTACT_EMAIL), unsafe_allow_html=True)
             if _current_user:
                 if st.button(t("pt_request_btn"), use_container_width=True, key="pt_request_btn"):
                     log_action("pt_request", severity="warning",
@@ -1947,9 +2123,9 @@ scanning a computer system without permission is a criminal offence.<br>
 ✅ Hold a signed written authorization from the domain owner.<br>
 <br>
 Questions / authorization verification:<br>
-📞 <a href="tel:0546962565" style="color:#f87171;text-decoration:none">054-696-2565</a>&nbsp;
-✉️ <a href="mailto:nivhaziza20@gmail.com" style="color:#f87171;text-decoration:none">nivhaziza20@gmail.com</a>
-</div>""", unsafe_allow_html=True)
+📞 <a href="tel:{CONTACT_PHONE_RAW}" style="color:#f87171;text-decoration:none">{CONTACT_PHONE}</a>&nbsp;
+✉️ <a href="mailto:{CONTACT_EMAIL}" style="color:#f87171;text-decoration:none">{CONTACT_EMAIL}</a>
+</div>""".format(CONTACT_PHONE_RAW=CONTACT_PHONE_RAW, CONTACT_PHONE=CONTACT_PHONE, CONTACT_EMAIL=CONTACT_EMAIL), unsafe_allow_html=True)
             pt_owns = st.checkbox(
                 t("pt_legal_confirm"),
                 value=False,
@@ -2001,10 +2177,10 @@ Check the legal confirmation above to unlock active probes.
 
     st.divider()
     st.markdown(f'<div class="section-label">{t("section_contact")}</div>', unsafe_allow_html=True)
-    st.markdown("""
+    st.markdown(f"""
 <small style="line-height:2">
-📞 <a href="tel:0546962565" style="color:#22d3ee;text-decoration:none">054-696-2565</a><br>
-✉️ <a href="mailto:nivhaziza20@gmail.com" style="color:#22d3ee;text-decoration:none">nivhaziza20@gmail.com</a>
+📞 <a href="tel:{CONTACT_PHONE_RAW}" style="color:#22d3ee;text-decoration:none">{CONTACT_PHONE}</a><br>
+✉️ <a href="mailto:{CONTACT_EMAIL}" style="color:#22d3ee;text-decoration:none">{CONTACT_EMAIL}</a>
 </small>
 """, unsafe_allow_html=True)
 
@@ -2084,7 +2260,7 @@ with tab_url:
         st.caption("Inject session cookies or a Bearer token so the scanner can reach protected pages.")
         _auth_method = st.radio(
             "Authentication method",
-            ["None", "Bearer Token", "Upload Session / Profile File"],
+            ["None", "Bearer Token", "Paste Cookies", "Upload Session / Profile File"],
             horizontal=True,
             key="auth_method_radio",
             label_visibility="collapsed",
@@ -2121,6 +2297,51 @@ with tab_url:
             if _cur_auth and not _cur_auth.is_empty:
                 st.success(f"✓ Active: {_cur_auth.summary()}")
                 if st.button("Clear", key="auth_clear_token"):
+                    st.session_state["auth_scan_auth"] = None
+                    st.rerun()
+
+        elif _auth_method == "Paste Cookies":
+            st.caption(
+                "Copy cookies from browser DevTools (Application → Cookies) and paste below "
+                "as `name=value; name2=value2` or as a JSON object `{\"name\": \"value\"}`."
+            )
+            _cookies_raw = st.text_area(
+                "Cookies",
+                placeholder='session=abc123; csrf_token=xyz789\n— or —\n{"session": "abc123", "csrf_token": "xyz789"}',
+                key="auth_cookies_raw",
+                height=100,
+                label_visibility="collapsed",
+            )
+            if st.button("Apply Cookies", key="auth_apply_cookies", use_container_width=False):
+                if _cookies_raw.strip():
+                    try:
+                        from auth.session_loader import from_cookies_dict
+                        _raw = _cookies_raw.strip()
+                        if _raw.startswith("{"):
+                            import json as _jmod
+                            _cookie_dict = _jmod.loads(_raw)
+                        else:
+                            _cookie_dict = {}
+                            for _part in _raw.split(";"):
+                                _part = _part.strip()
+                                if "=" in _part:
+                                    _k, _, _v = _part.partition("=")
+                                    _cookie_dict[_k.strip()] = _v.strip()
+                        if not _cookie_dict:
+                            st.warning("No cookies parsed. Check the format.")
+                        else:
+                            st.session_state["auth_scan_auth"] = from_cookies_dict(
+                                _cookie_dict, profile_name="browser-cookies"
+                            )
+                            st.rerun()
+                    except Exception as _ck_err:
+                        st.error(f"Cookie parse error: {_ck_err}")
+                else:
+                    st.warning("Paste cookies first.")
+            _cur_auth = st.session_state.get("auth_scan_auth")
+            if _cur_auth and not _cur_auth.is_empty:
+                st.success(f"✓ Loaded: {_cur_auth.summary()}")
+                if st.button("Clear Cookies", key="auth_clear_cookies"):
                     st.session_state["auth_scan_auth"] = None
                     st.rerun()
 
@@ -2460,6 +2681,8 @@ button[kind="primary"]:hover {
             from url_scanner_pipeline import run_url_security_audit
             from scan_rate_limiter import get_limiter
             from scan_history_store import get_store
+            import time as _time_mod
+            st.session_state["_scan_start_ts"] = _time_mod.time()
             try:
                 target = _validate_scan_url(url_input)
             except ValueError as _ve:
@@ -2501,11 +2724,33 @@ button[kind="primary"]:hover {
                         st.session_state["url_auth_mode"]    = result.get("auth_mode", "unauthenticated")
                         st.session_state["url_auth_profile"] = result.get("auth_profile", "")
                         st.session_state.pop("url_passive_recon", None)
-                        # Auto-save to history
+                        # Auto-save to history (both stores kept in sync)
                         try:
                             get_store().save_scan({**meta, "url": target})
                         except Exception as _he:
-                            logging.getLogger(__name__).warning("History save failed: %s", _he)
+                            logging.getLogger(__name__).warning("History save (store) failed: %s", _he)
+                        if _current_user:
+                            try:
+                                import time as _t
+                                _crit_cnt = len(meta.get("critical_findings", []))
+                                _high_cnt = sum(
+                                    1 for v in meta.get("category_scores", {}).values()
+                                    if v <= 40
+                                )
+                                _save_scan_rich(
+                                    user_id=_current_user.user_id,
+                                    target_url=target,
+                                    overall_grade=meta.get("overall_grade", "F"),
+                                    overall_score=meta.get("overall_score", 0),
+                                    category_scores=meta.get("category_scores", {}),
+                                    critical_count=_crit_cnt,
+                                    high_count=_high_cnt,
+                                    scan_mode=st.session_state.get("scan_mode_radio", "standard"),
+                                    scan_duration_s=_t.time() - st.session_state.get("_scan_start_ts", _t.time()),
+                                    report_md=result.get("raw_output", "")[:50_000],
+                                )
+                            except Exception as _he2:
+                                logging.getLogger(__name__).warning("History save (rich) failed: %s", _he2)
                         log_action("scan_complete", target=target, details={"mode": "standard", "score": result.get("overall_score"), "grade": result.get("overall_grade")})
 
                         # ── PT Mode: auto-run active verification ─────────────
@@ -2580,6 +2825,58 @@ button[kind="primary"]:hover {
 
         # ── Grade banner ──────────────────────────────────────────────────────
         _render_grade_banner(grade, score, target)
+
+        # ── Prominent PDF export row ──────────────────────────────────────────
+        try:
+            from cyber_shield_pdf_app import create_pdf as _create_pdf_top
+            _pdf_top = _create_pdf_top(st.session_state["url_report"])
+            _safe_fn = "".join(c for c in target.replace("https://","").replace("http://","") if c.isalnum() or c in ".-_")
+            _pdf_col, _json_col, _ = st.columns([2, 2, 6])
+            with _pdf_col:
+                st.download_button(
+                    label="📄 " + t("res_download_pdf"),
+                    data=_pdf_top,
+                    file_name=f"aics_report_{_safe_fn}_{score}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key="pdf_top",
+                )
+            with _json_col:
+                import json as _json
+                st.download_button(
+                    label="🗂️ " + t("res_export_json"),
+                    data=_json.dumps(st.session_state["url_report"], indent=2, ensure_ascii=False).encode(),
+                    file_name=f"aics_report_{_safe_fn}_{score}.json",
+                    mime="application/json",
+                    use_container_width=True,
+                    key="json_top",
+                )
+        except Exception:
+            pass   # PDF unavailable silently — bottom fallback still exists
+
+        # ── Trend widget: score history for this target ───────────────────────
+        try:
+            from scan_history_store import get_store as _get_store_trend
+            _trend_history = _get_store_trend().get_scan_history(target, limit=30)
+            if len(_trend_history) >= 2:
+                import pandas as _pd
+                _chron = list(reversed(_trend_history))
+                _trend_df = _pd.DataFrame({
+                    "Score": [h.overall_score for h in _chron],
+                }, index=[h.scan_timestamp[:10] for h in _chron])
+                _delta = _trend_history[0].overall_score - _trend_history[1].overall_score
+                _delta_str = (f"+{_delta}" if _delta > 0 else str(_delta)) + " vs last scan"
+                _delta_col = "#22d3ee" if _delta >= 0 else "#ef4444"
+                st.markdown(
+                    f'<div class="section-label">'
+                    f'{t("section_score_timeline")}'
+                    f'&nbsp;&nbsp;<span style="color:{_delta_col};font-size:0.8rem">{_delta_str}</span>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+                st.line_chart(_trend_df["Score"], color="#22d3ee", height=150)
+        except Exception:
+            pass  # trend widget is non-critical
 
         # ── 17-category score grid ────────────────────────────────────────────
         st.markdown(f'<div class="section-label">{t("section_scores")}</div>',
@@ -2707,6 +3004,40 @@ button[kind="primary"]:hover {
             )
         except Exception:
             st.warning(t("res_pdf_unavailable"))
+
+        # ── Security badge (A/B sites only — viral marketing) ─────────────────
+        if grade in ("A", "B"):
+            _badge_color = {"A": "#22d3ee", "B": "#3b82f6"}.get(grade, "#22d3ee")
+            _badge_text_color = "#060b14"
+            _badge_svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="220" height="28">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d1421"/><stop offset="1" stop-color="#060b14"/></linearGradient></defs>
+  <rect width="220" height="28" rx="5" fill="url(#bg)"/>
+  <rect width="220" height="28" rx="5" fill="none" stroke="{_badge_color}" stroke-width="1" stroke-opacity="0.6"/>
+  <text x="10" y="19" font-family="monospace" font-size="12" fill="{_badge_color}" font-weight="700">🛡 AI CYBER SHIELD</text>
+  <rect x="148" y="4" width="62" height="20" rx="4" fill="{_badge_color}"/>
+  <text x="164" y="18" font-family="monospace" font-size="11" fill="{_badge_text_color}" font-weight="900">{grade}  {score}</text>
+</svg>"""
+            import base64 as _b64
+            _badge_b64 = _b64.b64encode(_badge_svg.encode()).decode()
+            _badge_uri = f"data:image/svg+xml;base64,{_badge_b64}"
+            _site_clean = target.replace("https://","").replace("http://","").rstrip("/")
+            _badge_html_code = f'<a href="{target}"><img src="{_badge_uri}" alt="Secured by AI Cyber Shield — Grade {grade}" /></a>'
+            _badge_md_code   = f'[![AI Cyber Shield Grade {grade}]({_badge_uri})]({target})'
+
+            st.divider()
+            st.markdown(f'<div class="section-label">{t("badge_title")}</div>', unsafe_allow_html=True)
+            st.html(f"""
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+  <img src="{_badge_uri}" style="height:32px" alt="AI Cyber Shield Grade {grade}"/>
+  <div style="color:#64748b;font-size:0.8rem">
+    {t("badge_subtitle")}
+  </div>
+</div>""")
+            tab_html, tab_md = st.tabs(["HTML", "Markdown"])
+            with tab_html:
+                st.code(_badge_html_code, language="html")
+            with tab_md:
+                st.code(_badge_md_code, language="markdown")
 
     # ── Passive Recon Results (shown when passive mode was used) ─────────────
     _pr_data = st.session_state.get("url_passive_recon")

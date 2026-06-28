@@ -41,7 +41,7 @@ _CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
 html, body, .stApp {
-    background-color: #0a0e1a !important;
+    background-color: #060b14 !important;
     color: #c9d1d9 !important;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
