@@ -573,15 +573,61 @@ _CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-/* ── CSS variables ────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — Single source of truth (Wiz/Linear/Vercel design language)
+   ════════════════════════════════════════════════════════════════════════════ */
 :root {
+  /* Backgrounds */
+  --bg:           #050810;
+  --bg-elevated:  #090d1a;
+  --bg-card:      #0c1120;
+  --bg-card-hover:#0f1629;
+  --bg-input:     #080c18;
+  /* Borders */
+  --border:       #1a2236;
+  --border-strong:#243049;
+  --border-focus: #22d3ee;
+  /* Brand */
+  --brand:        #22d3ee;
+  --brand-dark:   #0e7490;
+  --brand-glow:   rgba(34,211,238,0.18);
+  --brand-subtle: rgba(34,211,238,0.06);
+  --brand-tint:   rgba(34,211,238,0.10);
+  /* Text */
+  --text-1:  #f1f5f9;
+  --text-2:  #94a3b8;
+  --text-3:  #4a5568;
+  --text-4:  #2d3a52;
+  /* Semantic */
+  --critical:       #ef4444;
+  --critical-bg:    rgba(239,68,68,0.08);
+  --critical-border:rgba(239,68,68,0.25);
+  --high:    #f97316;  --high-bg:    rgba(249,115,22,0.08);
+  --medium:  #f59e0b;  --medium-bg:  rgba(245,158,11,0.08);
+  --low:     #3b82f6;
+  --pass:    #10b981;  --pass-bg:    rgba(16,185,129,0.06);
+  /* Spacing (4px base grid) */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
+  --sp-5:20px; --sp-6:24px; --sp-8:32px; --sp-10:40px;
+  /* Radius */
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:20px; --r-full:9999px;
+  /* Shadows */
+  --shadow-card:  0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px var(--border);
+  --shadow-hover: 0 6px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--border-strong);
+  --shadow-brand: 0 0 40px var(--brand-glow);
+  /* Transitions */
+  --ease:     cubic-bezier(0.16,1,0.3,1);
+  --ease-out: cubic-bezier(0,0,0.2,1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 350ms;
+  /* Legacy aliases — keep for backward compat with any HTML templates */
   --primary:      #22d3ee;
   --primary-dark: #0891b2;
   --primary-glow: rgba(34,211,238,0.25);
-  --primary-tint: rgba(34,211,238,0.08);
-  --bg-base:      #060b14;
-  --bg-card:      #0d1117;
-  --border:       #1f2d3d;
+  --primary-tint: rgba(34,211,238,0.10);
+  --bg-base:      #050810;
+  --bg-card:      #0c1120;
 }
 
 /* ── Hebrew font ──────────────────────────────────────────────────────────── */
@@ -605,6 +651,22 @@ html[lang="he"] span:not([class*="badge"]):not([class*="tag"]) {
   50%     { box-shadow: 0 0 38px rgba(34,211,238,0.40); }
 }
 
+/* Gradient text shimmer */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+/* Fade + slide in — for cards and banners */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* Scan line — empty state SVG */
+@keyframes scanline {
+  0%,100% { transform: translateY(0px);  opacity: 0.65; }
+  50%     { transform: translateY(36px); opacity: 0.15; }
+}
+
 /* ── Gradient text ────────────────────────────────────────────────────────── */
 .text-gradient-cyber {
   background: linear-gradient(90deg,#22d3ee,#6366f1,#8b5cf6);
@@ -612,11 +674,26 @@ html[lang="he"] span:not([class*="badge"]):not([class*="tag"]) {
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */
-html, body, .stApp {
-    background-color: #060b14 !important;
-    color: #c9d1d9 !important;
-    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+html, body {
+  background-color: var(--bg) !important;
+  color: var(--text-1) !important;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+/* Ambient depth — Linear/Vercel/Wiz technique: radial glows + dot grid */
+.stApp {
+  background-color: var(--bg) !important;
+  background-image:
+    radial-gradient(ellipse 65% 35% at 5% 0%,   rgba(34,211,238,0.055) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 30% at 95% 100%, rgba(99,102,241,0.05)  0%, transparent 65%),
+    url("data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.55' fill='%23243049' fill-opacity='0.4'/%3E%3C/svg%3E");
+  background-attachment: fixed;
+  color: var(--text-1) !important;
+}
+[data-testid="stAppViewContainer"] { background: transparent !important; }
+[data-testid="stHeader"]           { background: transparent !important; }
+.block-container { background: transparent; }
 
 /* ── Sidebar ──────────────────────────────────────────────────────────────── */
 section[data-testid="stSidebar"] {
@@ -634,7 +711,7 @@ section[data-testid="stSidebar"] * {
     margin-bottom: 24px;
 }
 .cs-logo {
-    font-size: 3.1rem;
+    font-size: 2.5rem;
     font-weight: 900;
     letter-spacing: -0.04em;
     line-height: 1;
@@ -642,9 +719,13 @@ section[data-testid="stSidebar"] * {
 }
 .cs-logo-prefix { color: #e2e8f0; }
 .cs-logo-accent {
-    background: linear-gradient(90deg,#22d3ee,#6366f1);
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-    filter: drop-shadow(0 0 18px rgba(34,211,238,0.45));
+  background: linear-gradient(90deg, #22d3ee 0%, #818cf8 50%, #a78bfa 80%, #22d3ee 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 20px rgba(34,211,238,0.5));
+  animation: shimmer 5s linear infinite;
 }
 .cs-tagline {
     color: #475569;
@@ -701,6 +782,12 @@ button[kind="primary"]:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 6px 24px rgba(34,211,238,0.45) !important;
 }
+button[kind="primary"]:active {
+  transform: translateY(0) scale(0.98) !important;
+  box-shadow: 0 2px 8px rgba(34,211,238,0.2) !important;
+  transition-duration: 80ms !important;
+}
+button[kind="secondary"]:active { transform: scale(0.98) !important; }
 button[kind="secondary"] {
     background: #111827 !important;
     color: #94a3b8 !important;
@@ -715,14 +802,17 @@ button[kind="secondary"]:hover {
 
 /* ── Grade banner ─────────────────────────────────────────────────────────── */
 .grade-banner {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    background: #0d1117;
-    border: 1px solid #1f2d3d;
-    border-radius: 10px;
-    padding: 20px 28px;
-    margin: 16px 0 24px;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  background: rgba(12,17,32,0.8);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5) var(--sp-6);
+  margin: var(--sp-4) 0 var(--sp-6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: fadeUp 0.4s var(--ease) both;
 }
 .grade-circle {
     width: 90px; height: 90px;
@@ -756,14 +846,23 @@ button[kind="secondary"]:hover {
 
 /* ── Score grid cards ─────────────────────────────────────────────────────── */
 .score-card {
-    background: #0d1117;
-    border: 1px solid #1f2d3d;
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin: 4px 0;
-    transition: border-color 0.2s;
+  background: rgba(12,17,32,0.75);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  margin: 4px 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease),
+              box-shadow var(--dur-base) var(--ease-out);
+  cursor: default;
 }
-.score-card:hover { border-color: #2d3748; }
+.score-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.45), 0 0 0 1px var(--border-strong);
+}
 .score-card-label {
     color: #64748b;
     font-size: 0.7rem;
@@ -859,17 +958,24 @@ button[kind="secondary"]:hover {
     gap: 4px;
 }
 .stTabs [data-baseweb="tab"] {
-    background: transparent !important;
-    color: #64748b !important;
-    border-radius: 6px 6px 0 0 !important;
-    font-size: 0.85rem !important;
-    padding: 8px 16px !important;
-    border: none !important;
+  background: transparent !important;
+  color: var(--text-3) !important;
+  border-radius: var(--r-sm) var(--r-sm) 0 0 !important;
+  font-size: 0.82rem !important;
+  padding: 8px 14px !important;
+  border: none !important;
+  transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out) !important;
+  font-weight: 500 !important;
+}
+.stTabs [data-baseweb="tab"]:hover {
+  color: var(--text-2) !important;
+  background: var(--brand-subtle) !important;
 }
 .stTabs [aria-selected="true"] {
-    background: #111827 !important;
-    color: #22d3ee !important;
-    border-bottom: 2px solid #22d3ee !important;
+  background: rgba(34,211,238,0.06) !important;
+  color: var(--brand) !important;
+  border-bottom: 2px solid var(--brand) !important;
+  font-weight: 700 !important;
 }
 
 /* ── Expanders ────────────────────────────────────────────────────────────── */
@@ -889,10 +995,18 @@ button[kind="secondary"]:hover {
 
 /* ── Metrics ──────────────────────────────────────────────────────────────── */
 [data-testid="stMetric"] {
-    background: #0d1117 !important;
-    border: 1px solid #1f2d3d !important;
-    border-radius: 8px !important;
-    padding: 12px !important;
+  background: rgba(12,17,32,0.7) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-md) !important;
+  padding: var(--sp-3) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  transition: border-color var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease) !important;
+}
+[data-testid="stMetric"]:hover {
+  border-color: var(--border-strong) !important;
+  transform: translateY(-1px) !important;
 }
 [data-testid="stMetricLabel"] { color: #64748b !important; font-size: 0.75rem !important; text-transform: uppercase; }
 [data-testid="stMetricValue"] { color: #e2e8f0 !important; font-family: 'JetBrains Mono', 'Courier New', monospace !important; }
@@ -964,14 +1078,21 @@ code, pre {
 
 /* ── History / Diff cards ─────────────────────────────────────────────────── */
 .hist-card {
-    background: #0d1117;
-    border: 1px solid #1f2d3d;
-    border-radius: 8px;
-    padding: 14px 18px;
-    margin: 6px 0;
-    display: flex;
-    align-items: center;
-    gap: 16px;
+  background: rgba(12,17,32,0.75);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px 18px;
+  margin: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  backdrop-filter: blur(6px);
+  transition: border-color var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease);
+}
+.hist-card:hover {
+  border-color: var(--border-strong);
+  transform: translateX(2px);
 }
 .hist-grade-dot {
     width: 36px; height: 36px;
@@ -1030,8 +1151,14 @@ code, pre {
 
 /* ── TraffixNet-style inline findings panel ───────────────────────────────── */
 .tf-summary {
-    background: #0d1117; border: 1px solid #1f2d3d; border-radius: 10px;
-    padding: 18px 24px; margin: 16px 0;
+  background: rgba(12,17,32,0.75);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 18px 24px;
+  margin: 16px 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeUp 0.35s var(--ease) both;
 }
 .tf-counts { display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-family:'Courier New',monospace; }
 .tf-crit  { color:#ef4444; font-weight:800; font-size:1rem; }
@@ -1051,10 +1178,15 @@ code, pre {
     border-bottom: 1px solid #1f2d3d;
 }
 .tf-item {
-    display:flex; align-items:flex-start; gap:14px;
-    padding: 13px 18px; border-bottom: 1px solid #0f1923;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 13px 18px;
+  border-bottom: 1px solid rgba(26,34,54,0.5);
+  transition: background var(--dur-fast) var(--ease-out);
 }
 .tf-item:last-child { border-bottom: none; }
+.tf-item:hover { background: var(--bg-card-hover); }
 .tf-pri-badge {
     display:inline-block; border-radius:4px; padding:2px 8px;
     font-size:0.6rem; font-weight:800; text-transform:uppercase;
@@ -1133,9 +1265,22 @@ code, pre {
     margin-top: 24px;
 }
 .pr-card {
-    background: #0d1117; border: 1px solid #1f2d3d; border-radius: 8px;
-    padding: 14px 18px; margin: 6px 0; border-left: 4px solid #1f2d3d;
-    transition: border-color .2s;
+  background: rgba(12,17,32,0.75);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px 18px;
+  margin: 6px 0;
+  border-left: 4px solid var(--border);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: border-color var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease),
+              box-shadow var(--dur-base) var(--ease-out);
+}
+.pr-card:hover {
+  transform: translateX(3px);
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35);
 }
 .pr-card-critical {
     border-left-color: #ef4444;
@@ -1443,7 +1588,19 @@ def _render_grade_banner(grade: str, score: int, url: str) -> None:
     color  = _grade_color(grade)
     _C     = 326.73          # circumference of r=52 circle
     _off   = round(_C * (1 - score / 100), 2)
-    _uid   = f"gb{grade}{score}"   # unique per render to avoid anim conflicts
+    _uid   = f"gb{grade}{score}"
+    _meta  = st.session_state.get("url_meta", {})
+    _crits = len(_meta.get("critical_findings", []))
+    _grade_desc = {"A": "Excellent", "B": "Good", "C": "Fair", "D": "Poor", "F": "Critical Risk"}.get(grade, "")
+    _crit_html = (
+        f'<span style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.25);'
+        f'border-radius:{9999}px;padding:2px 12px;font-size:0.7rem;font-weight:800;margin-right:6px">'
+        f'⚡ {_crits} critical</span>'
+        if _crits > 0 else
+        '<span style="background:rgba(16,185,129,0.08);color:#10b981;border:1px solid rgba(16,185,129,0.2);'
+        f'border-radius:{9999}px;padding:2px 12px;font-size:0.7rem;font-weight:800;margin-right:6px">'
+        '✓ 0 critical</span>'
+    )
     st.html(f"""
 <style>
 @keyframes {_uid} {{
@@ -1453,73 +1610,68 @@ def _render_grade_banner(grade: str, score: int, url: str) -> None:
 .rng-{_uid} {{
   stroke-dasharray: {_C};
   stroke-dashoffset: {_C};
-  animation: {_uid} 1.5s cubic-bezier(0.34,1.56,0.64,1) 0.25s forwards;
+  animation: {_uid} 1.6s cubic-bezier(0.34,1.56,0.64,1) 0.2s forwards;
 }}
 </style>
 <script>
 (function(){{
   var el = document.getElementById('num-{_uid}');
   if (!el) return;
-  var target = {score};
-  var dur = 1300;
-  var t0 = performance.now();
+  var target = {score}, dur = 1300, t0 = performance.now();
   function step(ts) {{
-    var p = Math.min((ts - t0) / dur, 1);
-    var ease = 1 - Math.pow(1 - p, 3);
-    el.textContent = Math.round(target * ease);
-    if (p < 1) requestAnimationFrame(step);
-    else el.textContent = target;
+    var p = Math.min((ts-t0)/dur,1), ease = 1-Math.pow(1-p,3);
+    el.textContent = Math.round(target*ease);
+    if(p<1) requestAnimationFrame(step); else el.textContent = target;
   }}
-  setTimeout(function() {{ requestAnimationFrame(step); }}, 250);
+  setTimeout(function(){{requestAnimationFrame(step);}},200);
 }})();
 </script>
 <div style="display:flex;align-items:center;gap:24px;
-     background:#0d1117;border:1px solid #1f2d3d;border-radius:14px;
-     padding:22px 28px;margin:16px 0 24px;
-     box-shadow:0 4px 32px rgba(0,0,0,0.45),0 0 0 1px rgba(34,211,238,0.04);
-     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+     background:rgba(12,17,32,0.82);border:1px solid #1a2236;border-radius:16px;
+     padding:20px 28px;margin:16px 0 24px;
+     box-shadow:0 4px 40px rgba(0,0,0,0.5),0 0 0 1px rgba(34,211,238,0.04);
+     backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     animation:fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both">
   <div style="flex-shrink:0">
-    <svg width="130" height="130" viewBox="0 0 120 120">
-      <circle cx="60" cy="60" r="52" fill="none" stroke="#1e2d3d" stroke-width="9"/>
-      <circle cx="60" cy="60" r="52" fill="none" stroke="{color}" stroke-width="9"
+    <svg width="128" height="128" viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r="52" fill="none" stroke="#1a2236" stroke-width="8"/>
+      <circle cx="60" cy="60" r="52" fill="none" stroke="{color}" stroke-width="8"
               stroke-linecap="round" transform="rotate(-90 60 60)"
               class="rng-{_uid}"/>
       <text x="60" y="50" text-anchor="middle" dominant-baseline="middle"
-            fill="{color}" font-size="22" font-weight="900"
+            fill="{color}" font-size="24" font-weight="900"
             font-family="JetBrains Mono,Courier New,monospace"
             id="num-{_uid}">0</text>
-      <text x="60" y="66" text-anchor="middle" dominant-baseline="middle"
-            fill="#334155" font-size="9">/ 100</text>
-      <text x="60" y="80" text-anchor="middle" dominant-baseline="middle"
-            fill="{color}" font-size="11" font-weight="800" letter-spacing="1">GRADE {grade}</text>
+      <text x="60" y="67" text-anchor="middle" dominant-baseline="middle"
+            fill="#3d4f6e" font-size="9">/ 100</text>
+      <text x="60" y="82" text-anchor="middle" dominant-baseline="middle"
+            fill="{color}" font-size="10" font-weight="800" letter-spacing="2">{grade}</text>
     </svg>
   </div>
   <div style="flex:1;min-width:0">
-    <div style="color:#94a3b8;font-size:0.68rem;text-transform:uppercase;
-                letter-spacing:0.14em;margin-bottom:6px;font-family:JetBrains Mono,monospace">
-      Security Report
+    <div style="color:#3d4f6e;font-size:0.64rem;text-transform:uppercase;
+                letter-spacing:0.16em;margin-bottom:5px;font-family:JetBrains Mono,monospace">
+      Security Report · AI Cyber Shield v6
     </div>
-    <div style="color:#e2e8f0;font-size:1.25rem;font-weight:700;
-                overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{url}</div>
-    <div style="display:flex;align-items:baseline;gap:8px;margin-top:10px;flex-wrap:wrap">
-      <span style="color:{color};font-size:2.4rem;font-weight:900;
-                   font-family:JetBrains Mono,Courier New,monospace;line-height:1">{score}</span>
-      <span style="color:#334155;font-size:1rem">/100</span>
-      <span style="color:#1e2d3d;margin:0 4px">·</span>
-      <span style="background:{color}1a;color:{color};font-size:0.74rem;
-                   font-weight:800;padding:3px 14px;border-radius:20px;
-                   border:1px solid {color}44;letter-spacing:0.06em">Grade {grade}</span>
+    <div style="color:#f1f5f9;font-size:1.2rem;font-weight:700;
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+                margin-bottom:10px">{url}</div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      {_crit_html}
+      <span style="color:#3d4f6e;font-size:0.7rem;font-family:JetBrains Mono,monospace">
+        {_grade_desc} security posture
+      </span>
     </div>
-    <div style="margin-top:14px;background:#1f2d3d;border-radius:4px;
-                height:5px;overflow:hidden;max-width:400px">
-      <div style="height:5px;width:{score}%;border-radius:4px;
-                  background:linear-gradient(90deg,{color},{color}80);
-                  box-shadow:0 0 10px {color}55;
+    <div style="background:#1a2236;border-radius:3px;height:4px;overflow:hidden;max-width:380px">
+      <div style="height:4px;width:{score}%;border-radius:3px;
+                  background:linear-gradient(90deg,{color},{color}70);
+                  box-shadow:0 0 8px {color}40;
                   animation:score-bar-enter 1.2s cubic-bezier(0.16,1,0.3,1) forwards"></div>
     </div>
-    <div style="color:#334155;font-size:0.68rem;margin-top:8px;
+    <div style="color:#3d4f6e;font-size:0.62rem;margin-top:6px;
                 font-family:JetBrains Mono,Courier New,monospace;letter-spacing:0.04em">
-      Full security analysis · AI Cyber Shield v6.0 · Defensive use only
+      Defensive use only · מערכת לשימוש הגנתי בלבד
     </div>
   </div>
 </div>
@@ -1953,16 +2105,39 @@ def _show_empty_state(scan_mode: str = "passive") -> None:
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
             max-width:680px;margin:32px auto 0;padding:0 8px">
 
-  <!-- SVG shield illustration -->
+  <!-- Animated shield + lock illustration -->
   <div style="text-align:center;margin-bottom:28px">
-    <svg width="80" height="88" viewBox="0 0 80 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="80" height="90" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+      <defs>
+        <linearGradient id="slg" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="1.5" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+      </defs>
+      <!-- Outer shield -->
       <path d="M40 4L8 16V44C8 62.4 22.4 79.6 40 84C57.6 79.6 72 62.4 72 44V16L40 4Z"
-            fill="#0d1a2e" stroke="#1e3a5f" stroke-width="2"/>
-      <path d="M40 14L16 24V44C16 58.4 26.8 71.8 40 75.6C53.2 71.8 64 58.4 64 44V24L40 14Z"
-            fill="#0a1525" stroke="#22d3ee33" stroke-width="1.5"/>
-      <text x="40" y="50" text-anchor="middle" dominant-baseline="middle"
-            fill="#22d3ee" font-size="26" font-weight="900"
-            font-family="JetBrains Mono,monospace">?</text>
+            fill="#090d1a" stroke="#243049" stroke-width="1.5"/>
+      <!-- Inner shield -->
+      <path d="M40 12L16 22V44C16 58.4 26.8 71.8 40 75.6C53.2 71.8 64 58.4 64 44V22L40 12Z"
+            fill="#0c1120" stroke="rgba(34,211,238,0.15)" stroke-width="1"/>
+      <!-- Lock body -->
+      <rect x="27" y="44" width="26" height="20" rx="3"
+            fill="rgba(34,211,238,0.07)" stroke="rgba(34,211,238,0.35)" stroke-width="1.2"/>
+      <!-- Lock shackle -->
+      <path d="M32 44v-6a8 8 0 0 1 16 0v6"
+            fill="none" stroke="rgba(34,211,238,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Keyhole dot -->
+      <circle cx="40" cy="53" r="2.5" fill="rgba(34,211,238,0.5)"/>
+      <rect x="38.8" y="53" width="2.4" height="5" rx="1.2" fill="rgba(34,211,238,0.5)"/>
+      <!-- Animated scan line group -->
+      <g style="animation:scanline 2.4s ease-in-out infinite">
+        <rect x="16" y="28" width="48" height="0.8" rx="0.4" fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+        <rect x="16" y="28" width="48" height="7" rx="2" fill="url(#slg)" opacity="0.12"/>
+      </g>
     </svg>
   </div>
 
@@ -2248,8 +2423,19 @@ else:
     _mode_badge_html = '<span class="cs-badge" style="margin-left:6px">🟢 STANDARD SCAN</span>'
 st.markdown(f"""
 <div class="cs-header">
-  <div class="cs-logo"><span class="cs-logo-prefix">⬡ AI CYBER </span><span class="cs-logo-accent">SHIELD</span></div>
-  <div class="cs-tagline">Web Application Security Intelligence Platform</div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+    <svg width="26" height="30" viewBox="0 0 28 32" fill="none"
+         style="flex-shrink:0;filter:drop-shadow(0 0 10px rgba(34,211,238,0.45))">
+      <path d="M14 1.5L2 6.5V15.5C2 23.2 7.4 30.1 14 32C20.6 30.1 26 23.2 26 15.5V6.5L14 1.5Z"
+            fill="#090d1a" stroke="#22d3ee" stroke-width="1.2"/>
+      <path d="M9 16l4 4 7-7" stroke="#22d3ee" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="cs-logo"><span class="cs-logo-prefix">AI CYBER </span><span class="cs-logo-accent">SHIELD</span></div>
+      <div class="cs-tagline">Web Application Security Intelligence Platform</div>
+    </div>
+  </div>
   <div>
     <span class="cs-badge">v6.0</span>
     <span class="cs-badge" style="margin-left:6px">{'18 OSINT TOOLS' if scan_mode == 'passive' else '18 TOOLS'}</span>
