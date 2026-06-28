@@ -2617,12 +2617,12 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
 </div>""", unsafe_allow_html=True)
 
         # ── TraffixNet-style inline priority findings ─────────────────────────
-        st.markdown('<div class="section-label" style="margin-top:8px">FINDINGS</div>',
+        st.markdown(f'<div class="section-label" style="margin-top:8px">{t("res_findings")}</div>',
                     unsafe_allow_html=True)
         _render_inline_findings(meta.get("critical_findings", []))
 
         # ── Full report — organized by section ────────────────────────────────
-        st.markdown('<div class="section-label" style="margin-top:12px">FULL REPORT — BY CATEGORY</div>',
+        st.markdown(f'<div class="section-label" style="margin-top:12px">{t("res_full_report")}</div>',
                     unsafe_allow_html=True)
         _render_report_sections(st.session_state["url_report"])
 
@@ -2630,25 +2630,16 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
 
         # ── Active Verification results ────────────────────────────────────────
         st.divider()
-        st.markdown('<div class="section-label">ACTIVE VERIFICATION — LIVE PROBE RESULTS</div>',
+        st.markdown(f'<div class="section-label">{t("res_active_verify")}</div>',
                     unsafe_allow_html=True)
 
         if demo_mode:
-            st.markdown("""
-<div class="mode-badge-locked">
-🔒 ACTIVE VERIFICATION UNAVAILABLE IN DEMO MODE<br>
-<span style="font-weight:400;font-size:0.72rem">Switch to Live Mode and enable PT Mode in the sidebar to get Confirmed PoC results.</span>
-</div>""", unsafe_allow_html=True)
+            st.markdown(f'<div class="mode-badge-locked">{t("res_demo_locked")}</div>',
+                        unsafe_allow_html=True)
 
         elif not pt_mode_active:
-            st.markdown("""
-<div class="mode-badge-standard">
-🟢 STANDARD SCAN MODE — No live probes sent<br>
-<span style="font-weight:400;color:#94a3b8;font-size:0.72rem">
-Enable <b>Active PT Mode</b> in the sidebar (after confirming target ownership) to automatically
-confirm vulnerabilities with non-destructive canary probes and get curl PoC reproduction steps.
-</span>
-</div>""", unsafe_allow_html=True)
+            st.markdown(f'<div class="mode-badge-standard">{t("res_standard_mode")}</div>',
+                        unsafe_allow_html=True)
 
         else:
             # PT mode — show auto-run results (or a spinner if not yet run)
@@ -2656,7 +2647,7 @@ confirm vulnerabilities with non-destructive canary probes and get curl PoC repr
             if _av is None:
                 st.info("Active verification will run automatically after the next scan.")
             elif not _av:
-                st.success("✅ No verifiable findings detected — no probes dispatched.")
+                st.success(t("res_no_verify"))
             else:
                 _confirmed = [r for r in _av if r.is_confirmed]
                 _blocked   = [r for r in _av if not r.is_confirmed
@@ -2698,19 +2689,19 @@ confirm vulnerabilities with non-destructive canary probes and get curl PoC repr
 
         # ── PDF download ──────────────────────────────────────────────────────
         st.divider()
-        st.markdown('<div class="section-label">EXPORT</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="section-label">{t("res_export")}</div>', unsafe_allow_html=True)
         try:
             from cyber_shield_pdf_app import create_pdf
             pdf_bytes = create_pdf(st.session_state["url_report"])
             st.download_button(
-                label="📥  Download Full Report as PDF",
+                label=t("res_download_pdf"),
                 data=pdf_bytes,
                 file_name=f"cyber_shield_report_{grade}_{score}.pdf",
                 mime="application/pdf",
                 use_container_width=True,
             )
         except Exception:
-            st.warning("PDF export unavailable — the report above is the full output.")
+            st.warning(t("res_pdf_unavailable"))
 
     # ── Passive Recon Results (shown when passive mode was used) ─────────────
     _pr_data = st.session_state.get("url_passive_recon")
@@ -2950,10 +2941,10 @@ confirm vulnerabilities with non-destructive canary probes and get curl PoC repr
             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
     <span style="font-size:1.1rem">🛠️</span>
-    <span style="color:#e2e8f0;font-size:1rem;font-weight:700">What to do next</span>
-    <span style="color:#334155;font-size:0.75rem;margin-left:auto">{len(_top_fixes)} quick wins identified</span>
+    <span style="color:#e2e8f0;font-size:1rem;font-weight:700">{t("res_what_next")}</span>
+    <span style="color:#334155;font-size:0.75rem;margin-left:auto">{t("res_quick_wins", n=len(_top_fixes))}</span>
   </div>
-  {_fix_items if _fix_items else '<div style="color:#475569;font-size:0.84rem">No critical/high findings — your site passed passive checks. 🎉</div>'}
+  {_fix_items if _fix_items else f'<div style="color:#475569;font-size:0.84rem">{t("res_no_critical")}</div>'}
   {_upgrade_row}
 </div>""")
             if _is_free and _top_fixes:
@@ -3022,24 +3013,24 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
 
         # ── Tool-by-tool results ───────────────────────────────────────────
         _TOOL_META = {
-            "security_txt":       ("📝", "Security.txt / Bug Bounty"),
-            "exposed_files":      ("🗂️", "Exposed Sensitive Files"),
-            "http_headers":       ("🛡️", "HTTP Security Headers"),
-            "robots_sitemap":     ("🤖", "robots.txt / Sitemap Analysis"),
-            "js_secrets":         ("⚡", "JavaScript Secrets + Source Maps"),
-            "wayback":            ("🕰️", "Wayback Machine Exposure"),
-            "cloud_buckets":      ("☁️", "Cloud Bucket Detection"),
-            "http_methods":       ("🔧", "HTTP Methods Check"),
-            "email_spoofability": ("📧", "Email Spoofability (DMARC/SPF)"),
-            "cve_correlation":    ("🔗", "CVE Correlation (55 CVEs)"),
-            "meta_leakage":       ("🔍", "Error Page Info Leakage"),
-            "github_leaks":       ("🐙", "GitHub Public Code Leaks"),
-            "crt_subdomains":     ("🔏", "CT Logs — Subdomain Enumeration"),
-            "ssl_passive":        ("🔒", "SSL/TLS Certificate Analysis"),
-            "dns_deep":           ("🌐", "DNS Deep Analysis"),
-            "whois":              ("📋", "WHOIS & Domain Age"),
-            "urlscan":            ("🔎", "URLScan.io Fingerprint"),
-            "ip_intelligence":    ("🖥️",  "IP Intelligence (Shodan InternetDB)"),
+            "security_txt":       ("📝", t("tool_security_txt")),
+            "exposed_files":      ("🗂️", t("tool_exposed_files")),
+            "http_headers":       ("🛡️", t("tool_http_headers")),
+            "robots_sitemap":     ("🤖", t("tool_robots_sitemap")),
+            "js_secrets":         ("⚡", t("tool_js_secrets")),
+            "wayback":            ("🕰️", t("tool_wayback")),
+            "cloud_buckets":      ("☁️", t("tool_cloud_buckets")),
+            "http_methods":       ("🔧", t("tool_http_methods")),
+            "email_spoofability": ("📧", t("tool_email_spoofability")),
+            "cve_correlation":    ("🔗", t("tool_cve_correlation")),
+            "meta_leakage":       ("🔍", t("tool_meta_leakage")),
+            "github_leaks":       ("🐙", t("tool_github_leaks")),
+            "crt_subdomains":     ("🔏", t("tool_crt_subdomains")),
+            "ssl_passive":        ("🔒", t("tool_ssl_passive")),
+            "dns_deep":           ("🌐", t("tool_dns_deep")),
+            "whois":              ("📋", t("tool_whois")),
+            "urlscan":            ("🔎", t("tool_urlscan")),
+            "ip_intelligence":    ("🖥️", t("tool_ip_intelligence")),
         }
 
         # Plain-language "what it means / what to report" per tool
@@ -3140,7 +3131,7 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
             },
         }
 
-        st.markdown('<div class="pr-section-title">🔵 PASSIVE RECON — RESULTS (מיון לפי חומרה)</div>',
+        st.markdown(f'<div class="pr-section-title">{t("res_passive_title")}</div>',
                     unsafe_allow_html=True)
 
         # Sort tools: CRITICAL first → HIGH → MEDIUM → LOW → INFO
@@ -3152,11 +3143,11 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
         _unavailable_tools = []
         _last_sev_group    = None
         _sev_group_labels  = {
-            "CRITICAL": ("🔴", "CRITICAL — Immediate Action Required",  "#ef4444", "#3f0000"),
-            "HIGH":     ("🟠", "HIGH — Fix Before Next Release",        "#f97316", "#3f1400"),
-            "MEDIUM":   ("🟡", "MEDIUM — Should Be Addressed",          "#f59e0b", "#3a2800"),
-            "LOW":      ("⚪", "LOW — Minor Issues",                    "#60a5fa", "#0e1e3f"),
-            "INFO":     ("✅", "INFORMATIONAL — No Issues Found",       "#475569", "#111827"),
+            "CRITICAL": ("🔴", t("sev_critical"), "#ef4444", "#3f0000"),
+            "HIGH":     ("🟠", t("sev_high"),     "#f97316", "#3f1400"),
+            "MEDIUM":   ("🟡", t("sev_medium"),   "#f59e0b", "#3a2800"),
+            "LOW":      ("⚪", t("sev_low"),       "#60a5fa", "#0e1e3f"),
+            "INFO":     ("✅", t("sev_info"),      "#475569", "#111827"),
         }
 
         for tool_key, (icon, label) in _sorted_tools:
@@ -3181,13 +3172,13 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
             if _raw_finding:
                 finding = _raw_finding
             elif status == "completed":
-                finding = "✅ No issues detected."
+                finding = t("res_no_issues")
             elif status in ("timeout", "error"):
                 finding = f"⚠️ {tr.get('error', 'Service temporarily unavailable — try re-running the scan.')}"
             elif status == "not_found":
-                finding = "ℹ️ Not found on this target."
+                finding = t("res_not_found")
             else:
-                finding = "ℹ️ No data returned for this target."
+                finding = t("res_no_data")
 
             # ── Severity group header (shown once per severity level) ──────────
             _sev_group = sev if sev in _sev_group_labels else "INFO"
@@ -3240,7 +3231,7 @@ Generated by AI Cyber Shield v6 — For authorized security testing only
 
         # Collapsed section for tools that had no output (skipped/error/timeout)
         if _unavailable_tools:
-            with st.expander(f"⚙️ {len(_unavailable_tools)} tools — no data for this target", expanded=False):
+            with st.expander(t("res_tools_no_data", n=len(_unavailable_tools)), expanded=False):
                 st.caption("These tools ran but returned no results for this specific domain. This is normal — not every tool applies to every target.")
                 for _tk, _ti, _tl, _ts, _tr in _unavailable_tools:
                     _reason = {

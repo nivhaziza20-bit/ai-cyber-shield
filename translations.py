@@ -159,6 +159,72 @@ _T: dict[str, dict[str, str]] = {
     "auth_enter_btn":     {"he": "כניסה",                         "en": "Enter"},
     "auth_incorrect_pw":  {"he": "סיסמה שגויה.",                  "en": "Incorrect password."},
 
+    # ── Scan result section headers ───────────────────────────────────────────
+    "res_findings":         {"he": "ממצאים",                        "en": "FINDINGS"},
+    "res_full_report":      {"he": "דוח מלא — לפי קטגוריה",        "en": "FULL REPORT — BY CATEGORY"},
+    "res_active_verify":    {"he": "אימות פעיל — תוצאות בדיקות",   "en": "ACTIVE VERIFICATION — LIVE PROBE RESULTS"},
+    "res_passive_title":    {"he": "🔵 PASSIVE RECON — תוצאות (מיון לפי חומרה)", "en": "🔵 PASSIVE RECON — RESULTS (by severity)"},
+    "res_export":           {"he": "ייצוא",                         "en": "EXPORT"},
+    "res_download_pdf":     {"he": "📥  הורד דוח מלא כ-PDF",       "en": "📥  Download Full Report as PDF"},
+    "res_download_html":    {"he": "📥  הורד דוח (HTML)",           "en": "📥  Download Report (HTML)"},
+    "res_pdf_unavailable":  {"he": "ייצוא PDF אינו זמין — הדוח לעיל הוא הפלט המלא.", "en": "PDF export unavailable — the report above is the full output."},
+
+    # ── Severity group labels ─────────────────────────────────────────────────
+    "sev_critical":     {"he": "🔴 קריטי — נדרשת פעולה מיידית",    "en": "🔴 CRITICAL — Immediate Action Required"},
+    "sev_high":         {"he": "🟠 גבוה — תקן לפני הגרסה הבאה",    "en": "🟠 HIGH — Fix Before Next Release"},
+    "sev_medium":       {"he": "🟡 בינוני — יש לטפל בזה",          "en": "🟡 MEDIUM — Should Be Addressed"},
+    "sev_low":          {"he": "⚪ נמוך — בעיות קלות",              "en": "⚪ LOW — Minor Issues"},
+    "sev_info":         {"he": "✅ מידע — לא נמצאו בעיות",          "en": "✅ INFORMATIONAL — No Issues Found"},
+
+    # ── Scan result status messages ───────────────────────────────────────────
+    "res_no_issues":        {"he": "✅ לא נמצאו בעיות.",             "en": "✅ No issues detected."},
+    "res_not_found":        {"he": "ℹ️ לא נמצא ביעד זה.",           "en": "ℹ️ Not found on this target."},
+    "res_no_data":          {"he": "ℹ️ לא הוחזרו נתונים ליעד זה.", "en": "ℹ️ No data returned for this target."},
+    "res_no_verify":        {"he": "✅ לא נמצאו ממצאים לאימות — לא נשלחו בדיקות.", "en": "✅ No verifiable findings detected — no probes dispatched."},
+    "res_no_critical":      {"he": "לא נמצאו ממצאים קריטיים/גבוהים — האתר עבר את הבדיקות הפסיביות. 🎉", "en": "No critical/high findings — your site passed passive checks. 🎉"},
+    "res_av_auto":          {"he": "האימות הפעיל ירוץ אוטומטית לאחר הסריקה הבאה.", "en": "Active verification will run automatically after the next scan."},
+
+    # ── Scan mode messages ────────────────────────────────────────────────────
+    "res_demo_locked":      {
+        "he": "🔒 אימות פעיל אינו זמין במצב הדגמה<br><span style='font-weight:400;font-size:0.72rem'>עבור למצב חי והפעל PT Mode בסרגל הצד לקבלת תוצאות PoC מאומתות.</span>",
+        "en": "🔒 ACTIVE VERIFICATION UNAVAILABLE IN DEMO MODE<br><span style='font-weight:400;font-size:0.72rem'>Switch to Live Mode and enable PT Mode in the sidebar to get Confirmed PoC results.</span>",
+    },
+    "res_standard_mode":    {
+        "he": "🟢 מצב סריקה רגיל — לא נשלחו בדיקות חיות<br><span style='font-weight:400;color:#94a3b8;font-size:0.72rem'>הפעל <b>Active PT Mode</b> בסרגל הצד (לאחר אישור בעלות על היעד) לאימות פגיעויות ויצירת curl PoC.</span>",
+        "en": "🟢 STANDARD SCAN MODE — No live probes sent<br><span style='font-weight:400;color:#94a3b8;font-size:0.72rem'>Enable <b>Active PT Mode</b> in the sidebar (after confirming target ownership) to automatically confirm vulnerabilities with non-destructive canary probes and get curl PoC reproduction steps.</span>",
+    },
+
+    # ── Tool section titles ───────────────────────────────────────────────────
+    "tool_security_txt":       {"he": "Security.txt / Bug Bounty",      "en": "Security.txt / Bug Bounty"},
+    "tool_exposed_files":      {"he": "קבצים רגישים חשופים",            "en": "Exposed Sensitive Files"},
+    "tool_http_headers":       {"he": "כותרות HTTP אבטחה",              "en": "HTTP Security Headers"},
+    "tool_robots_sitemap":     {"he": "robots.txt / מפת אתר",           "en": "robots.txt / Sitemap Analysis"},
+    "tool_js_secrets":         {"he": "סודות JavaScript + Source Maps", "en": "JavaScript Secrets + Source Maps"},
+    "tool_wayback":            {"he": "חשיפת Wayback Machine",          "en": "Wayback Machine Exposure"},
+    "tool_cloud_buckets":      {"he": "גילוי Cloud Buckets",            "en": "Cloud Bucket Detection"},
+    "tool_http_methods":       {"he": "בדיקת HTTP Methods",             "en": "HTTP Methods Check"},
+    "tool_email_spoofability": {"he": "זיוף מייל (DMARC/SPF)",         "en": "Email Spoofability (DMARC/SPF)"},
+    "tool_cve_correlation":    {"he": "קורלציית CVE (55 CVEs)",         "en": "CVE Correlation (55 CVEs)"},
+    "tool_meta_leakage":       {"he": "דליפת מידע בדפי שגיאה",         "en": "Error Page Info Leakage"},
+    "tool_github_leaks":       {"he": "דליפות קוד ציבורי GitHub",      "en": "GitHub Public Code Leaks"},
+    "tool_crt_subdomains":     {"he": "CT Logs — תת-דומיינים",         "en": "CT Logs — Subdomain Enumeration"},
+    "tool_ssl_passive":        {"he": "ניתוח אישור SSL/TLS",            "en": "SSL/TLS Certificate Analysis"},
+    "tool_dns_deep":           {"he": "ניתוח DNS מעמיק",               "en": "DNS Deep Analysis"},
+    "tool_whois":              {"he": "WHOIS וגיל הדומיין",            "en": "WHOIS & Domain Age"},
+    "tool_urlscan":            {"he": "טביעת אצבע URLScan.io",         "en": "URLScan.io Fingerprint"},
+    "tool_ip_intelligence":    {"he": "מודיעין IP (Shodan InternetDB)", "en": "IP Intelligence (Shodan InternetDB)"},
+
+    # ── What to do next / CTA ─────────────────────────────────────────────────
+    "res_what_next":        {"he": "מה לעשות עכשיו",                   "en": "What to do next"},
+    "res_quick_wins":       {"he": "{n} תיקונים מהירים זוהו",          "en": "{n} quick wins identified"},
+    "res_upgrade_fixes":    {"he": "🔍 שדרג ל-Pro לקבלת מדריכי תיקון שלב-אחר-שלב", "en": "🔍 Upgrade to Pro for step-by-step fix guides"},
+    "res_tools_no_data":    {"he": "⚙️ {n} כלים — אין נתונים ליעד זה", "en": "⚙️ {n} tools — no data for this target"},
+
+    # ── Empty state ───────────────────────────────────────────────────────────
+    "empty_headline_passive": {"he": "האתר שלך דולף מידע עכשיו?",     "en": "Is your website leaking secrets right now?"},
+    "empty_headline_standard":{"he": "מה הפגיעויות שהאתר שלך חושף?",  "en": "What vulnerabilities is your site exposing?"},
+    "empty_headline_pt":      {"he": "מוכן לאמת ממצאים בזמן אמת?",    "en": "Ready to verify these findings live?"},
+
     # ── Footer / legal disclaimer ─────────────────────────────────────────────
     "auth_card_footer_legal": {
         "he": "🛡 לשימוש מורשה בלבד · סריקת יעדים ללא אישור מפרה את <a href='/?legal=tos' style='color:#334155;text-decoration:underline'>התנאים שלנו</a>",
