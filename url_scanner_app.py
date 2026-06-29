@@ -105,7 +105,7 @@ enforce_rate_limit()  # Block abusive sessions before auth
 from auth.streamlit_auth import (
     require_auth, get_current_user, sign_out,
     check_quota, increment_quota, supabase_available,
-    TIER_DAILY_LIMITS, sign_in_with_github,
+    TIER_DAILY_LIMITS,
 )
 from audit_log import log_action
 from billing_ui import show_pricing_page, show_upgrade_prompt, PLANS
@@ -606,11 +606,11 @@ _CSS = """
   --brand-glow:   rgba(34,211,238,0.18);
   --brand-subtle: rgba(34,211,238,0.06);
   --brand-tint:   rgba(34,211,238,0.10);
-  /* Text */
-  --text-1:  #f1f5f9;
-  --text-2:  #94a3b8;
-  --text-3:  #4a5568;
-  --text-4:  #2d3a52;
+  /* Text — contrast-compliant against #050810 bg */
+  --text-1:  #f1f5f9;   /* primary   — 14:1 */
+  --text-2:  #94a3b8;   /* secondary — 6.4:1 */
+  --text-3:  #64748b;   /* muted     — 3.8:1 ≥ WCAG AA large */
+  --text-4:  #4a5568;   /* subtle    — replaces invisible #2d3a52 */
   /* Semantic */
   --critical:       #ef4444;
   --critical-bg:    rgba(239,68,68,0.08);
@@ -741,11 +741,11 @@ section[data-testid="stSidebar"] * {
   animation: shimmer 5s linear infinite;
 }
 .cs-tagline {
-    color: #475569;
-    font-size: 0.75rem;
-    letter-spacing: 0.18em;
+    color: #64748b;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    margin-top: 4px;
+    margin-top: 5px;
     font-family: 'JetBrains Mono', 'Courier New', monospace;
 }
 .cs-badge {
@@ -966,29 +966,36 @@ button[kind="secondary"]:hover {
 
 /* ── Tabs ─────────────────────────────────────────────────────────────────── */
 .stTabs [data-baseweb="tab-list"] {
-    background: #0d1117 !important;
-    border-bottom: 1px solid #1f2d3d !important;
-    gap: 4px;
+    background: #090d1a !important;
+    border-bottom: 1px solid #1a2236 !important;
+    gap: 2px;
+    padding: 0 4px !important;
 }
 .stTabs [data-baseweb="tab"] {
   background: transparent !important;
-  color: var(--text-3) !important;
+  color: var(--text-2) !important;        /* #94a3b8 — clearly readable */
   border-radius: var(--r-sm) var(--r-sm) 0 0 !important;
   font-size: 0.82rem !important;
-  padding: 8px 14px !important;
+  padding: 10px 16px !important;
   border: none !important;
-  transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out) !important;
+  transition: color 150ms ease, background 150ms ease !important;
   font-weight: 500 !important;
+  letter-spacing: 0.01em !important;
 }
 .stTabs [data-baseweb="tab"]:hover {
-  color: var(--text-2) !important;
-  background: var(--brand-subtle) !important;
+  color: var(--text-1) !important;        /* #f1f5f9 */
+  background: rgba(255,255,255,0.04) !important;
 }
 .stTabs [aria-selected="true"] {
-  background: rgba(34,211,238,0.06) !important;
-  color: var(--brand) !important;
-  border-bottom: 2px solid var(--brand) !important;
+  background: rgba(34,211,238,0.08) !important;
+  color: #22d3ee !important;              /* full brand color, not CSS var for specificity */
+  border-bottom: 2px solid #22d3ee !important;
   font-weight: 700 !important;
+  text-shadow: 0 0 18px rgba(34,211,238,0.25) !important; /* subtle — not blinding */
+}
+/* Tab panel border */
+.stTabs [data-baseweb="tab-panel"] {
+  padding-top: 20px !important;
 }
 
 /* ── Expanders ────────────────────────────────────────────────────────────── */
@@ -1064,12 +1071,12 @@ code, pre {
 .stAlert { border-radius: 8px !important; }
 
 /* ── Caption / small text ─────────────────────────────────────────────────── */
-.stCaption, small { color: #475569 !important; }
+.stCaption, small { color: #64748b !important; }
 
 /* ── Section dividers ─────────────────────────────────────────────────────── */
 .section-label {
-    color: #475569;
-    font-size: 0.65rem;   /* was 0.58rem — 9.3px too small to read comfortably */
+    color: #64748b;
+    font-size: 0.67rem;
     text-transform: uppercase;
     letter-spacing: 0.18em;
     font-family: 'JetBrains Mono', 'Courier New', monospace;
@@ -2382,7 +2389,7 @@ Check the legal confirmation above to unlock active probes.
     # ── About ─────────────────────────────────────────────────────────────────
     st.markdown(f'<div class="section-label">{t("sidebar_about")}</div>', unsafe_allow_html=True)
     st.markdown("""
-<small style="color:#475569;line-height:1.7">
+<small style="color:#8898aa;line-height:1.75">
 <b style="color:#22d3ee">18 security tools</b> run in parallel:<br>
 🔒 SSL/TLS · 📋 Headers · 🌐 HTML/JS<br>
 ⚙️ Tech Stack · 🕷️ Crawler · 🔀 CORS<br>
@@ -2398,7 +2405,7 @@ Check the legal confirmation above to unlock active probes.
     # ── Capability badges ─────────────────────────────────────────────────────
     st.markdown(f'<div class="section-label">{t("sidebar_engine")}</div>', unsafe_allow_html=True)
     st.markdown("""
-<small style="color:#475569;line-height:2">
+<small style="color:#8898aa;line-height:2">
 <span style="color:#22d3ee;font-weight:700">✓</span> WAF Stealth Bypass — browser TLS fingerprint<br>
 <span style="color:#22d3ee;font-weight:700">✓</span> SSRF guard on every redirect hop<br>
 <span style="color:#22d3ee;font-weight:700">✓</span> IPv4-mapped IPv6 SSRF detection<br>
@@ -2419,7 +2426,7 @@ Check the legal confirmation above to unlock active probes.
 
     st.divider()
     st.markdown(
-        '<small style="color:#334155">AI Cyber Shield v6<br>מערכת לשימוש הגנתי בלבד</small>',
+        '<small style="color:#64748b">AI Cyber Shield v6<br>מערכת לשימוש הגנתי בלבד</small>',
         unsafe_allow_html=True,
     )
 
@@ -4677,9 +4684,15 @@ with tab_portfolio:
 # ─────────────────────────────────────────────────────────────────────────────
 
 st.markdown("""
-<div style="text-align:center;padding:24px 0 8px;color:#334155;font-size:0.75rem;
-            font-family:'Courier New',monospace;letter-spacing:0.1em;">
-  AI CYBER SHIELD v6 &nbsp;·&nbsp; DEFENSIVE USE ONLY &nbsp;·&nbsp;
-  מערכת לשימוש הגנתי בלבד &nbsp;·&nbsp; SCAN ONLY YOUR OWN SITES
+<div style="text-align:center;padding:28px 0 12px;
+            border-top:1px solid #1a2236;margin-top:8px;">
+  <div style="color:#64748b;font-size:0.72rem;
+              font-family:'JetBrains Mono','Courier New',monospace;
+              letter-spacing:0.12em;line-height:2">
+    <span style="color:#22d3ee;font-weight:700">AI CYBER SHIELD v6</span>
+    &nbsp;·&nbsp; DEFENSIVE USE ONLY
+    &nbsp;·&nbsp; מערכת לשימוש הגנתי בלבד
+    &nbsp;·&nbsp; SCAN ONLY YOUR OWN SITES
+  </div>
 </div>
 """, unsafe_allow_html=True)

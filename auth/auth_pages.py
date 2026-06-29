@@ -168,25 +168,6 @@ body, .block-container, button, label, p, span, div, input {
     transform: scale(0.98) !important;
 }
 
-/* ── GitHub button ───────────────────────────────────────── */
-.auth-github-row [data-testid="stButton"] button {
-    background: #21262d !important;
-    color: #e6edf3 !important;
-    border: 1px solid #30363d !important;
-    border-radius: 10px !important;
-    font-weight: 700 !important;
-    font-size: 0.88rem !important;
-    box-shadow: none !important;
-    letter-spacing: 0.01em !important;
-    transition: background 0.15s, border-color 0.15s, transform 0.15s !important;
-}
-.auth-github-row [data-testid="stButton"] button:hover {
-    background: #2d333b !important;
-    border-color: #8b949e !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 3px 14px rgba(0,0,0,0.35) !important;
-}
-
 /* ── Toggle link buttons ─────────────────────────────────── */
 .auth-toggle-row [data-testid="stButton"] button {
     background: transparent !important;
@@ -245,8 +226,8 @@ body, .block-container, button, label, p, span, div, input {
   margin-bottom: 16px;
 }
 .lp-trust span {
-  color: #2d4056;
-  font-size: 0.7rem;
+  color: #64748b;
+  font-size: 0.72rem;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -256,23 +237,6 @@ body, .block-container, button, label, p, span, div, input {
   color: #22d3ee;
   font-weight: 800;
   font-size: 0.68rem;
-}
-
-/* ── GitHub button CSS marker trick (:has selector) ─────── */
-[data-testid="stMarkdownContainer"]:has(.lp-gh-marker) + [data-testid="stButton"] button {
-  background: #21262d !important;
-  color: #e6edf3 !important;
-  border: 1px solid #30363d !important;
-  box-shadow: none !important;
-  text-decoration: none !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.01em !important;
-}
-[data-testid="stMarkdownContainer"]:has(.lp-gh-marker) + [data-testid="stButton"] button:hover {
-  background: #2d333b !important;
-  border-color: #8b949e !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 3px 14px rgba(0,0,0,0.35) !important;
 }
 
 /* ── Hero scan URL label ────────────────────────────────── */
