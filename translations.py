@@ -338,7 +338,7 @@ Scanning systems without permission may violate the Computer Fraud and Abuse Act
     "diff_scan_a":          {"he": "סריקה A (בסיס)",                   "en": "SCAN A (BASELINE)"},
     "diff_scan_b":          {"he": "סריקה B (השוואה)",                 "en": "SCAN B (COMPARISON)"},
     "stealth_activated":    {"he": "🕵️ מצב STEALTH הופעל — WAF חסם UA רגיל · TLS fingerprint של דפדפן בשימוש", "en": "STEALTH MODE ACTIVATED"},
-    "stealth_detail":       {"he": "", "en": " — WAF blocked standard scanner UA · browser TLS fingerprint used for WAF fingerprinting"},
+    "stealth_detail":       {"he": " — WAF חסם UA רגיל · TLS fingerprint של דפדפן בשימוש לעקיפת WAF", "en": " — WAF blocked standard scanner UA · browser TLS fingerprint used for WAF fingerprinting"},
     "passive_recon_header": {"he": "PASSIVE RECON — תוצאות · 18 כלים · {ts} UTC", "en": "Passive OSINT Recon · 18 Tools · {ts} UTC"},
 
     # ── Empty state ───────────────────────────────────────────────────────────

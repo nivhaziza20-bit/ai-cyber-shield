@@ -435,23 +435,36 @@ _SEV_BG       = {"HIGH": "rgba(239,68,68,0.1)", "MEDIUM": "rgba(245,158,11,0.1)"
 # Score gauge helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _risk_label(score: int) -> tuple[str, str]:
+def _compliance_score(risk: int) -> int:
+    """Convert risk score (0=safe, 100=bad) → compliance score (100=excellent, 0=critical)."""
+    return max(0, min(100, 100 - risk))
+
+
+def _compliance_label(c: int) -> tuple[str, str]:
+    """Return (label, hex_color) for a compliance score (100=excellent)."""
     lang = _get_lang()
     s = _STRINGS[lang]["score"]
-    if score <= 20: return s["low"],      "#22d3ee"
-    if score <= 50: return s["medium"],   "#f59e0b"
-    if score <= 75: return s["high"],     "#ef4444"
-    return               s["critical"],  "#dc2626"
+    if c >= 80: return s["low"],      "#22d3ee"   # low risk = high compliance = cyan
+    if c >= 55: return s["medium"],   "#f59e0b"
+    if c >= 30: return s["high"],     "#ef4444"
+    return              s["critical"],"#dc2626"
 
 
-def _score_gauge_svg(score: int, label: str, color: str, size: int = 120) -> str:
-    r = 44
+# Keep _risk_label as internal alias (used in legacy find-card coloring)
+def _risk_label(risk_score: int) -> tuple[str, str]:
+    c = _compliance_score(risk_score)
+    return _compliance_label(c)
+
+
+def _score_gauge_svg(compliance: int, label: str, color: str, size: int = 120) -> str:
+    """SVG gauge — compliance score (100=excellent fills fully with cyan, 0=critical empty)."""
+    r  = 44
     cx = cy = size // 2
     circumference = 2 * 3.14159 * r
-    fill_pct   = score / 100
+    fill_pct   = compliance / 100
     dash_fill  = circumference * fill_pct
     dash_empty = circumference * (1 - fill_pct)
-    safe_color = "#22d3ee" if score <= 20 else ("#f59e0b" if score <= 50 else "#ef4444")
+    safe_color = "#22d3ee" if compliance >= 80 else ("#f59e0b" if compliance >= 55 else "#ef4444")
     return f"""<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}">
   <circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="#1e293b" stroke-width="8"/>
   <circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="{safe_color}" stroke-width="8"
@@ -459,7 +472,7 @@ def _score_gauge_svg(score: int, label: str, color: str, size: int = 120) -> str
     stroke-linecap="round"
     transform="rotate(-90 {cx} {cy})"/>
   <text x="{cx}" y="{cy - 4}" text-anchor="middle" font-size="20" font-weight="900"
-    fill="{safe_color}" font-family="system-ui">{score}</text>
+    fill="{safe_color}" font-family="system-ui">{compliance}</text>
   <text x="{cx}" y="{cy + 14}" text-anchor="middle" font-size="8" fill="#64748b"
     font-family="system-ui">{label}</text>
 </svg>"""
@@ -489,32 +502,46 @@ def _render_score_dashboard(result: LegalScanResult, active_frameworks: list[str
     lang = _get_lang()
     s    = _STRINGS[lang]["score"]
     m    = _STRINGS[lang]["metrics"]
-    risk_lbl, risk_col = _risk_label(result.risk_score)
+
+    # Convert risk → compliance (100 = fully compliant, 0 = critical violations)
+    overall_c = _compliance_score(result.risk_score)
+    risk_lbl, risk_col = _compliance_label(overall_c)
+
+    # ── Compliance score header label ─────────────────────────────────────────
+    comp_label_he = "ציון ציות משפטי"
+    comp_label_en = "Compliance Score"
+    comp_label    = comp_label_he if lang == "he" else comp_label_en
+    score_note_he = "100 = ציות מלא · 0 = הפרות קריטיות"
+    score_note_en = "100 = fully compliant · 0 = critical violations"
+    score_note    = score_note_he if lang == "he" else score_note_en
 
     # Build only the selected framework gauge cards
     fw_cards_html = ""
     if "IL" in active_frameworks:
-        il_lbl, il_col = _risk_label(result.il_score)
+        il_c = _compliance_score(result.il_score)
+        il_lbl, il_col = _compliance_label(il_c)
         fw_cards_html += f"""
   <div class="lscore-card">
     <div class="lscore-fw">{s["il"]}</div>
-    {_score_gauge_svg(result.il_score, il_lbl, il_col, 110)}
+    {_score_gauge_svg(il_c, il_lbl, il_col, 110)}
     <div class="lscore-lbl" style="color:{il_col}">{il_lbl}</div>
   </div>"""
     if "US" in active_frameworks:
-        us_lbl, us_col = _risk_label(result.us_score)
+        us_c = _compliance_score(result.us_score)
+        us_lbl, us_col = _compliance_label(us_c)
         fw_cards_html += f"""
   <div class="lscore-card">
     <div class="lscore-fw">{s["us"]}</div>
-    {_score_gauge_svg(result.us_score, us_lbl, us_col, 110)}
+    {_score_gauge_svg(us_c, us_lbl, us_col, 110)}
     <div class="lscore-lbl" style="color:{us_col}">{us_lbl}</div>
   </div>"""
     if "GDPR" in active_frameworks:
-        gdpr_lbl, gdpr_col = _risk_label(result.gdpr_score)
+        gdpr_c = _compliance_score(result.gdpr_score)
+        gdpr_lbl, gdpr_col = _compliance_label(gdpr_c)
         fw_cards_html += f"""
   <div class="lscore-card">
     <div class="lscore-fw">{s["gdpr"]}</div>
-    {_score_gauge_svg(result.gdpr_score, gdpr_lbl, gdpr_col, 110)}
+    {_score_gauge_svg(gdpr_c, gdpr_lbl, gdpr_col, 110)}
     <div class="lscore-lbl" style="color:{gdpr_col}">{gdpr_lbl}</div>
   </div>"""
 
@@ -536,9 +563,10 @@ def _render_score_dashboard(result: LegalScanResult, active_frameworks: list[str
 </style>
 <div class="lscore-wrap">
   <div class="lscore-card lscore-main">
-    <div class="lscore-fw">{s["overall"]}</div>
-    {_score_gauge_svg(result.risk_score, risk_lbl, risk_col, 130)}
+    <div class="lscore-fw">{comp_label}</div>
+    {_score_gauge_svg(overall_c, risk_lbl, risk_col, 130)}
     <div class="lscore-lbl" style="color:{risk_col}">{risk_lbl}</div>
+    <div style="font-size:0.62rem;color:#475569;margin-top:4px;letter-spacing:0.02em">{score_note}</div>
   </div>
   {fw_cards_html}
 </div>""", unsafe_allow_html=True)
@@ -652,9 +680,9 @@ def _render_finding_card(f: LegalFinding) -> None:
     ⚖️ <em>{f.legal_basis}</em>
   </div>
   <div style="font-size:0.94rem;color:#94a3b8;margin-bottom:8px;line-height:1.5">{f.description}</div>
-  {'<div style="background:#0f1f0f;border:1px solid #166534;border-radius:6px;padding:8px 12px;font-size:0.91rem;color:#86efac;margin-top:4px">💡 ' + f.recommendation + '</div>' if f.status in ("FAIL", "WARN") else ''}
+  {'<div style="background:#0f1f0f;border:1px solid #166534;border-radius:6px;padding:8px 12px;font-size:0.91rem;color:#86efac;margin-top:4px;line-height:1.5">💡 ' + f.recommendation + '</div>' if f.status in ("FAIL", "WARN") else ''}
   {fine_html}
-  {'<div style="font-size:0.83rem;color:#64748b;margin-top:6px">🔍 ' + f.evidence + '</div>' if f.evidence else ''}
+  {'<div style="font-size:0.83rem;color:#64748b;margin-top:6px;word-break:break-all;overflow-wrap:anywhere">🔍 ' + (f.evidence[:220] + '…' if len(f.evidence) > 220 else f.evidence) + '</div>' if f.evidence else ''}
 </div>""", unsafe_allow_html=True)
 
 

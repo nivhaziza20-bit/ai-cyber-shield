@@ -2588,6 +2588,20 @@ Check the legal confirmation above to unlock active probes.
 
     st.divider()
 
+    # ── REST API badge ────────────────────────────────────────────────────────
+    st.markdown("""
+<div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);
+  border-radius:8px;padding:9px 13px;margin:0 0 10px">
+  <div style="color:#818cf8;font-size:0.62rem;font-weight:800;letter-spacing:0.14em;
+    text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:4px">
+    // REST API
+  </div>
+  <div style="color:#64748b;font-size:0.66rem;line-height:1.65">
+    CI/CD pipeline integration<br>
+    <span style="color:#818cf8;font-family:monospace;font-size:0.64rem">POST /api/v1/scans</span>
+  </div>
+</div>""", unsafe_allow_html=True)
+
     # ── Capability badges ─────────────────────────────────────────────────────
     st.markdown(f'<div class="section-label">{t("sidebar_engine")}</div>', unsafe_allow_html=True)
     st.markdown("""
@@ -2729,6 +2743,50 @@ tab_url, tab_code, tab_legal, tab_history, tab_diff, tab_our_legal, tab_portfoli
     t("tab_legal_docs"),
     t("tab_portfolio"),
 ])
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# First-time user onboarding hint (shown once per session for new accounts)
+# ─────────────────────────────────────────────────────────────────────────────
+if _current_user and not st.session_state.get("_onboarding_dismissed"):
+    try:
+        from scan_history_store import get_store as _ob_store
+        _has_history = bool(_ob_store().get_all_scanned_urls())
+    except Exception:
+        _has_history = True   # assume returning user on any error
+    if not _has_history:
+        _ob_lang = get_lang()
+        _ob_steps = [
+            ("1", "🎯", "הכנס דומיין" if _ob_lang == "he" else "Enter a domain",   "https://yoursite.com"),
+            ("2", "⚙️", "בחר מצב סריקה" if _ob_lang == "he" else "Choose scan mode", "Standard · PT · Passive"),
+            ("3", "📊", "קבל דוח מלא" if _ob_lang == "he" else "Get full report",   "Grade · Findings · PDF"),
+        ]
+        _ob_title    = "ברוך הבא" if _ob_lang == "he" else "GETTING STARTED"
+        _ob_step_html = ""
+        for _n, _ic, _step, _hint in _ob_steps:
+            _ob_step_html += (
+                f'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
+                f'<div style="width:20px;height:20px;border-radius:50%;background:rgba(34,211,238,0.1);'
+                f'border:1px solid rgba(34,211,238,0.3);color:#22d3ee;font-size:0.65rem;font-weight:800;'
+                f'display:flex;align-items:center;justify-content:center;flex-shrink:0">{_n}</div>'
+                f'<div><div style="color:#f1f5f9;font-size:0.75rem;font-weight:600">{_ic} {_step}</div>'
+                f'<div style="color:#64748b;font-size:0.65rem">{_hint}</div></div></div>'
+            )
+        _ob_html = (
+            '<div style="background:linear-gradient(135deg,#060e1c,#080f1e);'
+            'border:1px solid rgba(34,211,238,0.18);border-radius:12px;padding:14px 20px;'
+            'margin-bottom:14px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">'
+            f'<div style="color:#22d3ee;font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;'
+            f'font-family:\'JetBrains Mono\',monospace;white-space:nowrap;flex-shrink:0">{_ob_title}</div>'
+            f'{_ob_step_html}</div>'
+        )
+        _ob_cols = st.columns([8, 1])
+        with _ob_cols[0]:
+            st.markdown(_ob_html, unsafe_allow_html=True)
+        with _ob_cols[1]:
+            if st.button("✕", key="_ob_dismiss", help="Dismiss"):
+                st.session_state["_onboarding_dismissed"] = True
+                st.rerun()
 
 
 # ═════════════════════════════════════════════════════════════════════════════
