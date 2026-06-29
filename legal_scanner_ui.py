@@ -566,10 +566,39 @@ def _render_score_dashboard(result: LegalScanResult, active_frameworks: list[str
     <div class="lscore-fw">{comp_label}</div>
     {_score_gauge_svg(overall_c, risk_lbl, risk_col, 130)}
     <div class="lscore-lbl" style="color:{risk_col}">{risk_lbl}</div>
-    <div style="font-size:0.62rem;color:#475569;margin-top:4px;letter-spacing:0.02em">{score_note}</div>
+    <div style="font-size:0.72rem;color:#94a3b8;margin-top:6px;letter-spacing:0.02em">{score_note}</div>
   </div>
   {fw_cards_html}
 </div>""", unsafe_allow_html=True)
+
+    # ── "Why this score?" — top failing checks per framework ─────────────────
+    _top_fails = [f for f in result.findings if f.status == "FAIL"]
+    _top_warns = [f for f in result.findings if f.status == "WARN"]
+    _drivers   = (_top_fails + _top_warns)[:6]
+    if _drivers:
+        _sev_col = {"HIGH": "#ef4444", "MEDIUM": "#f59e0b", "LOW": "#64748b"}
+        _pill_html = ""
+        for _df in _drivers:
+            _dc = _sev_col.get(_df.severity, "#64748b")
+            _dt = (_translate_finding(_df, lang)).title if lang == "he" else _df.title
+            _ds = "FAIL" if _df.status == "FAIL" else "WARN"
+            _pill_html += (
+                f'<span style="display:inline-flex;align-items:center;gap:4px;'
+                f'background:rgba(15,23,42,0.8);border:1px solid {_dc}44;'
+                f'border-left:2px solid {_dc};border-radius:4px;'
+                f'padding:3px 8px;margin:3px 3px;font-size:0.72rem;color:#cbd5e1;'
+                f'font-family:system-ui">'
+                f'<span style="color:{_dc};font-size:0.65rem;font-weight:800">{_ds}</span>'
+                f' {_dt}</span>'
+            )
+        _why_title = "מה משפיע על הציון?" if lang == "he" else "What's driving the score?"
+        st.markdown(
+            f'<div style="margin:4px 0 12px">'
+            f'<div style="font-size:0.72rem;color:#64748b;margin-bottom:4px;'
+            f'letter-spacing:0.06em;text-transform:uppercase">{_why_title}</div>'
+            f'<div style="display:flex;flex-wrap:wrap">{_pill_html}</div></div>',
+            unsafe_allow_html=True,
+        )
 
     # Stats row
     fails  = sum(1 for f in result.findings if f.status == "FAIL")

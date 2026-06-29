@@ -3052,6 +3052,24 @@ button[kind="primary"]:hover {
             st.session_state.pop(k, None)
         st.rerun()
 
+    # ── Guest signup nudge (shown once, before first scan) ────────────────────
+    if not _current_user and not st.session_state.get("url_report"):
+        _g_lang = get_lang()
+        _g_title = "שמור את תוצאות הסריקה" if _g_lang == "he" else "Save your scan results"
+        _g_body  = "הירשם חינם כדי לשמור היסטוריה, להשוות סריקות ולקבל דוח PDF" if _g_lang == "he" \
+                   else "Sign up free to save history, compare scans and export PDF reports"
+        _g_btn   = "הירשם חינם ←" if _g_lang == "he" else "Create free account →"
+        st.markdown(
+            f'<div style="background:rgba(34,211,238,0.04);border:1px solid rgba(34,211,238,0.12);'
+            f'border-radius:8px;padding:10px 16px;margin-top:8px;'
+            f'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+            f'<div><div style="color:#f1f5f9;font-size:0.78rem;font-weight:600">{_g_title}</div>'
+            f'<div style="color:#64748b;font-size:0.71rem;margin-top:2px">{_g_body}</div></div>'
+            f'<div style="color:#22d3ee;font-size:0.75rem;font-weight:700;white-space:nowrap;'
+            f'cursor:pointer">{_g_btn}</div></div>',
+            unsafe_allow_html=True,
+        )
+
     # ── Legal pages overlay ───────────────────────────────────────────────────
     _legal = st.session_state.get("_show_legal", "")
     if _legal == "tos":

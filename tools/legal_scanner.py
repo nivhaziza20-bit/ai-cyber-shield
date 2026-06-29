@@ -2153,8 +2153,13 @@ def _check_children_safety_advanced(soup: BeautifulSoup, html: str) -> list[Lega
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _calculate_scores(findings: list[LegalFinding]) -> tuple[int, int, int, int]:
-    """Returns (overall, il_score, us_score, gdpr_score) — 0=low risk, 100=high risk."""
-    sev_weight = {"HIGH": 10, "MEDIUM": 5, "LOW": 2}
+    """Returns (overall, il_score, us_score, gdpr_score) — 0=low risk, 100=high risk.
+
+    Severity weighting:  HIGH=20  MEDIUM=8  LOW=2
+    WARN counts as 35% of a FAIL at the same severity.
+    A single HIGH FAIL caps the framework score at a minimum of 25 (so compliance ≤ 75).
+    """
+    sev_weight = {"HIGH": 20, "MEDIUM": 8, "LOW": 2}
 
     def _fw_score(fw_filter: str) -> int:
         fw_checks = [f for f in findings
@@ -2162,15 +2167,18 @@ def _calculate_scores(findings: list[LegalFinding]) -> tuple[int, int, int, int]
                      and f.status != "SKIP"]
         if not fw_checks:
             return 0
-        max_pts = sum(sev_weight.get(f.severity, 5) for f in fw_checks)
-        fail_pts = sum(sev_weight.get(f.severity, 5) for f in fw_checks if f.status == "FAIL")
-        warn_pts = sum(sev_weight.get(f.severity, 5) * 0.4 for f in fw_checks if f.status == "WARN")
-        return min(100, round(((fail_pts + warn_pts) / max_pts) * 100)) if max_pts else 0
+        max_pts  = sum(sev_weight.get(f.severity, 8) for f in fw_checks)
+        fail_pts = sum(sev_weight.get(f.severity, 8)       for f in fw_checks if f.status == "FAIL")
+        warn_pts = sum(sev_weight.get(f.severity, 8) * 0.35 for f in fw_checks if f.status == "WARN")
+        raw = round(((fail_pts + warn_pts) / max_pts) * 100) if max_pts else 0
+        # A HIGH FAIL means at least 25 risk (compliance ≤ 75)
+        has_high_fail = any(f.severity == "HIGH" and f.status == "FAIL" for f in fw_checks)
+        return max(25, min(100, raw)) if has_high_fail else min(100, raw)
 
-    il = _fw_score("IL")
-    us = _fw_score("US")
+    il   = _fw_score("IL")
+    us   = _fw_score("US")
     gdpr = _fw_score("GDPR")
-    overall = min(100, round((il * 0.35 + us * 0.30 + gdpr * 0.35)))
+    overall = min(100, round(il * 0.35 + us * 0.30 + gdpr * 0.35))
     return overall, il, us, gdpr
 
 
