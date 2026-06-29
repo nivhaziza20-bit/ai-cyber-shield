@@ -58,14 +58,24 @@ st.html("""
 <meta name="twitter:title" content="AI Cyber Shield — Free Website Security Scanner">
 <meta name="twitter:description" content="18 OSINT tools · SSL · Headers · CVE · DNS · WAF · Grade in 60s">
 
-<!-- Keyboard shortcut: Ctrl+Enter / Cmd+Enter triggers scan button -->
+<!-- Enter key in auth inputs (sign-in / sign-up) triggers the primary button -->
+<!-- Ctrl+Enter / Cmd+Enter triggers scan button anywhere in the app -->
 <script>
 (function(){
   document.addEventListener('keydown', function(e) {
+    var tag = (e.target && e.target.tagName || '').toLowerCase();
+    var isInput = tag === 'input' || tag === 'textarea';
+    if (e.key === 'Enter' && isInput && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      // Plain Enter inside an auth form input: submit the first visible primary button
+      var btns = document.querySelectorAll('button[kind="primary"]');
+      for (var i = 0; i < btns.length; i++) {
+        if (btns[i].offsetParent !== null) { btns[i].click(); break; }
+      }
+    }
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
+      // Ctrl+Enter: click first visible primary button (scan form)
       var btns = document.querySelectorAll('button[kind="primary"]');
-      // Click the first visible primary button (the Scan button)
       for (var i = 0; i < btns.length; i++) {
         if (btns[i].offsetParent !== null) { btns[i].click(); break; }
       }
@@ -190,9 +200,11 @@ st.html("""
 </script>
 """)
 
-# Exchange Supabase token from email confirmation callback
+# Exchange Supabase token from email confirmation / OAuth callback.
+# Google OAuth does NOT include a `type` field in the hash fragment,
+# so we accept any st_at present — set_session validates the token.
 _qp = st.query_params
-if _qp.get("st_at") and _qp.get("st_type") in ("signup", "recovery", "email_change"):
+if _qp.get("st_at"):
     try:
         from auth.streamlit_auth import _client
         _sb = _client()
@@ -204,6 +216,7 @@ if _qp.get("st_at") and _qp.get("st_type") in ("signup", "recovery", "email_chan
                 st.session_state["_user_session"] = _build_user_session(_sess.user, _sess)
     except Exception:
         pass
+    # Always clear params + rerun, even on exchange failure, to avoid redirect loops
     st.query_params.clear()
     st.rerun()
 

@@ -141,6 +141,33 @@ body, .block-container, button, label, p, span, div, input {
     margin-bottom: 3px !important;
 }
 
+/* ── Google link_button (OAuth) ─────────────────────────── */
+[data-testid="stLinkButton"] a {
+    background: #ffffff !important;
+    color: #1f1f1f !important;
+    border: 1px solid #dadce0 !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    text-decoration: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
+    transition: background 0.15s, box-shadow 0.15s !important;
+}
+[data-testid="stLinkButton"] a:hover {
+    background: #f8f8f8 !important;
+    border-color: #bbb !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18) !important;
+    text-decoration: none !important;
+}
+[data-testid="stLinkButton"] a:active {
+    background: #f1f1f1 !important;
+    transform: scale(0.98) !important;
+}
+
 /* ── GitHub button ───────────────────────────────────────── */
 .auth-github-row [data-testid="stButton"] button {
     background: #21262d !important;
@@ -375,6 +402,15 @@ button[kind="secondary"]:hover {
   .auth-card-top { padding: 18px 16px 14px; border-radius: 12px 12px 0 0; }
   .auth-card-footer { padding: 10px 16px 16px; border-radius: 0 0 12px 12px; }
   .lp-free-badge { font-size: 0.74rem; }
+  /* Streamlit column layout — force single column on tablet */
+  [data-testid="stHorizontalBlock"] { flex-wrap: wrap !important; }
+  [data-testid="stColumn"]          { min-width: 100% !important; flex: 1 1 100% !important; }
+  /* Link button (Google) — ensure full width & touch-friendly */
+  [data-testid="stLinkButton"] a    { min-height: 48px !important; font-size: 1rem !important; }
+  /* Primary buttons — touch target */
+  button[kind="primary"] { min-height: 48px !important; font-size: 0.95rem !important; }
+  /* Inputs — prevent iOS zoom (font-size ≥16px) */
+  [data-testid="stTextInput"] input { font-size: 16px !important; }
 }
 
 /* ── MOBILE — phone (≤480px) ────────────────────────────── */
@@ -389,6 +425,13 @@ button[kind="secondary"]:hover {
   .lp-brand-name { font-size: 1.1rem; }
   .auth-card-top { padding: 14px 12px; }
   .auth-card-footer { padding: 8px 12px 14px; }
+  .dp-wrap { grid-template-columns: 1fr !important; }
+  .feat-duo { grid-template-columns: 1fr !important; }
+  .lp-checks { grid-template-columns: repeat(2,1fr) !important; }
+  .aics-plans { grid-template-columns: 1fr !important; }
+  /* Full-width inputs on phone */
+  [data-testid="stTextInput"] { width: 100% !important; }
+  [data-testid="stLinkButton"] a { min-height: 52px !important; font-size: 1rem !important; }
 }
 </style>
 """
@@ -1325,9 +1368,10 @@ def show_auth_page() -> None:
         _view = st.session_state["_auth_view"]
 
         _card_meta = {
-            "signin": (_t("auth_signin_title"), _t("auth_signin_sub")),
-            "signup": (_t("auth_signup_title"), _t("auth_signup_sub")),
-            "reset":  (_t("auth_reset_title"),  _t("auth_reset_sub")),
+            "signin":         (_t("auth_signin_title"), _t("auth_signin_sub")),
+            "signup":         (_t("auth_signup_title"), _t("auth_signup_sub")),
+            "reset":          (_t("auth_reset_title"),  _t("auth_reset_sub")),
+            "signup_confirm": ("Check your inbox 📧",   "One more step"),
         }
         _hl, _sub = _card_meta.get(_view, _card_meta["signin"])
 
@@ -1337,29 +1381,42 @@ def show_auth_page() -> None:
         # ── Google OAuth (shown for signin + signup) ──────────────────────────
         if _view in ("signin", "signup"):
             st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+            # CSS: style the link_button to look like a Google button
             st.markdown("""
 <style>
-[data-testid="stButton"] button[kind="secondary"].google-btn-marker,
-.google-oauth-row [data-testid="stButton"] button {
+/* st.link_button renders as <a> inside [data-testid="stLinkButton"] */
+[data-testid="stLinkButton"] a {
   background:#ffffff!important;color:#1f1f1f!important;
   border:1px solid #dadce0!important;border-radius:10px!important;
   font-weight:600!important;font-size:0.9rem!important;
-  display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;
+  text-decoration:none!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  transition:background 0.15s,border-color 0.15s!important;
+  box-shadow:0 1px 4px rgba(0,0,0,0.14)!important;
 }
-.google-oauth-row [data-testid="stButton"] button:hover{background:#f8f8f8!important;border-color:#bbb!important;}
-</style>
-<div class="google-oauth-row"></div>""", unsafe_allow_html=True)
-            if st.button(
-                f"G  {_t('auth_google')}",
-                use_container_width=True,
-                key=f"google_{_view}",
-            ):
-                from auth.streamlit_auth import sign_in_with_google
-                _gg = sign_in_with_google()
-                if "url" in _gg:
-                    st.html(f'<script>window.location.href="{_gg["url"]}";</script>')
-                else:
-                    st.error(_gg.get("error", "Google login is not configured yet."))
+[data-testid="stLinkButton"] a:hover{
+  background:#f8f8f8!important;border-color:#bbb!important;
+  box-shadow:0 2px 8px rgba(0,0,0,0.18)!important;
+}
+</style>""", unsafe_allow_html=True)
+            from auth.streamlit_auth import sign_in_with_google as _sig
+            _gg = _sig()
+            if "url" in _gg:
+                # st.link_button renders a real <a href> — no JavaScript needed,
+                # works in all browsers including Streamlit Cloud iframes.
+                st.link_button(
+                    f"G  {_t('auth_google')}",
+                    url=_gg["url"],
+                    use_container_width=True,
+                )
+            else:
+                st.button(
+                    f"G  {_t('auth_google')}",
+                    use_container_width=True,
+                    disabled=True,
+                    key=f"google_disabled_{_view}",
+                )
+                st.error(_gg.get("error", "Google OAuth is not configured. Enable it in Supabase → Auth → Providers → Google."))
 
             st.markdown(f"""
 <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px">
@@ -1451,6 +1508,15 @@ def show_auth_page() -> None:
                     f'</div><div style="color:{_pwc};font-size:0.7rem;margin-top:3px">{_pwl}</div></div>',
                     unsafe_allow_html=True,
                 )
+            _r_pass2 = st.text_input(
+                "Confirm password", type="password", key="reg_pass2",
+                placeholder="Repeat your password",
+            )
+            if _r_pass and _r_pass2 and _r_pass != _r_pass2:
+                st.markdown(
+                    '<div style="color:#ef4444;font-size:0.72rem;margin:-4px 0 6px">Passwords do not match</div>',
+                    unsafe_allow_html=True,
+                )
             st.markdown(
                 '<div style="color:#334155;font-size:0.71rem;margin-bottom:10px;line-height:1.6">'
                 'By signing up you agree to our '
@@ -1466,6 +1532,8 @@ def show_auth_page() -> None:
                 _ok_pw, _pw_msg = _valid_password(_r_pass)
                 if not _ok_pw:
                     _errors.append(f"Password: {_pw_msg}")
+                if _r_pass and _r_pass2 and _r_pass != _r_pass2:
+                    _errors.append("Passwords do not match.")
                 if _errors:
                     for _e in _errors:
                         st.error(_e)
@@ -1476,7 +1544,10 @@ def show_auth_page() -> None:
                         from audit_log import log_action
                         log_action("signup", target=_r_email.strip().lower(), details={"confirm_required": result.get("confirm_required", False)})
                         if result.get("confirm_required"):
-                            st.success(_t("auth_confirm_email"))
+                            # Switch to dedicated confirmation screen
+                            st.session_state["_signup_email"] = _r_email.strip().lower()
+                            st.session_state["_auth_view"] = "signup_confirm"
+                            st.rerun()
                         else:
                             st.success(_t("auth_confirmed_ok"))
                     else:
@@ -1517,6 +1588,36 @@ def show_auth_page() -> None:
             st.markdown('<div class="auth-toggle-row">', unsafe_allow_html=True)
             if st.button(_t("auth_back_signin"), key="go_signin_from_reset"):
                 st.session_state["_auth_view"] = "signin"
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # ── Email confirmation pending screen ─────────────────────────────────
+        elif _view == "signup_confirm":
+            _conf_email = st.session_state.get("_signup_email", "your email")
+            st.markdown(f"""
+<div style="text-align:center;padding:18px 0 8px">
+  <div style="font-size:2.6rem;margin-bottom:14px">📧</div>
+  <div style="color:#f1f5f9;font-weight:700;font-size:1.05rem;margin-bottom:8px">
+    Confirmation email sent!
+  </div>
+  <div style="color:#64748b;font-size:0.82rem;line-height:1.65;margin-bottom:20px">
+    We sent a link to <strong style="color:#22d3ee">{_conf_email}</strong>.<br>
+    Click the link in the email to activate your account.
+  </div>
+  <div style="background:#0c2030;border:1px solid #1a3a50;border-radius:10px;padding:12px 16px;font-size:0.77rem;color:#475569;line-height:1.75;text-align:left">
+    📂 Check spam/junk folder<br>
+    🔒 Link expires in 24 hours<br>
+    🔄 Once confirmed, sign in below
+  </div>
+</div>""", unsafe_allow_html=True)
+            st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+            if st.button("Sign in after confirming →", use_container_width=True, key="go_signin_after_confirm", type="primary"):
+                st.session_state["_auth_view"] = "signin"
+                st.rerun()
+            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+            st.markdown('<div class="auth-toggle-row">', unsafe_allow_html=True)
+            if st.button("← Start over", key="go_signup_from_confirm"):
+                st.session_state["_auth_view"] = "signup"
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
