@@ -398,6 +398,86 @@ button[kind="secondary"]:hover {
   [data-testid="stTextInput"] { width: 100% !important; }
   [data-testid="stLinkButton"] a { min-height: 52px !important; font-size: 1rem !important; }
 }
+
+/* ── Premium dp-panel upgrades ────────────────────────────── */
+.dp-panel {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.dp-panel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, currentColor 50%, transparent 100%);
+  opacity: 0.18;
+  pointer-events: none;
+}
+.dp-sec { background: linear-gradient(135deg, #040d19 0%, #030a14 100%); }
+.dp-leg { background: linear-gradient(135deg, #05040f 0%, #040310 100%); }
+.dp-sec::before { color: #22d3ee; }
+.dp-leg::before { color: #818cf8; }
+
+/* ── Premium feat-panel upgrades ──────────────────────────── */
+.feat-panel {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+.feat-panel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  opacity: 0.22;
+  pointer-events: none;
+}
+.feat-panel-sec::before { background: linear-gradient(90deg, transparent, #22d3ee, transparent); }
+.feat-panel-leg::before { background: linear-gradient(90deg, transparent, #818cf8, transparent); }
+.feat-panel:hover { transform: translateY(-2px); }
+.feat-panel-sec { background: linear-gradient(135deg, #040d19 0%, #030a14 100%); }
+.feat-panel-leg { background: linear-gradient(135deg, #05040f 0%, #040310 100%); }
+.feat-panel-sec:hover { border-color: rgba(34,211,238,0.35) !important; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.feat-panel-leg:hover { border-color: rgba(129,140,248,0.35) !important; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.feat-panel-item { transition: color 0.15s ease; }
+.feat-panel-item:hover { color: #94a3b8 !important; }
+.feat-panel-item:hover strong { color: #f1f5f9 !important; }
+
+/* ── CTA button shimmer ────────────────────────────────────── */
+@keyframes btnShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.lp-cta-btn {
+  background: linear-gradient(90deg, #22d3ee 0%, #38e0f5 40%, #22d3ee 60%, #17b8d4 100%);
+  background-size: 200% auto;
+  animation: btnShimmer 3s linear infinite;
+  color: #000b14;
+  font-weight: 800;
+  font-size: 0.88rem;
+  padding: 11px 24px;
+  border-radius: 9px;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 0 24px rgba(34,211,238,0.30);
+}
+.lp-cta-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 36px rgba(34,211,238,0.45);
+}
+
+/* ── Eyebrow tag upgrade ───────────────────────────────────── */
+.lp-eyebrow {
+  background: linear-gradient(90deg, rgba(34,211,238,0.08) 0%, rgba(34,211,238,0.04) 100%) !important;
+  box-shadow: 0 0 16px rgba(34,211,238,0.06);
+}
+.lp-eyebrow-dot {
+  box-shadow: 0 0 6px #22d3ee;
+}
 </style>
 """
 

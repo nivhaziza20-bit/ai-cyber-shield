@@ -117,6 +117,23 @@
   0%, 80%, 100% { opacity: 0.2; transform: scale(0.7); }
   40%            { opacity: 1;   transform: scale(1); }
 }
+@keyframes critPingRing {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.55); }
+  50%       { box-shadow: 0 0 0 4px rgba(239,68,68,0); }
+}
+@keyframes scanLine {
+  0%   { transform: translateY(-100%); opacity: 0.4; }
+  50%  { opacity: 0.12; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+@keyframes terminalBlink {
+  0%, 50%  { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+@keyframes ambientShift {
+  0%, 100% { opacity: 0.055; transform: scale(1); }
+  50%       { opacity: 0.08;  transform: scale(1.05); }
+}
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */
 *, *::before, *::after {
@@ -145,9 +162,10 @@ body {
 
   /* Ambient depth — Wiz/Linear technique */
   background-image:
-    radial-gradient(ellipse 65% 35% at 3% 0%,    rgba(34,211,238,0.055) 0%, transparent 65%),
-    radial-gradient(ellipse 50% 30% at 97% 100%,  rgba(99,102,241,0.05)  0%, transparent 65%),
-    url("data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.55' fill='%23243049' fill-opacity='0.4'/%3E%3C/svg%3E");
+    radial-gradient(ellipse 60% 40% at 0% 0%,     rgba(34,211,238,0.06)  0%, transparent 70%),
+    radial-gradient(ellipse 55% 35% at 100% 100%,  rgba(99,102,241,0.055) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 50% 50%,    rgba(34,211,238,0.015) 0%, transparent 100%),
+    url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.5' fill='%23243049' fill-opacity='0.45'/%3E%3C/svg%3E");
   background-attachment: fixed;
   min-height: 100dvh;
 }
@@ -175,14 +193,25 @@ body {
 
 /* ── Glass morphism card ──────────────────────────────────────────────────── */
 .glass-card {
-  background: rgba(12, 17, 32, 0.75);
+  background: linear-gradient(135deg, rgba(12,17,32,0.80) 0%, rgba(9,13,24,0.80) 100%);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+}
+.glass-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.12) 50%, transparent 100%);
+  pointer-events: none;
 }
 .glass-card:hover {
   border-color: var(--color-border-strong);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
 }
 
 /* ── Grade colors ─────────────────────────────────────────────────────────── */
