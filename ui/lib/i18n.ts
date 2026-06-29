@@ -5,7 +5,7 @@ export const t = {
   nav_dashboard:   { en: "Dashboard",          he: "לוח בקרה" },
   nav_history:     { en: "Scan History",       he: "היסטוריית סריקות" },
   nav_scheduled:   { en: "Scheduled Scans",    he: "סריקות מתוזמנות" },
-  nav_compliance:  { en: "Compliance Shield",  he: "מגן ציות" },
+  nav_compliance:  { en: "Legal Scanner",       he: "סורק משפטי" },
   nav_settings:    { en: "Settings",           he: "הגדרות" },
 
   /* ── Header ─────────────────────────────────────────────────────────────── */
@@ -54,8 +54,8 @@ export const t = {
   next_run:        { en: "Next run",            he: "ריצה הבאה" },
 
   /* ── Compliance ──────────────────────────────────────────────────────────── */
-  compliance_title:{ en: "Compliance Shield",  he: "מגן ציות" },
-  compliance_sub:  { en: "IL · GDPR · US Law compliance analysis", he: "ניתוח ציות לחוק ישראלי · GDPR · חוק אמריקאי" },
+  compliance_title:{ en: "Legal Scanner",       he: "סורק משפטי" },
+  compliance_sub:  { en: "IL · GDPR · US Law — automated legal compliance analysis", he: "ניתוח ציות אוטומטי — חוק ישראלי · GDPR · חוק אמריקאי" },
   export_pdf:      { en: "Export PDF",         he: "ייצוא PDF" },
   framework_il:    { en: "Israeli Law",        he: "חוק ישראלי" },
   framework_gdpr:  { en: "GDPR (EU)",          he: "GDPR (אירופה)" },

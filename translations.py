@@ -103,7 +103,7 @@ _T: dict[str, dict[str, str]] = {
 
     # ── Tab names ─────────────────────────────────────────────────────────────
     "tab_url_scanner":   {"he": "🌐  סורק אבטחה",          "en": "🌐  URL Security Scanner"},
-    "tab_legal":         {"he": "⚖️  ציות משפטי",          "en": "⚖️  Legal Compliance"},
+    "tab_legal":         {"he": "⚖️  סורק משפטי",          "en": "⚖️  Legal Scanner"},
     "tab_legal_docs":    {"he": "📋  מסמכים משפטיים",      "en": "📋  Legal Docs"},
     "tab_code_scanner":  {"he": "💻  סורק קוד מקור",       "en": "💻  Source Code Scanner"},
     "tab_scan_history":  {"he": "📈  היסטוריית סריקות",    "en": "📈  Scan History"},

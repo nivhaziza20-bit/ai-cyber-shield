@@ -527,7 +527,7 @@ def _get_hero_html(lang: str = "he") -> str:
     }
     h, em = _h.get(lang, _h["en"])
 
-    _eyebrow = "פלטפורמת AI · אבטחה + ציות משפטי" if lang == "he" else "AI Platform · Security + Legal Compliance"
+    _eyebrow = "פלטפורמת AI · סורק אבטחה + סורק משפטי" if lang == "he" else "AI Platform · Security Scanner + Legal Scanner"
 
     _sec = {
         "he": [
@@ -578,7 +578,7 @@ def _get_hero_html(lang: str = "he") -> str:
     _sec_sub     = "18 כלי OSINT · OWASP Top 10" if lang == "he" else "18 OSINT Tools · OWASP Top 10"
     _leg_sub     = "3 מערכות חוק · ניקוד אוטומטי" if lang == "he" else "3 Jurisdictions · Auto-Scoring"
     _sec_title   = "אבטחת סייבר" if lang == "he" else "Cybersecurity"
-    _leg_title   = "ציות משפטי" if lang == "he" else "Legal Compliance"
+    _leg_title   = "סורק משפטי" if lang == "he" else "Legal Scanner"
 
     trust_html = "".join(f"<span>{s}</span>" for s in _trust)
 
@@ -699,7 +699,7 @@ _FEATURES_HTML = """
       <div class="feat-panel-item"><span class="feat-panel-item-icon">✅</span><span><strong>Active Probes</strong> — XSS · CORS · Open Redirect · SSTI</span></div>
     </div>
     <div class="feat-panel feat-panel-leg">
-      <div class="feat-panel-head">⚖️ Legal Compliance</div>
+      <div class="feat-panel-head">⚖️ Legal Scanner</div>
       <div class="feat-panel-sub">3 jurisdictions · Auto-scoring · Fine estimates</div>
       <div class="feat-panel-item"><span class="feat-panel-item-icon">🇮🇱</span><span><strong>Israeli Law</strong> — Privacy Protection · ILPA 2024</span></div>
       <div class="feat-panel-item"><span class="feat-panel-item-icon">🇪🇺</span><span><strong>GDPR</strong> — EU Regulation 2016/679</span></div>
