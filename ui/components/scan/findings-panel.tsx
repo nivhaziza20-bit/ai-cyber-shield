@@ -73,7 +73,7 @@ function FindingCard({ finding }: { finding: Finding }) {
           <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: "0.88rem", lineHeight: 1.4 }}>
             {finding.title}
           </div>
-          <div style={{ color: "#3d4f6e", fontSize: "0.72rem", marginTop: "3px", fontFamily: "JetBrains Mono, monospace" }}>
+          <div style={{ color: "#64748b", fontSize: "0.72rem", marginTop: "3px", fontFamily: "JetBrains Mono, monospace" }}>
             {finding.tool}
           </div>
         </div>
@@ -83,7 +83,7 @@ function FindingCard({ finding }: { finding: Finding }) {
           width="16" height="16" viewBox="0 0 16 16" fill="none"
           style={{
             flexShrink: 0,
-            color: "#3d4f6e",
+            color: "#64748b",
             transform: open ? "rotate(180deg)" : "rotate(0)",
             transition: "transform 200ms ease",
             marginTop: "2px",
@@ -220,7 +220,7 @@ export function FindingsPanel({ findings, criticalFindings }: FindingsPanelProps
                 borderRadius: "999px",
                 border: `1px solid ${active && sevStyle ? sevStyle.border : active ? "rgba(34,211,238,0.3)" : "#1a2236"}`,
                 background: active && sevStyle ? sevStyle.bg : active ? "rgba(34,211,238,0.06)" : "transparent",
-                color: active && sevStyle ? sevStyle.color : active ? "#22d3ee" : "#4a5568",
+                color: active && sevStyle ? sevStyle.color : active ? "#22d3ee" : "#64748b",
                 fontSize: "0.72rem",
                 fontWeight: active ? 700 : 400,
                 cursor: "pointer",
@@ -243,7 +243,7 @@ export function FindingsPanel({ findings, criticalFindings }: FindingsPanelProps
 
       {/* Section title */}
       <div style={{
-        color: "#3d4f6e",
+        color: "#64748b",
         fontSize: "0.65rem",
         textTransform: "uppercase",
         letterSpacing: "0.18em",
@@ -257,7 +257,7 @@ export function FindingsPanel({ findings, criticalFindings }: FindingsPanelProps
 
       {/* Findings list */}
       {filtered.length === 0 ? (
-        <div style={{ color: "#3d4f6e", fontSize: "0.85rem", padding: "24px 0", textAlign: "center" }}>
+        <div style={{ color: "#64748b", fontSize: "0.85rem", padding: "24px 0", textAlign: "center" }}>
           {t("no_findings")}
         </div>
       ) : (

@@ -54,7 +54,7 @@ export default function CompliancePage() {
               <h1 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "#f1f5f9" }}>
                 {t("compliance_title")}
               </h1>
-              <p style={{ margin: "4px 0 0", color: "#4a5568", fontSize: "0.82rem" }}>
+              <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.82rem" }}>
                 {t("compliance_sub")}
               </p>
             </div>
@@ -74,7 +74,7 @@ export default function CompliancePage() {
                   borderRadius: "8px",
                   border: `1px solid ${activeFramework === f.id ? f.color + "44" : "#1a2236"}`,
                   background: activeFramework === f.id ? `${f.color}10` : "transparent",
-                  color: activeFramework === f.id ? f.color : "#4a5568",
+                  color: activeFramework === f.id ? f.color : "#64748b",
                   fontSize: "0.82rem",
                   fontWeight: activeFramework === f.id ? 700 : 400,
                   cursor: "pointer",
@@ -158,7 +158,7 @@ export default function CompliancePage() {
               <div style={{ color: item.color, fontWeight: 700, fontSize: "0.9rem", marginBottom: "6px" }}>
                 {item.title}
               </div>
-              <div style={{ color: "#4a5568", fontSize: "0.76rem", lineHeight: 1.65 }}>
+              <div style={{ color: "#64748b", fontSize: "0.76rem", lineHeight: 1.65 }}>
                 {item.desc}
               </div>
               <button style={{

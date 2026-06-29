@@ -30,7 +30,7 @@ function GradeDot({ grade }: { grade: Grade }) {
 function DeltaBadge({ current, prev }: { current: number; prev?: number }) {
   if (prev === undefined) return null;
   const diff = current - prev;
-  if (diff === 0) return <span style={{ color: "#3d4f6e", fontSize: "0.72rem" }}>—</span>;
+  if (diff === 0) return <span style={{ color: "#64748b", fontSize: "0.72rem" }}>—</span>;
   return (
     <span style={{
       color: diff > 0 ? "#22d3ee" : "#ef4444",
@@ -72,7 +72,7 @@ export default function HistoryPage() {
                 borderRadius: "999px",
                 border: `1px solid ${filter === g && g !== "ALL" ? gradeColor(g as Grade) + "44" : filter === g ? "rgba(34,211,238,0.3)" : "#1a2236"}`,
                 background: filter === g && g !== "ALL" ? gradeColor(g as Grade) + "11" : filter === g ? "rgba(34,211,238,0.06)" : "transparent",
-                color: filter === g && g !== "ALL" ? gradeColor(g as Grade) : filter === g ? "#22d3ee" : "#4a5568",
+                color: filter === g && g !== "ALL" ? gradeColor(g as Grade) : filter === g ? "#22d3ee" : "#64748b",
                 fontSize: "0.76rem",
                 fontWeight: filter === g ? 700 : 400,
                 cursor: "pointer",
@@ -86,9 +86,9 @@ export default function HistoryPage() {
         </div>
 
         {loading ? (
-          <div style={{ color: "#3d4f6e", textAlign: "center", padding: "40px" }}>Loading...</div>
+          <div style={{ color: "#64748b", textAlign: "center", padding: "40px" }}>Loading...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ color: "#3d4f6e", textAlign: "center", padding: "40px" }}>
+          <div style={{ color: "#64748b", textAlign: "center", padding: "40px" }}>
             No scan history yet
           </div>
         ) : (
@@ -128,7 +128,7 @@ export default function HistoryPage() {
                   }}>
                     {rec.url}
                   </div>
-                  <div style={{ color: "#3d4f6e", fontSize: "0.72rem", marginTop: "3px", fontFamily: "JetBrains Mono, monospace" }}>
+                  <div style={{ color: "#64748b", fontSize: "0.72rem", marginTop: "3px", fontFamily: "JetBrains Mono, monospace" }}>
                     {t("last_scan")}: {relativeTime(rec.scanned_at)}
                     {rec.critical_count > 0 && (
                       <span style={{ color: "#ef4444", marginInlineStart: "10px" }}>
@@ -158,7 +158,7 @@ export default function HistoryPage() {
                     borderRadius: "8px",
                     border: "1px solid #1a2236",
                     background: "transparent",
-                    color: "#4a5568",
+                    color: "#64748b",
                     fontSize: "0.75rem",
                     cursor: "pointer",
                     transition: "all 150ms ease",
@@ -171,7 +171,7 @@ export default function HistoryPage() {
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = "#1a2236";
-                    e.currentTarget.style.color = "#4a5568";
+                    e.currentTarget.style.color = "#64748b";
                   }}
                 >
                   {t("rescan")}

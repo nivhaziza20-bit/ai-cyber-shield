@@ -39,7 +39,7 @@ function ScoreCard({ name, score }: { name: string; score: number }) {
       }}>
         <span style={{ fontSize: "0.9rem" }}>{icon}</span>
         <span style={{
-          color: "#4a5568",
+          color: "#64748b",
           fontSize: "0.66rem",
           textTransform: "uppercase",
           letterSpacing: "0.12em",
@@ -60,7 +60,7 @@ function ScoreCard({ name, score }: { name: string; score: number }) {
         marginBottom: "8px",
       }}>
         {score}
-        <span style={{ fontSize: "0.85rem", color: "#3d4f6e", fontWeight: 400 }}>/100</span>
+        <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 400 }}>/100</span>
       </div>
 
       {/* Mini bar */}
@@ -88,7 +88,7 @@ export function ScoreGrid({ scores }: ScoreGridProps) {
   return (
     <div style={{ marginBottom: "24px" }}>
       <div style={{
-        color: "#3d4f6e",
+        color: "#64748b",
         fontSize: "0.65rem",
         textTransform: "uppercase",
         letterSpacing: "0.18em",

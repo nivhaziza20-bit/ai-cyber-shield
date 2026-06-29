@@ -57,7 +57,7 @@ body, .block-container, button, label, p, span, div, input {
 .lp-brand { display:flex; align-items:center; gap:14px; margin-bottom:24px; margin-top:8px; }
 .lp-brand-icon { font-size:1.8rem; line-height:1; }
 .lp-brand-name { font-family:'JetBrains Mono','Courier New',monospace; font-size:1.3rem; font-weight:900; background:linear-gradient(90deg,#22d3ee,#818cf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; letter-spacing:-0.04em; line-height:1.1; filter:drop-shadow(0 0 12px rgba(34,211,238,0.35)); }
-.lp-brand-sub { color:#475569; font-size:0.58rem; letter-spacing:0.2em; text-transform:uppercase; margin-top:2px; }
+.lp-brand-sub { color:#64748b; font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; margin-top:2px; }
 
 /* ── Hero ───────────────────────────────────────────────── */
 .lp-headline { font-size:3.2rem; font-weight:900; color:#f1f5f9; line-height:1.08; margin:0 0 18px; letter-spacing:-0.03em; font-family:'Heebo','Inter',sans-serif; }
@@ -65,17 +65,17 @@ body, .block-container, button, label, p, span, div, input {
 .lp-desc { color:#94a3b8; font-size:0.97rem; line-height:1.72; max-width:520px; margin:0 0 22px; }
 .lp-cta-row { display:flex; align-items:center; gap:16px; margin-bottom:28px; flex-wrap:wrap; }
 .lp-cta-btn { display:inline-flex; align-items:center; gap:8px; background:#22d3ee; color:#000; font-weight:800; font-size:0.88rem; padding:11px 24px; border-radius:9px; letter-spacing:-0.01em; }
-.lp-cta-note { color:#475569; font-size:0.75rem; }
+.lp-cta-note { color:#64748b; font-size:0.75rem; }
 
 /* ── Stats ──────────────────────────────────────────────── */
 .lp-stats { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:32px; padding-bottom:28px; border-bottom:1px solid #1e2d3d; }
 .lp-stat-val { font-size:1.9rem; font-weight:900; color:#22d3ee; font-family:'JetBrains Mono',monospace; line-height:1; }
-.lp-stat-lbl { color:#475569; font-size:0.68rem; margin-top:4px; text-transform:uppercase; letter-spacing:0.07em; }
+.lp-stat-lbl { color:#64748b; font-size:0.68rem; margin-top:6px; text-transform:uppercase; letter-spacing:0.07em; }
 
 /* ── Features grid ──────────────────────────────────────── */
 .lp-features-label { color:#64748b; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.22em; margin-bottom:12px; }
-.lp-features { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:24px; }
-.lp-feat { background:#0d1421; border:1px solid #1e2d3d; border-radius:10px; padding:15px 15px 14px; transition:border-color 0.18s,background 0.18s; }
+.lp-features { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+.lp-feat { background:#0d1421; border:1px solid #1e2d3d; border-radius:10px; padding:16px; transition:border-color 0.18s,background 0.18s; }
 .lp-feat:hover { border-color:#22d3ee; background:#061828; }
 .lp-feat-icon { color:#22d3ee; margin-bottom:8px; display:block; line-height:0; }
 .lp-feat-name { font-size:0.86rem; font-weight:700; color:#e2e8f0; margin-bottom:4px; }
@@ -89,9 +89,9 @@ body, .block-container, button, label, p, span, div, input {
 .auth-card-top { background:#0d1421; border:1px solid #22d3ee33; border-bottom:none; border-radius:16px 16px 0 0; padding:26px 28px 20px; box-shadow:0 4px 32px rgba(0,0,0,0.5), 0 0 30px rgba(34,211,238,0.06); animation:borderPulse 4s ease-in-out infinite; }
 .auth-card-brand { display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
 .auth-card-title { font-size:1.25rem; font-weight:800; color:#f1f5f9; margin-bottom:4px; letter-spacing:-0.02em; font-family:'Heebo','Inter',sans-serif; }
-.auth-card-sub { font-size:0.73rem; color:#475569; }
+.auth-card-sub { font-size:0.75rem; color:#64748b; }
 .auth-notice { background:#0c2835; border:1px solid #22d3ee; border-radius:8px; padding:10px 14px; font-size:0.79rem; color:#a5f3fc; margin-bottom:16px; line-height:1.55; }
-.auth-card-footer { background:#0d1421; border:1px solid #2a3d52; border-top:none; border-radius:0 0 16px 16px; padding:12px 28px 22px; text-align:center; color:#334155; font-size:0.69rem; line-height:1.75; box-shadow:0 8px 32px rgba(0,0,0,0.5); }
+.auth-card-footer { background:#0d1421; border:1px solid #2a3d52; border-top:none; border-radius:0 0 16px 16px; padding:12px 28px 22px; text-align:center; color:#64748b; font-size:0.69rem; line-height:1.75; box-shadow:0 8px 32px rgba(0,0,0,0.5); }
 
 /* ── Auth column card (JS-injected .aics-auth-col on the right column) ── */
 .aics-auth-col {
@@ -131,7 +131,7 @@ body, .block-container, button, label, p, span, div, input {
     box-shadow: 0 0 0 3px rgba(34,211,238,0.12) !important;
     outline: none !important;
 }
-[data-testid="stTextInput"] input::placeholder { color: #2a3d52 !important; }
+[data-testid="stTextInput"] input::placeholder { color: #4a5568 !important; }
 [data-testid="stTextInput"] label {
     color: #64748b !important;
     font-size: 0.73rem !important;
@@ -308,8 +308,8 @@ button[kind="secondary"]:hover {
 .dp-panel{border-radius:11px;padding:16px 14px}
 .dp-sec{background:#040d19;border:1px solid rgba(34,211,238,0.2)}
 .dp-leg{background:#05040f;border:1px solid rgba(129,140,248,0.2)}
-.dp-title{font-size:0.72rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:6px}
-.dp-subtitle{font-size:0.63rem;color:#334155;margin-bottom:11px;letter-spacing:0.03em}
+.dp-title{font-size:0.72rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.dp-subtitle{font-size:0.63rem;color:#64748b;margin-bottom:11px;letter-spacing:0.03em}
 .dp-sec .dp-title{color:#22d3ee}
 .dp-leg .dp-title{color:#818cf8}
 .dp-item{font-size:0.77rem;color:#64748b;padding:2.5px 0;display:flex;align-items:baseline;gap:5px;line-height:1.4}
@@ -329,9 +329,9 @@ button[kind="secondary"]:hover {
 
 /* ── Trust bar ──────────────────────────────────────── */
 .lp-trust{display:flex;flex-wrap:wrap;gap:6px 16px;margin:18px 0 8px}
-.lp-trust span{color:#475569;font-size:0.72rem;display:inline-flex;align-items:center;gap:5px}
+.lp-trust span{color:#64748b;font-size:0.72rem;display:inline-flex;align-items:center;gap:5px}
 .lp-trust span::before{content:"✓";color:#22d3ee;font-weight:900}
-.lp-scan-label{color:#334155;font-size:0.69rem;letter-spacing:0.04em;margin-top:4px;padding-bottom:20px;border-bottom:1px solid #0f1e2d}
+.lp-scan-label{color:#64748b;font-size:0.69rem;letter-spacing:0.04em;margin-top:4px;padding-bottom:20px;border-bottom:1px solid #1a2d40}
 
 /* ── Nav dual badge ─────────────────────────────────── */
 .nav-dual{display:inline-flex;align-items:center;gap:6px;background:#080e1a;border:1px solid #1a2a3d;border-radius:7px;padding:3px 10px;font-size:0.64rem}
@@ -341,7 +341,7 @@ button[kind="secondary"]:hover {
 
 /* ── Feature dual panel ─────────────────────────────── */
 .feat-section{margin:24px 0 8px}
-.feat-section-label{color:#475569;font-size:0.63rem;text-transform:uppercase;letter-spacing:0.22em;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.feat-section-label{color:#64748b;font-size:0.63rem;text-transform:uppercase;letter-spacing:0.22em;margin-bottom:14px;display:flex;align-items:center;gap:10px}
 .feat-section-label::after{content:"";flex:1;height:1px;background:#0f1e2d}
 .feat-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 @media(max-width:600px){.feat-duo{grid-template-columns:1fr}}
@@ -351,7 +351,7 @@ button[kind="secondary"]:hover {
 .feat-panel-head{font-size:0.72rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:3px}
 .feat-panel-sec .feat-panel-head{color:#22d3ee}
 .feat-panel-leg .feat-panel-head{color:#818cf8}
-.feat-panel-sub{font-size:0.63rem;color:#334155;margin-bottom:12px;letter-spacing:0.03em}
+.feat-panel-sub{font-size:0.63rem;color:#64748b;margin-bottom:12px;letter-spacing:0.03em}
 .feat-panel-item{font-size:0.77rem;color:#64748b;padding:3px 0;display:flex;gap:7px;align-items:flex-start;line-height:1.4}
 .feat-panel-item-icon{flex-shrink:0}
 .feat-panel-item strong{color:#94a3b8}
@@ -361,6 +361,7 @@ button[kind="secondary"]:hover {
   .lp-headline { font-size: 2.2rem; }
   .lp-desc { font-size: 0.9rem; }
   .lp-features { grid-template-columns: 1fr; }
+  .feat-duo { grid-template-columns: 1fr; }
   .lp-stats { gap: 16px; }
   .lp-stat-val { font-size: 1.5rem; }
   .auth-card-top { padding: 18px 16px 14px; border-radius: 12px 12px 0 0; }
@@ -409,7 +410,7 @@ _NAV_HTML = """
 .aics-nav{display:flex;align-items:center;justify-content:space-between;padding:13px 4px;border-bottom:1px solid #0f1e2d;margin-bottom:4px;flex-wrap:wrap;gap:10px}
 .aics-nav-brand{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .aics-nav-links{display:flex;align-items:center;gap:18px}
-.aics-nav-link{color:#334155;font-size:0.73rem;white-space:nowrap}
+.aics-nav-link{color:#64748b;font-size:0.73rem;white-space:nowrap}
 .aics-nav-cta{background:#22d3ee;color:#000;font-weight:800;font-size:0.73rem;padding:6px 15px;border-radius:7px;white-space:nowrap;letter-spacing:-0.01em}
 @media(max-width:768px){.aics-nav-links .aics-nav-link{display:none}.aics-nav{padding:10px 4px}}
 @media(max-width:480px){.aics-nav-cta{font-size:0.68rem;padding:5px 11px}}
@@ -547,7 +548,7 @@ _STATS_HTML = """
   letter-spacing: -0.03em;
 }
 .aics-stat-lbl {
-  color: #475569;
+  color: #64748b;
   font-size: 0.67rem;
   margin-top: 5px;
   text-transform: uppercase;
@@ -666,7 +667,7 @@ def _get_auth_card_footer(lang: str = "he") -> str:
 
 _SOCIAL_PROOF_HTML = """
 <style>
-.sp-bar{text-align:center;padding:14px 8px;color:#475569;font-size:0.78rem;border-top:1px solid #1e2d3d;border-bottom:1px solid #1e2d3d;background:#080d17;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px 16px}
+.sp-bar{text-align:center;padding:14px 8px;color:#64748b;font-size:0.78rem;border-top:1px solid #1e2d3d;border-bottom:1px solid #1e2d3d;background:#080d17;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px 16px}
 .sp-item{white-space:nowrap}
 .sp-hl{color:#22d3ee;font-weight:700}
 @media(max-width:480px){.sp-bar{font-size:0.7rem;padding:10px 6px}.sp-sep{display:none}}
@@ -715,12 +716,12 @@ _PRICING_HTML = """
 .aics-tier{font-size:.7rem;text-transform:uppercase;letter-spacing:.15em;color:#64748b;margin-bottom:10px}
 .aics-price{font-size:2.1rem;font-weight:800;color:#f8fafc;line-height:1;margin-bottom:4px}
 .aics-price sub{font-size:.8rem;font-weight:400;color:#64748b;vertical-align:baseline}
-.aics-tagline{font-size:.72rem;color:#475569;margin-bottom:18px;min-height:30px}
+.aics-tagline{font-size:.72rem;color:#64748b;margin-bottom:18px;min-height:30px}
 .aics-features{list-style:none;padding:0;margin:0 0 20px}
 .aics-features li{font-size:.74rem;color:#94a3b8;padding:4px 0;display:flex;gap:8px;align-items:flex-start}
 .aics-features li::before{content:"✓";color:#22d3ee;font-weight:700;flex-shrink:0}
-.aics-features li.off{color:#334155}
-.aics-features li.off::before{content:"—";color:#334155}
+.aics-features li.off{color:#475569}
+.aics-features li.off::before{content:"—";color:#475569}
 .aics-cta{display:block;width:100%;padding:9px 0;border-radius:8px;font-size:.8rem;font-weight:700;text-align:center;border:1px solid #1e2d3d;background:transparent;color:#64748b;cursor:default}
 .aics-cta-pro{background:#22d3ee;color:#000;border-color:#22d3ee}
 </style>
@@ -809,7 +810,7 @@ _SHOWCASE_HTML = """
 .sw-eyebrow-txt{color:#22d3ee;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
 .sw-h{font-size:1.7rem;font-weight:900;color:#f1f5f9;line-height:1.25;margin:0 0 8px}
 .sw-h span{background:linear-gradient(90deg,#22d3ee,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.sw-sub{color:#475569;font-size:.88rem;margin:0 0 32px;line-height:1.6}
+.sw-sub{color:#64748b;font-size:.88rem;margin:0 0 32px;line-height:1.6}
 
 /* ── Grid ── */
 .sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -876,7 +877,7 @@ _SHOWCASE_HTML = """
 .sw-chrome-dot{width:9px;height:9px;border-radius:50%}
 .sw-chrome-url{
   flex:1;font-family:'JetBrains Mono',monospace;font-size:.72rem;
-  color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .sw-chrome-lock{font-size:.72rem;margin-right:6px}
 
@@ -948,10 +949,10 @@ _SHOWCASE_HTML = """
   display:flex;align-items:center;justify-content:center;font-size:1.1rem;
 }
 .sw-ai-label{color:#a78bfa;font-size:.78rem;font-weight:700;letter-spacing:.04em}
-.sw-ai-sub{color:#475569;font-size:.67rem;margin-top:1px}
+.sw-ai-sub{color:#64748b;font-size:.67rem;margin-top:1px}
 .sw-ai-prompt{
   font-family:'JetBrains Mono',monospace;font-size:.7rem;
-  color:#334155;background:rgba(255,255,255,.02);
+  color:#64748b;background:rgba(255,255,255,.02);
   border:1px solid rgba(255,255,255,.05);border-radius:8px;
   padding:8px 12px;margin-bottom:12px;
 }
@@ -978,7 +979,7 @@ _SHOWCASE_HTML = """
   border:1px solid rgba(34,211,238,.12);border-radius:14px;
   background:linear-gradient(135deg,rgba(34,211,238,.04),rgba(34,211,238,.01));
 }
-.sw-cta-txt{color:#475569;font-size:.84rem}
+.sw-cta-txt{color:#64748b;font-size:.84rem}
 .sw-cta-txt strong{color:#22d3ee}
 .sw-cta-badge{
   background:linear-gradient(135deg,#22d3ee,#0891b2);
@@ -1243,16 +1244,16 @@ def _get_footer_html(lang: str = "he") -> str:
     privacy = _t2("privacy_link")
     contact = _t2("contact_link")
     disc    = _t2("footer_disclaimer")
-    return f"""<div style="text-align:center;color:#334155;font-size:0.71rem;padding:20px 0 40px;border-top:1px solid #1e2d3d;line-height:2">
-  <a href="/?legal=tos" style="color:#475569;text-decoration:none">{tos}</a>
+    return f"""<div style="text-align:center;color:#64748b;font-size:0.71rem;padding:20px 0 40px;border-top:1px solid #1e2d3d;line-height:2">
+  <a href="/?legal=tos" style="color:#94a3b8;text-decoration:none">{tos}</a>
   &nbsp;·&nbsp;
-  <a href="/?legal=privacy" style="color:#475569;text-decoration:none">{privacy}</a>
+  <a href="/?legal=privacy" style="color:#94a3b8;text-decoration:none">{privacy}</a>
   &nbsp;·&nbsp;
-  <a href="mailto:{CONTACT_EMAIL}" style="color:#475569;text-decoration:none">{contact}</a>
+  <a href="mailto:{CONTACT_EMAIL}" style="color:#94a3b8;text-decoration:none">{contact}</a>
   <br>
-  <a href="tel:{CONTACT_PHONE_RAW}" style="color:#475569;text-decoration:none">📞 {CONTACT_PHONE}</a>
+  <a href="tel:{CONTACT_PHONE_RAW}" style="color:#94a3b8;text-decoration:none">📞 {CONTACT_PHONE}</a>
   &nbsp;·&nbsp;
-  <a href="mailto:{CONTACT_EMAIL}" style="color:#475569;text-decoration:none">✉️ {CONTACT_EMAIL}</a>
+  <a href="mailto:{CONTACT_EMAIL}" style="color:#94a3b8;text-decoration:none">✉️ {CONTACT_EMAIL}</a>
   <br>{disc}
 </div>"""
 
@@ -1422,7 +1423,7 @@ def show_auth_page() -> None:
             _tc1, _tc2 = st.columns([1, 1])
             with _tc1:
                 st.markdown(
-                    f'<div style="color:#334155;font-size:0.79rem;padding-top:6px">{_t("auth_new_here")}</div>',
+                    f'<div style="color:#64748b;font-size:0.79rem;padding-top:6px">{_t("auth_new_here")}</div>',
                     unsafe_allow_html=True,
                 )
                 st.markdown('<div class="auth-toggle-row">', unsafe_allow_html=True)
@@ -1432,7 +1433,7 @@ def show_auth_page() -> None:
                 st.markdown('</div>', unsafe_allow_html=True)
             with _tc2:
                 st.markdown(
-                    f'<div style="text-align:right;color:#334155;font-size:0.79rem;padding-top:6px">{_t("auth_trouble")}</div>',
+                    f'<div style="text-align:right;color:#64748b;font-size:0.79rem;padding-top:6px">{_t("auth_trouble")}</div>',
                     unsafe_allow_html=True,
                 )
                 st.markdown('<div class="auth-toggle-row" style="text-align:right">', unsafe_allow_html=True)
@@ -1482,10 +1483,10 @@ def show_auth_page() -> None:
                     unsafe_allow_html=True,
                 )
             st.markdown(
-                '<div style="color:#334155;font-size:0.71rem;margin-bottom:10px;line-height:1.6">'
+                '<div style="color:#64748b;font-size:0.71rem;margin-bottom:10px;line-height:1.6">'
                 'By signing up you agree to our '
-                '<a href="/?legal=tos" style="color:#475569;text-decoration:underline">Terms</a>'
-                ' and <a href="/?legal=privacy" style="color:#475569;text-decoration:underline">Privacy Policy</a>.'
+                '<a href="/?legal=tos" style="color:#94a3b8;text-decoration:underline">Terms</a>'
+                ' and <a href="/?legal=privacy" style="color:#94a3b8;text-decoration:underline">Privacy Policy</a>.'
                 '</div>',
                 unsafe_allow_html=True,
             )
@@ -1568,7 +1569,7 @@ def show_auth_page() -> None:
     We sent a link to <strong style="color:#22d3ee">{_conf_email}</strong>.<br>
     Click the link in the email to activate your account.
   </div>
-  <div style="background:#0c2030;border:1px solid #1a3a50;border-radius:10px;padding:12px 16px;font-size:0.77rem;color:#475569;line-height:1.75;text-align:left">
+  <div style="background:#0c2030;border:1px solid #1a3a50;border-radius:10px;padding:12px 16px;font-size:0.77rem;color:#64748b;line-height:1.75;text-align:left">
     📂 Check spam/junk folder<br>
     🔒 Link expires in 24 hours<br>
     🔄 Once confirmed, sign in below

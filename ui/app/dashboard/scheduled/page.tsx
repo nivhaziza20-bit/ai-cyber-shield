@@ -7,7 +7,7 @@ import { getSchedules, toggleSchedule, gradeColor, relativeTime, type Schedule, 
 
 function StatusDot({ status }: { status: Schedule["status"] }) {
   const map = { ok: "#10b981", error: "#ef4444", running: "#f59e0b" };
-  const color = map[status] ?? "#4a5568";
+  const color = map[status] ?? "#64748b";
   return (
     <span style={{
       display: "inline-block",
@@ -45,9 +45,9 @@ export default function ScheduledPage() {
       <main style={{ flex: 1, padding: "28px 32px", maxWidth: "900px", margin: "0 auto", width: "100%" }}>
 
         {loading ? (
-          <div style={{ color: "#3d4f6e", textAlign: "center", padding: "40px" }}>Loading...</div>
+          <div style={{ color: "#64748b", textAlign: "center", padding: "40px" }}>Loading...</div>
         ) : schedules.length === 0 ? (
-          <div style={{ color: "#3d4f6e", textAlign: "center", padding: "40px" }}>
+          <div style={{ color: "#64748b", textAlign: "center", padding: "40px" }}>
             No scheduled scans yet
           </div>
         ) : (
@@ -91,7 +91,7 @@ export default function ScheduledPage() {
                     </div>
 
                     <div style={{
-                      color: "#3d4f6e",
+                      color: "#64748b",
                       fontSize: "0.72rem",
                       fontFamily: "JetBrains Mono, monospace",
                       marginBottom: "8px",
@@ -100,7 +100,7 @@ export default function ScheduledPage() {
                     </div>
 
                     {/* Meta row */}
-                    <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", fontSize: "0.72rem", color: "#4a5568" }}>
+                    <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", fontSize: "0.72rem", color: "#64748b" }}>
                       {s.last_grade && (
                         <span style={{ color: gradeColor(s.last_grade as Grade) }}>
                           Grade {s.last_grade} · {s.last_score}/100
@@ -116,7 +116,7 @@ export default function ScheduledPage() {
                           Last: {relativeTime(s.last_run_at)}
                         </span>
                       )}
-                      <span style={{ color: "#2d3a52" }}>
+                      <span style={{ color: "#5a7084" }}>
                         {s.run_count} runs
                       </span>
                     </div>
@@ -144,7 +144,7 @@ export default function ScheduledPage() {
                       width: "14px",
                       height: "14px",
                       borderRadius: "50%",
-                      background: s.enabled ? "#22d3ee" : "#2d3a52",
+                      background: s.enabled ? "#22d3ee" : "#5a7084",
                       transition: "left 200ms cubic-bezier(0.16,1,0.3,1), background 200ms ease",
                     }} />
                   </button>
@@ -165,7 +165,7 @@ export default function ScheduledPage() {
             borderRadius: "8px",
             border: "1px dashed #243049",
             background: "transparent",
-            color: "#4a5568",
+            color: "#64748b",
             fontSize: "0.84rem",
             cursor: "pointer",
             transition: "all 150ms ease",
@@ -178,7 +178,7 @@ export default function ScheduledPage() {
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = "#243049";
-            e.currentTarget.style.color = "#4a5568";
+            e.currentTarget.style.color = "#64748b";
           }}
         >
           + {t("add_schedule")}

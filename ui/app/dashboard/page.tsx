@@ -75,7 +75,7 @@ function EmptyState() {
         {t("empty_title")}
       </h2>
       <p style={{
-        color: "#4a5568",
+        color: "#64748b",
         fontSize: "0.88rem",
         maxWidth: "400px",
         lineHeight: 1.65,
@@ -96,7 +96,7 @@ function EmptyState() {
             border: "1px solid #1a2236",
             borderRadius: "8px",
             fontSize: "0.78rem",
-            color: "#4a5568",
+            color: "#64748b",
             textAlign: "start",
           }}>
             <span style={{ color: "#22d3ee", flexShrink: 0 }}>✓</span>
@@ -150,7 +150,7 @@ function ScanningState({ url }: { url: string }) {
 
         {/* Text skeleton */}
         <div style={{ flex: 1 }}>
-          <div style={{ color: "#3d4f6e", fontSize: "0.64rem", textTransform: "uppercase", letterSpacing: "0.16em", marginBottom: "8px", fontFamily: "JetBrains Mono, monospace" }}>
+          <div style={{ color: "#64748b", fontSize: "0.64rem", textTransform: "uppercase", letterSpacing: "0.16em", marginBottom: "8px", fontFamily: "JetBrains Mono, monospace" }}>
             Scanning...
           </div>
           <div style={{ color: "#f1f5f9", fontSize: "1.1rem", fontWeight: 700, marginBottom: "10px" }}>{url}</div>
@@ -263,7 +263,7 @@ export default function DashboardPage() {
                 v6.0
               </span>
             </h1>
-            <p style={{ margin: "5px 0 0", color: "#4a5568", fontSize: "0.82rem" }}>
+            <p style={{ margin: "5px 0 0", color: "#64748b", fontSize: "0.82rem" }}>
               {t("scan_subtitle")}
             </p>
           </div>
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                 [isRTL ? "right" : "left"]: "14px",
                 top: "50%",
                 transform: "translateY(-50%)",
-                color: "#3d4f6e",
+                color: "#64748b",
                 pointerEvents: "none",
                 fontSize: "0.9rem",
               }}>
@@ -394,7 +394,7 @@ export default function DashboardPage() {
                     borderRadius: "999px",
                     border: `1px solid ${active ? m.color + "44" : "#1a2236"}`,
                     background: active ? `${m.color}11` : "transparent",
-                    color: active ? m.color : "#4a5568",
+                    color: active ? m.color : "#64748b",
                     fontSize: "0.76rem",
                     fontWeight: active ? 700 : 400,
                     cursor: scanning ? "not-allowed" : "pointer",
@@ -410,7 +410,7 @@ export default function DashboardPage() {
             })}
             <span style={{
               fontSize: "0.68rem",
-              color: "#2d3a52",
+              color: "#5a7084",
               fontFamily: "JetBrains Mono, monospace",
               alignSelf: "center",
               marginInlineStart: "4px",

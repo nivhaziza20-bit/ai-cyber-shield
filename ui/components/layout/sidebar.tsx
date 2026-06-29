@@ -146,7 +146,7 @@ export function Sidebar() {
           </div>
           <div style={{
             fontSize: "0.6rem",
-            color: "#3d4f6e",
+            color: "#64748b",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             fontFamily: "var(--font-jetbrains, monospace)",
@@ -165,7 +165,7 @@ export function Sidebar() {
               <div style={{
                 fontSize: "0.58rem",
                 fontWeight: 700,
-                color: "#2d3a52",
+                color: "#5a7084",
                 textTransform: "uppercase",
                 letterSpacing: "0.18em",
                 padding: "8px 8px 4px",
@@ -187,7 +187,7 @@ export function Sidebar() {
                     padding: "8px 10px",
                     borderRadius: "8px",
                     marginBottom: "2px",
-                    color: active ? "#22d3ee" : "#4a5568",
+                    color: active ? "#22d3ee" : "#64748b",
                     background: active ? "rgba(34,211,238,0.07)" : "transparent",
                     borderLeft: (!isRTL && active) ? "2px solid #22d3ee" : (!isRTL ? "2px solid transparent" : "none"),
                     borderRight: (isRTL && active) ? "2px solid #22d3ee" : (isRTL ? "2px solid transparent" : "none"),
@@ -205,7 +205,7 @@ export function Sidebar() {
                   }}
                   onMouseLeave={(e) => {
                     if (!active) {
-                      e.currentTarget.style.color = "#4a5568";
+                      e.currentTarget.style.color = "#64748b";
                       e.currentTarget.style.background = "transparent";
                     }
                   }}
@@ -255,7 +255,7 @@ export function Sidebar() {
             borderRadius: "8px",
             background: "rgba(34,211,238,0.04)",
             border: "1px solid #1a2236",
-            color: "#4a5568",
+            color: "#64748b",
             fontSize: "0.78rem",
             fontWeight: 600,
             cursor: "pointer",
@@ -268,7 +268,7 @@ export function Sidebar() {
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = "#1a2236";
-            e.currentTarget.style.color = "#4a5568";
+            e.currentTarget.style.color = "#64748b";
           }}
         >
           <span style={{ fontSize: "0.9rem" }}>{lang === "he" ? "🇺🇸" : "🇮🇱"}</span>
@@ -278,7 +278,7 @@ export function Sidebar() {
         {/* Version */}
         <div style={{
           fontSize: "0.6rem",
-          color: "#2d3a52",
+          color: "#5a7084",
           fontFamily: "var(--font-jetbrains, monospace)",
           letterSpacing: "0.1em",
           textAlign: "center",

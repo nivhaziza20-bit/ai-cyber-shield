@@ -112,7 +112,7 @@ export function GradeRing({ result }: GradeRingProps) {
             0
           </text>
           <text x="60" y="67" textAnchor="middle" dominantBaseline="middle"
-                fill="#3d4f6e" fontSize="9">/ 100</text>
+                fill="#64748b" fontSize="9">/ 100</text>
           <text x="60" y="83" textAnchor="middle" dominantBaseline="middle"
                 fill={color} fontSize="10" fontWeight="800" letterSpacing="2">
             {grade}
@@ -124,7 +124,7 @@ export function GradeRing({ result }: GradeRingProps) {
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* Label */}
         <div style={{
-          color: "#3d4f6e",
+          color: "#64748b",
           fontSize: "0.64rem",
           textTransform: "uppercase",
           letterSpacing: "0.16em",
@@ -174,7 +174,7 @@ export function GradeRing({ result }: GradeRingProps) {
               ✓ {t("no_critical")}
             </span>
           )}
-          <span style={{ color: "#3d4f6e", fontSize: "0.7rem", fontFamily: "JetBrains Mono, monospace" }}>
+          <span style={{ color: "#64748b", fontSize: "0.7rem", fontFamily: "JetBrains Mono, monospace" }}>
             {desc} {t("security_posture")} · {relativeTime(result.scanned_at)}
           </span>
         </div>
@@ -201,7 +201,7 @@ export function GradeRing({ result }: GradeRingProps) {
 
         {/* Footer */}
         <div style={{
-          color: "#3d4f6e",
+          color: "#64748b",
           fontSize: "0.62rem",
           marginTop: "6px",
           fontFamily: "JetBrains Mono, monospace",

@@ -15,7 +15,7 @@ function SettingRow({ label, desc, children }: { label: string; desc?: string; c
     }}>
       <div style={{ flex: 1 }}>
         <div style={{ color: "#f1f5f9", fontSize: "0.88rem", fontWeight: 600 }}>{label}</div>
-        {desc && <div style={{ color: "#4a5568", fontSize: "0.76rem", marginTop: "3px" }}>{desc}</div>}
+        {desc && <div style={{ color: "#64748b", fontSize: "0.76rem", marginTop: "3px" }}>{desc}</div>}
       </div>
       <div style={{ flexShrink: 0 }}>{children}</div>
     </div>
@@ -39,7 +39,7 @@ export default function SettingsPage() {
           marginBottom: "16px",
         }}>
           <div style={{
-            color: "#3d4f6e",
+            color: "#64748b",
             fontSize: "0.65rem",
             textTransform: "uppercase",
             letterSpacing: "0.18em",
@@ -101,7 +101,7 @@ export default function SettingsPage() {
           marginBottom: "16px",
         }}>
           <div style={{
-            color: "#3d4f6e",
+            color: "#64748b",
             fontSize: "0.65rem",
             textTransform: "uppercase",
             letterSpacing: "0.18em",
@@ -142,7 +142,7 @@ export default function SettingsPage() {
           borderRadius: "10px",
           fontFamily: "JetBrains Mono, monospace",
           fontSize: "0.7rem",
-          color: "#2d3a52",
+          color: "#5a7084",
           lineHeight: 1.9,
         }}>
           <div>AI CYBER SHIELD · v6.0 · 18 OSINT TOOLS</div>
