@@ -477,7 +477,7 @@ a[href*="github.com/streamlit"]{display:none!important}
                      padding:3px 12px;border-radius:20px;font-size:0.73rem;font-weight:800">
           {_nhi} HIGH
         </span>
-        <span style="color:#475569;font-size:0.76rem;display:flex;align-items:center;gap:4px">
+        <span style="color:#64748b;font-size:0.76rem;display:flex;align-items:center;gap:4px">
           {len(_pr_tools)} tools ran
         </span>
       </div>
@@ -1088,38 +1088,49 @@ button[kind="secondary"]:hover {
     margin-bottom: 8px;
 }
 
-/* ── Tabs ─────────────────────────────────────────────────────────────────── */
+/* ── Tabs — premium terminal design ──────────────────────────────────────── */
 .stTabs [data-baseweb="tab-list"] {
-    background: #090d1a !important;
+    background: linear-gradient(180deg, #080c18 0%, #060a14 100%) !important;
     border-bottom: 1px solid #1a2236 !important;
-    gap: 2px;
-    padding: 0 4px !important;
+    gap: 1px;
+    padding: 0 8px !important;
+    box-shadow: 0 1px 0 rgba(34,211,238,0.04) !important;
 }
 .stTabs [data-baseweb="tab"] {
   background: transparent !important;
-  color: var(--text-2) !important;        /* #94a3b8 — clearly readable */
-  border-radius: var(--r-sm) var(--r-sm) 0 0 !important;
-  font-size: 0.82rem !important;
-  padding: 10px 16px !important;
+  color: #64748b !important;
+  border-radius: 0 !important;
+  font-size: 0.8rem !important;
+  padding: 10px 18px !important;
   border: none !important;
-  transition: color 150ms ease, background 150ms ease !important;
+  border-bottom: 2px solid transparent !important;
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease !important;
   font-weight: 500 !important;
-  letter-spacing: 0.01em !important;
+  letter-spacing: 0.02em !important;
+  font-family: 'JetBrains Mono', 'Inter', sans-serif !important;
+  position: relative !important;
 }
 .stTabs [data-baseweb="tab"]:hover {
-  color: var(--text-1) !important;        /* #f1f5f9 */
-  background: rgba(255,255,255,0.04) !important;
+  color: #94a3b8 !important;
+  background: rgba(34,211,238,0.03) !important;
+  border-bottom-color: rgba(34,211,238,0.2) !important;
 }
 .stTabs [aria-selected="true"] {
-  background: rgba(34,211,238,0.12) !important;
-  color: #22d3ee !important;              /* full brand color, not CSS var for specificity */
+  background: rgba(34,211,238,0.06) !important;
+  color: #22d3ee !important;
   border-bottom: 2px solid #22d3ee !important;
   font-weight: 700 !important;
-  text-shadow: 0 0 14px rgba(34,211,238,0.20) !important;
+  text-shadow: 0 0 20px rgba(34,211,238,0.35) !important;
+  box-shadow: inset 0 1px 0 rgba(34,211,238,0.08) !important;
 }
-/* Tab panel border */
+/* Tab panel */
 .stTabs [data-baseweb="tab-panel"] {
   padding-top: 20px !important;
+  background: transparent !important;
+}
+/* Tab highlight bar — scanner tabs get extra glow on active */
+.stTabs [aria-selected="true"] p {
+  filter: drop-shadow(0 0 6px rgba(34,211,238,0.4)) !important;
 }
 
 /* ── Expanders ────────────────────────────────────────────────────────────── */
@@ -1880,7 +1891,7 @@ def _render_score_card(key: str, score: int) -> str:
     return f"""
 <div class="score-card">
   <div class="score-card-label">{icon} {label}</div>
-  <div class="score-card-value score-val-{cls}">{score}<span style="font-size:0.9rem;color:#475569">/100</span></div>
+  <div class="score-card-value score-val-{cls}">{score}<span style="font-size:0.9rem;color:#64748b">/100</span></div>
   <div class="score-bar-bg"><div class="score-bar-{cls}" style="width:{score}%"></div></div>
 </div>"""
 
@@ -2647,6 +2658,67 @@ st.markdown(f"""
 
 if "auth_scan_auth" not in st.session_state:
     st.session_state["auth_scan_auth"] = None
+
+_lang_now = get_lang()
+st.markdown(f"""
+<style>
+@keyframes scannerCardPulse {{
+  0%,100% {{ box-shadow: 0 0 0 1px #1a2236, 0 4px 20px rgba(0,0,0,0.3); }}
+  50%      {{ box-shadow: 0 0 0 1px rgba(34,211,238,0.2), 0 4px 28px rgba(34,211,238,0.08); }}
+}}
+.scanner-hub {{
+  display:flex;gap:12px;margin-bottom:18px;
+}}
+.scanner-card {{
+  flex:1;background:linear-gradient(135deg,#0a0f1e 0%,#060b14 100%);
+  border:1px solid #1a2236;border-radius:12px;padding:16px 20px;
+  cursor:pointer;transition:all 0.2s ease;position:relative;overflow:hidden;
+  animation:scannerCardPulse 4s ease-in-out infinite;
+}}
+.scanner-card::before {{
+  content:"";position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(34,211,238,0.15),transparent);
+}}
+.scanner-card:hover {{
+  border-color:rgba(34,211,238,0.3);
+  box-shadow:0 0 24px rgba(34,211,238,0.1);
+  transform:translateY(-1px);
+}}
+.scanner-card-icon {{font-size:1.6rem;margin-bottom:8px}}
+.scanner-card-title {{
+  color:#f1f5f9;font-size:0.9rem;font-weight:700;margin-bottom:4px;
+  font-family:'JetBrains Mono',monospace;
+}}
+.scanner-card-sub {{color:#64748b;font-size:0.72rem;line-height:1.5}}
+.scanner-card-badge {{
+  position:absolute;top:12px;right:12px;
+  background:rgba(34,211,238,0.08);color:#22d3ee;
+  border:1px solid rgba(34,211,238,0.25);border-radius:20px;
+  padding:2px 10px;font-size:0.65rem;font-weight:800;
+  font-family:'JetBrains Mono',monospace;letter-spacing:0.06em;
+}}
+</style>
+<div class="scanner-hub">
+  <div class="scanner-card">
+    <div class="scanner-card-badge">OSINT · 18 TOOLS</div>
+    <div class="scanner-card-icon">🛡️</div>
+    <div class="scanner-card-title">{'סורק אבטחה' if _lang_now=='he' else 'Security Scanner'}</div>
+    <div class="scanner-card-sub">
+      {'ניתוח OSINT פסיבי · SSL · DNS · CVE · דליפות · ניקוד A–F' if _lang_now=='he'
+       else 'Passive OSINT · SSL · DNS · CVE · Leaks · A–F grade'}
+    </div>
+  </div>
+  <div class="scanner-card">
+    <div class="scanner-card-badge">50+ CHECKS</div>
+    <div class="scanner-card-icon">⚖️</div>
+    <div class="scanner-card-title">{'סורק משפטי' if _lang_now=='he' else 'Legal Scanner'}</div>
+    <div class="scanner-card-sub">
+      {'GDPR · חוק ישראלי · CCPA · עוגיות · פרטיות · ציון ציות' if _lang_now=='he'
+       else 'GDPR · Israeli Law · CCPA · Cookies · Privacy · Compliance score'}
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 tab_url, tab_code, tab_legal, tab_history, tab_diff, tab_our_legal, tab_portfolio = st.tabs([
     t("tab_url_scanner"),

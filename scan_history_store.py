@@ -165,46 +165,54 @@ class _SupabaseStore:
             raise RuntimeError("supabase-py not installed — run: pip install supabase")
         self._client = _supabase_create_client(url, key)
 
-    def save_scan(self, record: ScanRecord) -> bool:
+    def save_scan(self, record: ScanRecord, user_id: str | None = None) -> bool:
         try:
-            self._client.table(self._TABLE).insert({
-                "scan_id":          record.scan_id,
-                "url":              record.url,
-                "scan_timestamp":   record.scan_timestamp,
-                "overall_score":    record.overall_score,
-                "overall_grade":    record.overall_grade,
-                "category_scores":  record.category_scores,
+            row: dict = {
+                "scan_id":           record.scan_id,
+                "url":               record.url,
+                "scan_timestamp":    record.scan_timestamp,
+                "overall_score":     record.overall_score,
+                "overall_grade":     record.overall_grade,
+                "category_scores":   record.category_scores,
                 "critical_findings": record.critical_findings,
-            }).execute()
+            }
+            if user_id:
+                row["user_id"] = user_id
+            self._client.table(self._TABLE).insert(row).execute()
             return True
         except Exception as exc:
             logger.error("SupabaseStore.save_scan: %s", exc)
             return False
 
-    def get_scan_history(self, url: str, limit: int = 20) -> list[ScanRecord]:
+    def get_scan_history(self, url: str, limit: int = 20,
+                         user_id: str | None = None) -> list[ScanRecord]:
         try:
-            resp = (
+            q = (
                 self._client.table(self._TABLE)
                 .select("*")
                 .eq("url", url)
                 .order("scan_timestamp", desc=True)
                 .limit(limit)
-                .execute()
             )
+            if user_id:
+                q = q.eq("user_id", user_id)
+            resp = q.execute()
             return [ScanRecord.from_dict(r) for r in (resp.data or [])]
         except Exception as exc:
             logger.error("SupabaseStore.get_scan_history: %s", exc)
             return []
 
-    def get_all_scanned_urls(self) -> list[str]:
+    def get_all_scanned_urls(self, user_id: str | None = None) -> list[str]:
         try:
-            resp = (
+            q = (
                 self._client.table(self._TABLE)
                 .select("url, scan_timestamp")
                 .order("scan_timestamp", desc=True)
                 .limit(500)
-                .execute()
             )
+            if user_id:
+                q = q.eq("user_id", user_id)
+            resp = q.execute()
             seen: dict[str, str] = {}
             for r in (resp.data or []):
                 u  = r.get("url", "")
@@ -238,10 +246,24 @@ class ScanHistoryStore:
     def backend_name(self) -> str:
         return "supabase" if isinstance(self._backend, _SupabaseStore) else "json_file"
 
+    @staticmethod
+    def _current_user_id() -> str | None:
+        """Pull user_id from Streamlit session state if available."""
+        try:
+            import streamlit as st
+            user = st.session_state.get("_current_user")
+            return getattr(user, "user_id", None) if user else None
+        except Exception:
+            return None
+
     def save_scan(self, scan_result: dict) -> bool:
         """Persist a completed scan result dict from run_url_security_audit()."""
-        record = ScanRecord.from_scan_result(scan_result)
-        ok = self._backend.save_scan(record)
+        record  = ScanRecord.from_scan_result(scan_result)
+        uid     = self._current_user_id()
+        if isinstance(self._backend, _SupabaseStore):
+            ok = self._backend.save_scan(record, user_id=uid)
+        else:
+            ok = self._backend.save_scan(record)
         if ok:
             logger.info(
                 "scan saved [%s] url=%s grade=%s score=%d",
@@ -251,10 +273,16 @@ class ScanHistoryStore:
 
     def get_scan_history(self, url: str, limit: int = 20) -> list[ScanRecord]:
         """Return past scans for a URL, newest first."""
+        if isinstance(self._backend, _SupabaseStore):
+            return self._backend.get_scan_history(
+                url, limit=limit, user_id=self._current_user_id()
+            )
         return self._backend.get_scan_history(url, limit=limit)
 
     def get_all_scanned_urls(self) -> list[str]:
-        """Distinct URLs that have been scanned, most recently scanned first."""
+        """Distinct URLs scanned by the current user, most recently scanned first."""
+        if isinstance(self._backend, _SupabaseStore):
+            return self._backend.get_all_scanned_urls(user_id=self._current_user_id())
         return self._backend.get_all_scanned_urls()
 
     def get_latest_scan(self, url: str) -> ScanRecord | None:

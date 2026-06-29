@@ -267,6 +267,134 @@ _STRINGS: dict[str, dict] = {
 }
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Hebrew finding translations — applied when lang=="he"
+# Covers the 38 known check titles + common descriptions/recommendations.
+# Evidence and URLs remain in English (technical data, always ASCII-safe).
+# ─────────────────────────────────────────────────────────────────────────────
+
+_HE_TITLES: dict[str, str] = {
+    # Privacy & Policy
+    "Privacy Policy page accessible":
+        "דף מדיניות פרטיות נגיש",
+    "Privacy policy has a 'Last Updated' date":
+        "מדיניות הפרטיות מציינת תאריך עדכון אחרון",
+    "Cookie Policy accessible":
+        "מדיניות עוגיות נגישה",
+    "Terms of Service / Terms of Use accessible":
+        "תנאי שימוש נגישים",
+    "Data access request mechanism visible":
+        "מנגנון בקשת גישה לנתונים קיים",
+    "Data deletion / erasure request mechanism visible":
+        "מנגנון מחיקת נתונים קיים (הזכות להישכח)",
+    # Cookies & Consent
+    "Cookie consent management platform (CMP) detected":
+        "זוהתה פלטפורמת ניהול הסכמה לעוגיות (CMP)",
+    "'Reject All' option on cookie banner first layer":
+        "אפשרות 'דחה הכל' בשכבה ראשונה של באנר עוגיות",
+    "IAB TCF 2.2 framework implemented":
+        "מסגרת IAB TCF 2.2 מיושמת",
+    "Session cookies have Secure and HttpOnly flags":
+        "עוגיות סשן כוללות דגלי Secure ו-HttpOnly",
+    "Pre-checked consent / marketing checkboxes (dark pattern)":
+        "תיבות סימון הסכמה מסומנות מראש (דפוס מניפולטיבי)",
+    "Newsletter/marketing subscription uses explicit opt-in":
+        "הרשמה לניוזלטר/שיווק משתמשת ב-opt-in מפורש",
+    # Trackers
+    "Third-party tracking scripts detected":
+        "זוהו סקריפטים של מעקב צד-שלישי",
+    "Global Privacy Control (GPC) signal supported":
+        "תמיכה בסיגנל Global Privacy Control (GPC)",
+    # Accessibility
+    "HTML lang attribute set (WCAG 3.1.1)":
+        "תכונת שפה HTML מוגדרת (WCAG 3.1.1)",
+    "Viewport allows user scaling (zoom accessible)":
+        "Viewport מאפשר הגדלה למשתמש (נגישות זום)",
+    "Skip navigation link present":
+        "קישור דילוג לתוכן עיקרי קיים",
+    "Accessibility Statement (הצהרת נגישות) present":
+        "הצהרת נגישות קיימת",
+    # Security headers
+    "HTTPS enforced":
+        "HTTPS מאולץ",
+    "HSTS header present":
+        "כותרת HSTS קיימת",
+    "Content-Security-Policy header present":
+        "כותרת Content-Security-Policy קיימת",
+    "X-Content-Type-Options: nosniff set":
+        "X-Content-Type-Options: nosniff מוגדר",
+    "X-Frame-Options / frame-ancestors CSP set":
+        "X-Frame-Options / frame-ancestors CSP מוגדר",
+    "SPF record present (email authentication)":
+        "רשומת SPF קיימת (אימות אימייל)",
+    # Consumer / E-commerce
+    "Business identity and contact details visible":
+        "פרטי זיהוי עסק ופרטי קשר גלויים",
+    "Prices include VAT / all fees disclosed":
+        "מחירים כוללים מע\"מ / כל העמלות מצוינות",
+    "Cancellation / return policy accessible (14-day right)":
+        "מדיניות ביטול/החזרה נגישה (זכות 14 יום)",
+    "Terms acceptance mechanism before transactions":
+        "מנגנון אישור תנאים לפני ביצוע עסקה",
+    "Payment form PCI-DSS compliance (no payment form detected)":
+        "ציות PCI-DSS לטפסי תשלום (לא זוהה טופס תשלום)",
+    # Dark patterns
+    "Confirm-shaming (guilt-based decline language) detected":
+        "זוהה 'confirm-shaming' — שפה אשמה בסירוב",
+    "Asymmetric urgency / false scarcity signals detected":
+        "זוהו אותות דחיפות מלאכותית/מחסור מזויף",
+    # US specific
+    "California-specific rights disclosed in Privacy Policy":
+        "זכויות קליפורניה מצוינות במדיניות הפרטיות",
+    "COPPA / children's privacy disclosure in policy":
+        "גילוי COPPA / פרטיות ילדים במדיניות",
+    "COPPA compliance signals (if child-directed site)":
+        "אותות ציות COPPA (אם האתר מיועד לילדים)",
+    "Email marketing opt-out / unsubscribe mechanism":
+        "מנגנון ביטול קבלת שיווק באימייל",
+    "Unsubscribe mechanism visible in footer":
+        "מנגנון הסרה גלוי בכותרת תחתית",
+    # GDPR specific
+    "EU Representative (GDPR Art. 27) designated and disclosed":
+        "נציג EU (GDPR סעיף 27) מונה ומצוין",
+}
+
+_HE_STATUS: dict[str, str] = {
+    "PASS": "עבר ✅",
+    "FAIL": "נכשל ❌",
+    "WARN": "אזהרה ⚠️",
+    "SKIP": "דולג",
+}
+
+_HE_SEVERITY: dict[str, str] = {
+    "HIGH":   "גבוה",
+    "MEDIUM": "בינוני",
+    "LOW":    "נמוך",
+}
+
+_HE_CATEGORY: dict[str, str] = {
+    "privacy":       "🔒 מדיניות פרטיות",
+    "cookies":       "🍪 עוגיות והסכמה",
+    "trackers":      "📡 עוקבים צד-שלישי",
+    "accessibility": "♿ נגישות",
+    "consumer":      "🛒 דיני צרכנות",
+    "data_rights":   "📋 זכויות מידע",
+    "dark_patterns": "⚠️ דפוסים מניפולטיביים",
+    "security":      "🛡️ כותרות אבטחה",
+}
+
+
+def _translate_finding(f: "LegalFinding", lang: str) -> "LegalFinding":
+    """Return a copy of f with title translated for Hebrew UI.
+    Category is NOT changed — it's the grouping key used in _render_findings_by_category.
+    """
+    if lang != "he":
+        return f
+    from dataclasses import replace
+    translated_title = _HE_TITLES.get(f.title, f.title)
+    return replace(f, title=translated_title)
+
+
 def _s(lang: str, *keys: str) -> str:
     """Get a string from the translation dict. Supports nested keys."""
     obj: dict | str = _STRINGS[lang]
@@ -851,7 +979,9 @@ def show_legal_scanner(prefill_url: str = "") -> None:
 
         # Priority action list
         st.markdown("---")
-        _render_recommendations_summary(result.findings)
+        _lang_for_render = _get_lang()
+        _translated_findings = [_translate_finding(f, _lang_for_render) for f in result.findings]
+        _render_recommendations_summary(_translated_findings)
 
         # Full findings — dynamic tabs (only selected frameworks)
         st.markdown("---")
@@ -876,10 +1006,12 @@ def show_legal_scanner(prefill_url: str = "") -> None:
             "US":   lambda f: f.framework in ("US", "ALL"),
             "GDPR": lambda f: f.framework in ("GDPR", "ALL"),
         }
+        _lang_for_render = _get_lang()
         for tab_obj, key in zip(tab_objects, tab_keys):
             with tab_obj:
                 _render_findings_by_category(
-                    [f for f in result.findings if fw_filter[key](f)]
+                    [_translate_finding(f, _lang_for_render)
+                     for f in result.findings if fw_filter[key](f)]
                 )
 
         # ── Framework-filtered PDF exports ─────────────────────────────────
