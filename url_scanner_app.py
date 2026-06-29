@@ -250,6 +250,13 @@ html,body,[data-testid="stAppViewContainer"]{background:#060b14!important}
 [data-testid="stHeader"]{background:transparent}
 .block-container{padding-top:0!important;background:#060b14}
 #MainMenu,footer,header{visibility:hidden}
+/* Hide Streamlit Cloud share/deploy/GitHub buttons */
+[data-testid="stAppDeployButton"]{display:none!important}
+[data-testid="stToolbarActions"]{display:none!important}
+[data-testid="stShareButton"]{display:none!important}
+button[title*="GitHub"]{display:none!important}
+a[href*="github.com/streamlit"]{display:none!important}
+[class*="deployButton"]{display:none!important}
 .gs-nav{display:flex;align-items:center;justify-content:space-between;padding:13px 4px;border-bottom:1px solid #1e2d3d;margin-bottom:20px}
 .gs-brand{font-family:'JetBrains Mono','Courier New',monospace;font-weight:900;color:#22d3ee;font-size:1.05rem;letter-spacing:-0.03em}
 .gs-target-bar{background:#0d1421;border:1px solid #1e2d3d;border-radius:10px;padding:13px 18px;margin:0 0 18px;display:flex;align-items:center;gap:12px;font-size:0.86rem}
@@ -709,13 +716,73 @@ html, body {
 [data-testid="stHeader"]           { background: transparent !important; }
 .block-container { background: transparent; }
 
-/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+/* ── Sidebar — premium terminal design ───────────────────────────────────── */
 section[data-testid="stSidebar"] {
-    background-color: #0d1117 !important;
-    border-right: 1px solid #1f2d3d !important;
+    background: linear-gradient(180deg, #080c18 0%, #060a14 100%) !important;
+    border-right: 1px solid #1a2236 !important;
+    box-shadow: inset -1px 0 0 rgba(34,211,238,0.04) !important;
+}
+section[data-testid="stSidebar"] > div:first-child {
+    padding-top: 12px !important;
 }
 section[data-testid="stSidebar"] * {
-    color: #c9d1d9 !important;
+    color: #94a3b8 !important;
+}
+/* Sidebar buttons — terminal pill style */
+section[data-testid="stSidebar"] .stButton > button {
+    background: transparent !important;
+    border: 1px solid #1a2236 !important;
+    color: #64748b !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.04em !important;
+    border-radius: 6px !important;
+    transition: all 0.18s ease !important;
+    text-align: left !important;
+}
+section[data-testid="stSidebar"] .stButton > button:hover {
+    background: rgba(34,211,238,0.06) !important;
+    border-color: rgba(34,211,238,0.25) !important;
+    color: #22d3ee !important;
+    box-shadow: 0 0 12px rgba(34,211,238,0.08) !important;
+}
+section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+    background: rgba(34,211,238,0.08) !important;
+    border-color: rgba(34,211,238,0.3) !important;
+    color: #22d3ee !important;
+}
+section[data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
+    background: rgba(34,211,238,0.14) !important;
+    box-shadow: 0 0 20px rgba(34,211,238,0.15) !important;
+}
+/* Sidebar dividers */
+section[data-testid="stSidebar"] hr {
+    border-color: #1a2236 !important;
+    opacity: 0.7 !important;
+}
+/* Sidebar expander */
+section[data-testid="stSidebar"] details summary {
+    color: #64748b !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.06em !important;
+}
+section[data-testid="stSidebar"] details summary:hover {
+    color: #94a3b8 !important;
+}
+/* Sidebar radio buttons */
+section[data-testid="stSidebar"] .stRadio label {
+    color: #64748b !important;
+    font-size: 0.78rem !important;
+}
+section[data-testid="stSidebar"] .stRadio label:has(input:checked) {
+    color: #22d3ee !important;
+}
+/* Sidebar select */
+section[data-testid="stSidebar"] .stSelectbox select,
+section[data-testid="stSidebar"] .stSelectbox > div {
+    background: #0a0f1e !important;
+    border-color: #1a2236 !important;
 }
 
 /* ── Header area ──────────────────────────────────────────────────────────── */
@@ -4351,7 +4418,7 @@ with tab_code:
   </div>
   <div style="color:#94a3b8;font-size:0.85rem;line-height:1.7">
     The AI static-analysis engine is being upgraded to full Python 3.14 compatibility.<br>
-    <b style="color:#e2e8f0">URL security scanning, Legal Compliance, and Scan History are fully operational.</b><br>
+    <b style="color:#e2e8f0">URL security scanning, Legal Scanner, and Scan History are fully operational.</b><br>
     <span style="color:#64748b;font-size:0.78rem">Use the URL Scanner tab to analyse any website right now.</span>
   </div>
 </div>""", unsafe_allow_html=True)

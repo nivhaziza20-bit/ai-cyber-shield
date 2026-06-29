@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import ClassVar, Optional
 
 import streamlit as st
 
@@ -28,9 +28,11 @@ class UserSession:
     stripe_customer_id: str = ""
     access_token: str = ""
 
+    _OWNER_EMAILS: ClassVar[frozenset] = frozenset({"nivhaziza20@gmail.com"})
+
     @property
     def is_admin(self) -> bool:
-        return self.role == "admin"
+        return self.role == "admin" or self.email in self._OWNER_EMAILS
 
     @property
     def daily_limit(self) -> int:

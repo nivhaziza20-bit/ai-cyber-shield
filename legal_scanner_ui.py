@@ -1,5 +1,5 @@
 """
-Compliance Shield UI — AI Cyber Shield
+Legal Scanner UI — AI Cyber Shield
 Renders the full Compliance Shield interface inside url_scanner_app.py
 """
 from __future__ import annotations
@@ -21,7 +21,7 @@ _STRINGS: dict[str, dict] = {
     # ── Hebrew ────────────────────────────────────────────────────────────────
     "he": {
         "hero": {
-            "title":    "⚖️ מגן ציות",
+            "title":    "⚖️ סורק משפטי",
             "subtitle": "ניתוח ציות אוטומטי ב-3 מסגרות משפטיות · 50+ בדיקות · צעדי תיקון מעשיים",
         },
         "scan": {
@@ -30,15 +30,15 @@ _STRINGS: dict[str, dict] = {
             "fw_il":     "🇮🇱 חוק ישראלי",
             "fw_us":     "🇺🇸 חוק אמריקאי",
             "fw_gdpr":   "🇪🇺 GDPR",
-            "btn_scan":  "⚖️ הפעל סריקת ציות",
+            "btn_scan":  "⚖️ הפעל סריקה משפטית",
             "no_fw":     "יש לבחור לפחות מסגרת משפטית אחת לסריקה.",
             "no_url":    "אנא הזן כתובת אתר יעד.",
             "ssrf":      "⚠️ סריקת דומיין זה אינה מותרת. הזן כתובת חיצונית לסריקה.",
-            "spinner":   "⚖️ מגן ציות סורק… טוען עמודים, מזהה עוקבים, מנתח…",
+            "spinner":   "⚖️ סורק משפטי סורק… טוען עמודים, מזהה עוקבים, מנתח…",
             "fail":      "הסריקה נכשלה",
         },
         "result": {
-            "report_title": "### ⚖️ דוח מגן ציות — `{url}`",
+            "report_title": "### ⚖️ דוח סורק משפטי — `{url}`",
             "caption":      "מסגרות: {fws} · זמן סריקה: {t}ש׳ · {n} בדיקות",
         },
         "score": {
@@ -144,7 +144,7 @@ _STRINGS: dict[str, dict] = {
     # ── English ───────────────────────────────────────────────────────────────
     "en": {
         "hero": {
-            "title":    "⚖️ Compliance Shield",
+            "title":    "⚖️ Legal Scanner",
             "subtitle": "Automated compliance analysis across 3 legal frameworks · 50+ checks · Actionable remediation steps",
         },
         "scan": {
@@ -157,11 +157,11 @@ _STRINGS: dict[str, dict] = {
             "no_fw":     "Please select at least one legal framework to scan.",
             "no_url":    "Please enter a target URL.",
             "ssrf":      "⚠️ Scanning this app's own domain is disabled. Enter an external URL to scan.",
-            "spinner":   "⚖️ Compliance Shield scanning… fetching pages, detecting trackers, running analysis…",
+            "spinner":   "⚖️ Legal Scanner scanning… fetching pages, detecting trackers, running analysis…",
             "fail":      "Scan failed",
         },
         "result": {
-            "report_title": "### ⚖️ Compliance Shield Report — `{url}`",
+            "report_title": "### ⚖️ Legal Scanner Report — `{url}`",
             "caption":      "Frameworks: {fws} · Scan time: {t}s · {n} checks",
         },
         "score": {
@@ -403,7 +403,7 @@ def _render_score_dashboard(result: LegalScanResult, active_frameworks: list[str
   border:1px solid {risk_col}44;
   box-shadow:0 0 30px {risk_col}1a;
 }}
-.lscore-fw{{font-size:0.83rem;color:#475569;margin-bottom:6px;letter-spacing:0.04em}}
+.lscore-fw{{font-size:0.83rem;color:#64748b;margin-bottom:6px;letter-spacing:0.04em}}
 .lscore-lbl{{font-size:0.88rem;font-weight:700;margin-top:4px}}
 </style>
 <div class="lscore-wrap">
@@ -526,7 +526,7 @@ def _render_finding_card(f: LegalFinding) -> None:
   <div style="font-size:0.94rem;color:#94a3b8;margin-bottom:8px;line-height:1.5">{f.description}</div>
   {'<div style="background:#0f1f0f;border:1px solid #166534;border-radius:6px;padding:8px 12px;font-size:0.91rem;color:#86efac;margin-top:4px">💡 ' + f.recommendation + '</div>' if f.status in ("FAIL", "WARN") else ''}
   {fine_html}
-  {'<div style="font-size:0.83rem;color:#334155;margin-top:6px">🔍 ' + f.evidence + '</div>' if f.evidence else ''}
+  {'<div style="font-size:0.83rem;color:#64748b;margin-top:6px">🔍 ' + f.evidence + '</div>' if f.evidence else ''}
 </div>""", unsafe_allow_html=True)
 
 
@@ -588,7 +588,7 @@ def _render_recommendations_summary(findings: list[LegalFinding]) -> None:
     {i}. {f.title} {flag}
   </div>
   <div style="font-size:0.77rem;color:#86efac">💡 {f.recommendation}</div>
-  <div style="font-size:0.68rem;color:#334155;margin-top:3px">⚖️ {f.legal_basis}</div>
+  <div style="font-size:0.68rem;color:#64748b;margin-top:3px">⚖️ {f.legal_basis}</div>
 </div>""", unsafe_allow_html=True)
 
 
@@ -636,7 +636,7 @@ def _render_cookie_table(cookies: list[CookieRecord]) -> None:
                 f'<tr><td style="font-family:monospace;color:#93c5fd;font-size:0.88rem">{c.name}</td>'
                 f'<td>{cat_badge}{tracker_str}</td>'
                 f'<td>{flags_html}</td>'
-                f'<td style="color:#475569;font-size:0.83rem">{c.domain}</td></tr>'
+                f'<td style="color:#64748b;font-size:0.83rem">{c.domain}</td></tr>'
             )
         table = (
             '<table style="width:100%;border-collapse:collapse;font-size:0.94rem">'
@@ -675,7 +675,7 @@ def _render_framework_cards() -> None:
 <div style="background:linear-gradient(135deg,#0a0f1e,#060b14);
   border:1px solid {fw['color']}33;border-radius:12px;padding:14px 16px;height:100%">
   <div style="font-size:1.1rem;margin-bottom:6px">{fw['flag']} <strong style="color:{fw['color']}">{fw['name']}</strong></div>
-  <div style="font-size:0.83rem;color:#475569;line-height:1.6">{fw['laws']}</div>
+  <div style="font-size:0.83rem;color:#64748b;line-height:1.6">{fw['laws']}</div>
 </div>""", unsafe_allow_html=True)
 
 
@@ -684,7 +684,7 @@ def _render_framework_cards() -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def show_legal_scanner(prefill_url: str = "") -> None:
-    """Main Compliance Shield UI. Call from a Streamlit tab or section."""
+    """Main Legal Scanner UI. Call from a Streamlit tab or section."""
 
     # ── Language — sync from main app, allow local override via toggle ───────
     if "cs_lang" not in st.session_state:

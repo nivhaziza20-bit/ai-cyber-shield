@@ -15,10 +15,12 @@ import streamlit as st
 
 COMPANY       = "AI Cyber Shield"
 EFFECTIVE     = "June 2026"
-PRIVACY_EMAIL = "privacy@aicybershield.com"
-LEGAL_EMAIL   = "legal@aicybershield.com"
-ACC_EMAIL     = "accessibility@aicybershield.com"
-SUPPORT_EMAIL = "support@aicybershield.com"
+PRIVACY_EMAIL = "nivhaziza20@gmail.com"
+LEGAL_EMAIL   = "nivhaziza20@gmail.com"
+ACC_EMAIL     = "nivhaziza20@gmail.com"
+SUPPORT_EMAIL = "nivhaziza20@gmail.com"
+PHONE         = "054-696-2565"
+PHONE_RAW     = "0546962565"
 IL_DPA_URL    = "https://www.gov.il/he/departments/the_privacy_protection_authority"
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -76,7 +78,8 @@ _PP = f"""
   <strong>database owner (בעל מאגר)</strong> under Israeli Privacy Protection Law.
 </p>
 <div class="il">
-  <strong>Privacy contact:</strong> <a href="mailto:{PRIVACY_EMAIL}">{PRIVACY_EMAIL}</a><br>
+  <strong>Privacy contact:</strong> <a href="mailto:{PRIVACY_EMAIL}">{PRIVACY_EMAIL}</a> &nbsp;|&nbsp;
+  <a href="tel:{PHONE_RAW}">📞 {PHONE}</a><br>
   <strong>Response time:</strong> Within 30 days (GDPR Art. 12) / 45 days (CCPA §1798.130)
 </div>
 
@@ -240,9 +243,9 @@ If we add analytics cookies in the future, we will implement a CMP and notify yo
 <h2>10. Contact</h2>
 <table>
   <tr><th>Purpose</th><th>Contact</th></tr>
-  <tr><td>Privacy / GDPR / data rights</td><td><a href="mailto:{PRIVACY_EMAIL}">{PRIVACY_EMAIL}</a></td></tr>
-  <tr><td>Legal / ToS</td><td><a href="mailto:{LEGAL_EMAIL}">{LEGAL_EMAIL}</a></td></tr>
-  <tr><td>General support</td><td><a href="mailto:{SUPPORT_EMAIL}">{SUPPORT_EMAIL}</a></td></tr>
+  <tr><td>Privacy / GDPR / data rights</td><td><a href="mailto:{PRIVACY_EMAIL}">{PRIVACY_EMAIL}</a> · <a href="tel:{PHONE_RAW}">{PHONE}</a></td></tr>
+  <tr><td>Legal / ToS / Cancellations</td><td><a href="mailto:{LEGAL_EMAIL}">{LEGAL_EMAIL}</a></td></tr>
+  <tr><td>General support</td><td><a href="mailto:{SUPPORT_EMAIL}">{SUPPORT_EMAIL}</a> · <a href="tel:{PHONE_RAW}">{PHONE}</a></td></tr>
   <tr><td>Supervisory Authority (IL)</td><td><a href="{IL_DPA_URL}" target="_blank">הרשות להגנת הפרטיות — gov.il</a></td></tr>
   <tr><td>Supervisory Authority (EU)</td><td>Your local Data Protection Authority</td></tr>
 </table>
@@ -559,6 +562,265 @@ _ACC = f"""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Hebrew legal documents
+# ─────────────────────────────────────────────────────────────────────────────
+
+_HE_CSS = """
+<style>
+.ldoc-he{font-family:'Heebo','Arial',sans-serif;direction:rtl;text-align:right;
+  color:#cbd5e1;line-height:1.9;font-size:0.875rem;max-width:860px;margin:0 auto}
+.ldoc-he h1{font-size:1.5rem;font-weight:900;color:#f1f5f9;margin:0 0 2px}
+.ldoc-he .meta{font-size:0.7rem;color:#475569;margin-bottom:26px}
+.ldoc-he h2{font-size:1.02rem;font-weight:700;color:#e2e8f0;margin:26px 0 10px;
+  border-bottom:1px solid #1e293b;padding-bottom:5px}
+.ldoc-he h3{font-size:0.88rem;font-weight:700;color:#94a3b8;margin:14px 0 5px}
+.ldoc-he p{margin:7px 0;color:#94a3b8}
+.ldoc-he ul{margin:6px 18px 6px 0;padding-right:20px}
+.ldoc-he li{margin:3px 0;color:#94a3b8}
+.ldoc-he table{width:100%;border-collapse:collapse;margin:10px 0;font-size:0.8rem}
+.ldoc-he td,.ldoc-he th{border:1px solid #1e293b;padding:8px 12px;vertical-align:top}
+.ldoc-he th{background:#0a0f1e;color:#64748b;font-weight:700;font-size:0.72rem}
+.ldoc-he td{background:#060b14;color:#94a3b8}
+.ldoc-he a{color:#60a5fa;text-decoration:none}
+.ldoc-he .box{border-radius:10px;padding:13px 17px;margin:14px 0;font-size:0.82rem}
+.ldoc-he .box-info{background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.28)}
+.ldoc-he .box-warn{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.28);
+  border-right:3px solid #f59e0b}
+.ldoc-he .box-ok{background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.28)}
+.ldoc-he strong{color:#e2e8f0;font-weight:600}
+</style>
+"""
+
+_PP_HE = f"""
+<div class="ldoc-he">
+<h1>🔒 מדיניות פרטיות</h1>
+<div class="meta">AI Cyber Shield &nbsp;|&nbsp; עודכן לאחרונה: {EFFECTIVE}</div>
+
+<div class="box box-info">
+  <strong>בקצרה:</strong> אנו אוספים את כתובת האימייל שלך והיסטוריית הסריקות כדי לספק את השירות.
+  אנו <strong>לא מוכרים את המידע שלך לעולם</strong>. תוכל למחוק את חשבונך ואת כל הנתונים שלך בכל עת.
+  ספקי המשנה שלנו: Supabase, Stripe, Groq.
+</div>
+
+<h2>1. מי אנחנו — בעל מאגר הנתונים</h2>
+<p>
+  <strong>AI Cyber Shield</strong> ("אנחנו", "השירות") הינה פלטפורמת סריקת אבטחה ובדיקת ציות משפטי.
+  אנו <strong>בעל מאגר</strong> על פי חוק הגנת הפרטיות, התשמ"א–1981 ותיקון מספר 13 (אוגוסט 2025),
+  וכן <strong>מנהל עיבוד נתונים (Data Controller)</strong> לפי תקנות GDPR.
+</p>
+<p>
+  <strong>איש קשר לפרטיות:</strong> <a href="mailto:{PRIVACY_EMAIL}">{PRIVACY_EMAIL}</a>
+  &nbsp;|&nbsp; <a href="tel:{PHONE_RAW}">📞 {PHONE}</a><br>
+  <strong>זמן תגובה:</strong> עד 30 יום (GDPR סעיף 12) / עד 45 יום (CCPA)
+</p>
+
+<h2>2. המידע שאנו אוספים ומדוע</h2>
+<table>
+  <tr><th>סוג מידע</th><th>מטרה</th><th>בסיס משפטי</th><th>שמירה</th></tr>
+  <tr>
+    <td><strong>כתובת אימייל</strong></td>
+    <td>אימות זהות, תקשורת שירות</td>
+    <td>ביצוע חוזה — GDPR סעיף 6(1)(ב)</td>
+    <td>משך החשבון + 3 שנים</td>
+  </tr>
+  <tr>
+    <td><strong>סיסמה (מוצפנת)</strong></td>
+    <td>אימות — מאוחסנת כ-bcrypt hash בלבד</td>
+    <td>ביצוע חוזה</td>
+    <td>עד מחיקת החשבון</td>
+  </tr>
+  <tr>
+    <td><strong>היסטוריית סריקות</strong></td>
+    <td>הצגת סריקות קודמות, מעקב מכסה</td>
+    <td>אינטרסים לגיטימיים — GDPR סעיף 6(1)(ו)</td>
+    <td>12 חודשים (חינמי) / 24 חודשים (בתשלום)</td>
+  </tr>
+  <tr>
+    <td><strong>לוגי ביקורת</strong></td>
+    <td>אבטחה, מניעת שימוש לרעה</td>
+    <td>אינטרסים לגיטימיים | חובה חוקית</td>
+    <td>90 יום</td>
+  </tr>
+  <tr>
+    <td><strong>כתובת IP, סוג דפדפן</strong></td>
+    <td>אבטחת הפעלה, הגבלת קצב</td>
+    <td>אינטרסים לגיטימיים — אבטחה</td>
+    <td>30 יום</td>
+  </tr>
+</table>
+<p><strong>אנו לא אוספים:</strong> מספרי כרטיסי אשראי (מטופלים ישירות ע"י Stripe), נתונים רגישים,
+נתוני מיקום מעבר לכתובת IP, ולא נתונים מילדים מתחת לגיל 16.</p>
+
+<h2>3. ספקי משנה</h2>
+<table>
+  <tr><th>ספק</th><th>תפקיד</th><th>מדינה</th><th>הגנת GDPR</th></tr>
+  <tr><td>Supabase</td><td>בסיס נתונים, אימות</td><td>EU / US</td><td>SCCs</td></tr>
+  <tr><td>Stripe</td><td>עיבוד תשלומים</td><td>US</td><td>SCCs + DPA</td></tr>
+  <tr><td>Groq</td><td>ניתוח AI</td><td>US</td><td>SCCs + DPA</td></tr>
+  <tr><td>Sentry</td><td>ניטור שגיאות</td><td>US</td><td>SCCs</td></tr>
+</table>
+
+<h2>4. זכויותיך</h2>
+<p>בהתאם לחוק הגנת הפרטיות הישראלי ו-GDPR, יש לך זכות ל:</p>
+<ul>
+  <li><strong>עיון</strong> — לקבל עותק של כל המידע שנאסף עליך</li>
+  <li><strong>תיקון</strong> — לדרוש תיקון מידע שגוי</li>
+  <li><strong>מחיקה (הזכות להישכח)</strong> — לדרוש מחיקת כל מידע אישי</li>
+  <li><strong>ניידות</strong> — לקבל את הנתונים בפורמט מכונה-קריא</li>
+  <li><strong>הגבלת עיבוד</strong> — להגביל עיבוד המידע שלך</li>
+  <li><strong>התנגדות</strong> — להתנגד לעיבוד המבוסס על אינטרסים לגיטימיים</li>
+</ul>
+<p>לממש זכויות אלה: <a href="mailto:{PRIVACY_EMAIL}">{PRIVACY_EMAIL}</a></p>
+
+<h2>5. עוגיות ועוקבים</h2>
+<p>אנו משתמשים רק בעוגיות הכרחיות לתפעול השירות. איננו משתמשים בעוגיות שיווקיות ללא הסכמה מפורשת.</p>
+
+<h2>6. אבטחת מידע</h2>
+<p>אנו מיישמים: הצפנת TLS בכל תקשורת, הצפנת AES-256 לנתונים מסווגים, אימות דו-שלבי אופציונלי,
+וסריקות אבטחה שוטפות על מערכות ה-backend.</p>
+
+<h2>7. תלונות לרשות הגנת הפרטיות</h2>
+<p>
+  ישראל: <a href="{IL_DPA_URL}" target="_blank">רשות הגנת הפרטיות</a><br>
+  אירופה: רשות הגנת הנתונים בתחום שיפוטך (GDPR סעיף 77)
+</p>
+
+<div class="box box-ok">
+  <strong>✅ אנו עומדים ב:</strong> חוק הגנת הפרטיות + תיקון 13 · GDPR · CCPA/CPRA · CAN-SPAM
+</div>
+</div>
+"""
+
+_TOS_HE = f"""
+<div class="ldoc-he">
+<h1>📜 תנאי שימוש</h1>
+<div class="meta">AI Cyber Shield &nbsp;|&nbsp; עודכן לאחרונה: {EFFECTIVE}</div>
+
+<div class="box box-warn">
+  <strong>⚠️ חשוב:</strong> השירות מיועד <strong>לשימוש הגנתי בלבד</strong>.
+  אסור להשתמש בו לסריקת מטרות שאינן בבעלותך ללא אישור כתוב.
+</div>
+
+<h2>1. השירות</h2>
+<p>AI Cyber Shield מספקת ניתוח אבטחת רשת וציות משפטי אוטומטי. השירות מיועד לאנשי IT, מפתחים,
+ומנהלי אתרים הבודקים מערכות שהם אחראים עליהן.</p>
+
+<h2>2. כלל השימוש המותר</h2>
+<p>מותר לסרוק <strong>רק</strong> מערכות שאתה מחזיק, מנהל, או שקיבלת אישור בכתב לבדוק.
+כל שימוש אחר אסור בהחלט ועשוי להיות עבירה פלילית לפי:</p>
+<ul>
+  <li>חוק המחשבים, התשנ"ה–1995 (ישראל)</li>
+  <li>Computer Fraud and Abuse Act (CFAA) (ארה"ב)</li>
+  <li>Network and Information Security Directive (EU)</li>
+</ul>
+
+<h2>3. תנאי חשבון</h2>
+<ul>
+  <li>גיל מינימלי: 18 שנה (16 שנה עם אישור הורים)</li>
+  <li>כתובת אימייל חוקית נדרשת</li>
+  <li>אחריות על כל פעילות המבוצעת תחת חשבונך</li>
+  <li>חל איסור על שיתוף חשבון</li>
+</ul>
+
+<h2>4. מכסות ותשלום</h2>
+<table>
+  <tr><th>תוכנית</th><th>סריקות ביום</th><th>מחיר</th></tr>
+  <tr><td>חינמי</td><td>5</td><td>ללא עלות</td></tr>
+  <tr><td>Starter</td><td>50</td><td>לפי תמחור</td></tr>
+  <tr><td>Professional</td><td>200</td><td>לפי תמחור</td></tr>
+  <tr><td>Enterprise</td><td>ללא הגבלה</td><td>לפי הסכם</td></tr>
+</table>
+<p>ביטול: ניתן לבטל בכל עת. החיוב יופסק בסוף תקופת החיוב הנוכחית. אין החזרים יחסיים.</p>
+
+<h2>5. הגבלת אחריות</h2>
+<p>השירות ניתן כמות שהוא. אנו מוציאים כל ייעוץ משפטי. תוצאות הסריקה הן מידעיות בלבד
+ואינן מהוות חוות דעת משפטית. <strong>אחריותנו המקסימלית</strong> מוגבלת לסכום ששולם
+ב-3 החודשים האחרונים.</p>
+
+<h2>6. קניין רוחני</h2>
+<p>כל קוד, ממשקים, ואלגוריתמים הם קניין רוחני של AI Cyber Shield.
+ממצאי הסריקות שלך שייכים לך.</p>
+
+<h2>7. סיום שירות</h2>
+<p>אנו רשאים לסגור חשבונות המפרים תנאים אלה ללא הודעה מוקדמת.
+לבירורים: <a href="mailto:{LEGAL_EMAIL}">{LEGAL_EMAIL}</a></p>
+
+<h2>8. הדין החל</h2>
+<p>הסכם זה כפוף לדין הישראלי. סמכות שיפוט: בתי משפט בתל אביב-יפו.</p>
+</div>
+"""
+
+_CK_HE = f"""
+<div class="ldoc-he">
+<h1>🍪 מדיניות עוגיות</h1>
+<div class="meta">AI Cyber Shield &nbsp;|&nbsp; עודכן לאחרונה: {EFFECTIVE}</div>
+
+<h2>1. מה הן עוגיות?</h2>
+<p>עוגיות הן קבצי טקסט קטנים המאוחסנים בדפדפן שלך. אנו משתמשים בהן לניהול הפעלות והאימות שלך.</p>
+
+<h2>2. העוגיות שאנו משתמשים בהן</h2>
+<table>
+  <tr><th>שם</th><th>מטרה</th><th>סוג</th><th>תוקף</th></tr>
+  <tr><td><code>sb-access-token</code></td><td>אימות Supabase</td><td>הכרחי</td><td>1 שעה</td></tr>
+  <tr><td><code>sb-refresh-token</code></td><td>חידוש הפעלה</td><td>הכרחי</td><td>7 ימים</td></tr>
+  <tr><td><code>_cs_lang</code></td><td>העדפת שפה</td><td>פונקציונלי</td><td>30 יום</td></tr>
+</table>
+
+<h2>3. עוגיות שאינן בשימוש</h2>
+<p>אנו <strong>לא</strong> משתמשים בעוגיות שיווקיות, עוגיות מעקב צד שלישי, או Google Analytics.</p>
+
+<h2>4. שליטה בעוגיות</h2>
+<p>ניתן לנהל עוגיות דרך הגדרות הדפדפן שלך. השבתת עוגיות הכרחיות תמנע כניסה לשירות.</p>
+
+<p>לשאלות: <a href="mailto:{PRIVACY_EMAIL}">{PRIVACY_EMAIL}</a></p>
+</div>
+"""
+
+_ACC_HE = f"""
+<div class="ldoc-he">
+<h1>♿ הצהרת נגישות</h1>
+<div class="meta">AI Cyber Shield &nbsp;|&nbsp; עודכן לאחרונה: {EFFECTIVE}</div>
+
+<div class="box box-ok">
+  <strong>✅ מחויבות:</strong> AI Cyber Shield מחויבת לנגישות דיגיטלית מלאה לפי
+  תקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות), התשע"ג–2013,
+  ולפי תקן WCAG 2.1 ברמה AA.
+</div>
+
+<h2>1. רמת הנגישות</h2>
+<p>אנו שואפים לעמוד ב-WCAG 2.1 AA (תקן נגישות אינטרנט בינלאומי) ובתקן ישראלי IS 5568.</p>
+
+<h2>2. תכונות נגישות מיושמות</h2>
+<ul>
+  <li>תמיכה בשפה עברית עם כיוון RTL מלא</li>
+  <li>ניגוד צבעים מינימלי 4.5:1 (WCAG AA)</li>
+  <li>תמיכה בניווט מקלדת</li>
+  <li>תמיכה בקוראי מסך (NVDA, VoiceOver)</li>
+  <li>טקסט חלופי לכל תמונות פונקציונליות</li>
+  <li>אין תוכן מהבהב מסוכן (WCAG 2.3.1)</li>
+</ul>
+
+<h2>3. מגבלות ידועות</h2>
+<ul>
+  <li>חלק מגרפי התוצאות עשויים לדרוש תמיכה נוספת בקוראי מסך — בטיפול</li>
+  <li>אפליקציית Streamlit מוגבלת בחלק מיישומי ARIA</li>
+</ul>
+
+<h2>4. יצירת קשר בנושא נגישות</h2>
+<p>
+  נתקלתם בבעיית נגישות? פנו אלינו:<br>
+  📧 <a href="mailto:{ACC_EMAIL}">{ACC_EMAIL}</a><br>
+  📞 <a href="tel:{PHONE_RAW}">{PHONE}</a>
+</p>
+<p>נטפל בפניות נגישות בתוך <strong>5 ימי עסקים</strong>.</p>
+
+<h2>5. מנגנון ערר</h2>
+<p>אם לא קיבלתם מענה מספק, ניתן לפנות ל<strong>נציב שוויון זכויות לאנשים עם מוגבלות</strong>
+במשרד המשפטים.</p>
+</div>
+"""
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Streamlit UI
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -578,11 +840,12 @@ def show_legal_pages() -> None:
   </p>
 </div>""", unsafe_allow_html=True)
 
-    tab_pp, tab_tos, tab_ck, tab_acc = st.tabs([
+    tab_pp, tab_tos, tab_ck, tab_acc, tab_he = st.tabs([
         "🔒 Privacy Policy",
         "📜 Terms of Service",
         "🍪 Cookie Policy",
-        "♿ Accessibility / נגישות",
+        "♿ Accessibility",
+        "🇮🇱 עברית",
     ])
 
     with tab_pp:
@@ -599,6 +862,23 @@ def show_legal_pages() -> None:
     with tab_acc:
         st.markdown(_ACC, unsafe_allow_html=True)
         _dl_btn(_ACC, "AI_CyberShield_Accessibility_Statement.html", "⬇️ Download Accessibility Statement (HTML)")
+
+    with tab_he:
+        st.markdown(_HE_CSS, unsafe_allow_html=True)
+        he_doc_tab_pp, he_doc_tab_tos, he_doc_tab_ck, he_doc_tab_acc = st.tabs([
+            "🔒 מדיניות פרטיות",
+            "📜 תנאי שימוש",
+            "🍪 מדיניות עוגיות",
+            "♿ נגישות",
+        ])
+        with he_doc_tab_pp:
+            st.markdown(_PP_HE, unsafe_allow_html=True)
+        with he_doc_tab_tos:
+            st.markdown(_TOS_HE, unsafe_allow_html=True)
+        with he_doc_tab_ck:
+            st.markdown(_CK_HE, unsafe_allow_html=True)
+        with he_doc_tab_acc:
+            st.markdown(_ACC_HE, unsafe_allow_html=True)
 
 
 def _dl_btn(content_html: str, filename: str, label: str) -> None:
