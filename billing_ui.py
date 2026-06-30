@@ -280,8 +280,21 @@ def show_pricing_page(quota_exceeded: bool = False) -> None:
         unsafe_allow_html=True,
     )
 
+    # Admin-only safety net: catch a test-mode Stripe key left in production
+    # before it costs you a sale that silently never charges anyone.
+    _stripe_key = st.secrets.get("STRIPE_SECRET_KEY", "")
+    _is_prod = st.secrets.get("ENVIRONMENT", "production") == "production"
+    if user and user.is_admin and _is_prod and _stripe_key.startswith("sk_test_"):
+        st.warning(
+            "⚠️ **Admin notice**: Stripe is running in **test mode** "
+            "(`sk_test_…`) on a production environment. Real customers can "
+            "click Upgrade, but no money will actually be charged. "
+            "Switch to a `sk_live_…` key in Secrets when ready to accept payments.",
+            icon="🔑",
+        )
+
     cols = st.columns(4, gap="small")
-    stripe_configured = bool(st.secrets.get("STRIPE_SECRET_KEY", ""))
+    stripe_configured = bool(_stripe_key)
 
     for col, plan in zip(cols, PLANS):
         with col:
