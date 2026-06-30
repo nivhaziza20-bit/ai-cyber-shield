@@ -423,6 +423,13 @@ _FRAMEWORK_INFO = {
         "laws": "Arts. 13/14 Privacy Notice · Art. 7 Cookie Consent · Art. 17 Right to Erasure · Art. 37 DPO · ePrivacy Directive · EDPB Cookie Taskforce",
         "color": "#6366f1",
     },
+    # Not a real jurisdiction — a marker for checks (mostly security headers)
+    # that the underlying law treats identically across every framework, so
+    # they're shown no matter which jurisdiction checkboxes are selected.
+    "ALL": {
+        "flag": "🌐", "name_he": "כללי — חל בכל המסגרות", "name_en": "Universal — applies to every framework",
+        "laws": "", "color": "#475569",
+    },
 }
 
 _STATUS_COLOR = {"PASS": "#22d3ee", "FAIL": "#ef4444", "WARN": "#f59e0b", "SKIP": "#475569"}
@@ -672,8 +679,12 @@ def _render_finding_card(f: LegalFinding) -> None:
     sev_c  = _SEV_COLOR[f.severity]
     sev_bg = _SEV_BG[f.severity]
     fw_info = _FRAMEWORK_INFO.get(f.framework, {"flag": "🌐", "color": "#475569"})
-    fw_flag = fw_info["flag"] if f.framework != "ALL" else "🌐"
-    fw_col  = fw_info["color"] if f.framework != "ALL" else "#475569"
+    fw_flag  = fw_info["flag"]
+    fw_col   = fw_info["color"]
+    # "ALL" isn't a jurisdiction the user can pick — show why it's here instead
+    # of the bare literal string "ALL", which read like an unrelated category.
+    fw_label = (fw_info.get("name_he") if lang == "he" else fw_info.get("name_en")) \
+        if f.framework == "ALL" else f.framework
 
     fine_html = ""
     if f.status in ("FAIL", "WARN") and (f.fine_min or f.fine_max or f.fine_example):
@@ -702,7 +713,7 @@ def _render_finding_card(f: LegalFinding) -> None:
       <span style="background:{sev_bg};border:1px solid {sev_c};color:{sev_c};
         font-size:0.91rem;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.05em">{f.severity}</span>
       <span style="background:#1e293b;border:1px solid {fw_col}44;color:{fw_col};
-        font-size:0.91rem;font-weight:700;padding:2px 8px;border-radius:4px">{fw_flag} {f.framework}</span>
+        font-size:0.91rem;font-weight:700;padding:2px 8px;border-radius:4px">{fw_flag} {fw_label}</span>
     </div>
   </div>
   <div style="font-size:0.88rem;color:#64748b;margin-bottom:6px">
@@ -847,20 +858,29 @@ def _render_multipage_summary(result: LegalScanResult) -> None:
         st.success(mp["ok"].format(n=len(pages)))
     else:
         st.warning(mp["warn"].format(n=len(pages)))
+    # Transparent attribution: clarify what was checked per-page vs. globally
+    st.caption(
+        "💡 רוב הממצאים מוחלים על עמוד הכניסה שסרקת. "
+        f"בדיקת נוכחות קישורי הפרטיות בדף Footer בוצעה על {len(pages)} עמודים." if lang == "he"
+        else f"💡 Most findings reflect the entry page you scanned. "
+             f"Footer privacy-link consistency was checked across all {len(pages)} pages."
+    )
     with st.expander(mp["pages_expand"].format(n=len(pages)), expanded=False):
         for p in pages:
             st.markdown(f"- `{p}`")
 
 
 def _render_framework_cards() -> None:
-    cols = st.columns(3)
-    for i, (fw_code, fw) in enumerate(_FRAMEWORK_INFO.items()):
+    # "ALL" is internal metadata, not a selectable framework — skip it here.
+    selectable = [(k, v) for k, v in _FRAMEWORK_INFO.items() if k != "ALL"]
+    cols = st.columns(len(selectable))
+    for i, (fw_code, fw) in enumerate(selectable):
         with cols[i]:
             st.markdown(f"""
 <div style="background:linear-gradient(135deg,#0a0f1e,#060b14);
   border:1px solid {fw['color']}33;border-radius:12px;padding:14px 16px;height:100%">
-  <div style="font-size:1.1rem;margin-bottom:6px">{fw['flag']} <strong style="color:{fw['color']}">{fw['name']}</strong></div>
-  <div style="font-size:0.83rem;color:#64748b;line-height:1.6">{fw['laws']}</div>
+  <div style="font-size:1.1rem;margin-bottom:6px">{fw['flag']} <strong style="color:{fw['color']}">{fw.get('name', fw_code)}</strong></div>
+  <div style="font-size:0.83rem;color:#64748b;line-height:1.6">{fw.get('laws','')}</div>
 </div>""", unsafe_allow_html=True)
 
 
@@ -935,6 +955,13 @@ def show_legal_scanner(prefill_url: str = "") -> None:
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
         scan_btn = st.button(sc["btn_scan"], type="primary", use_container_width=True, key="legal_scan_btn")
 
+    st.caption(
+        "💡 חלק מהממצאים (מסומנים 🌐 כללי) חלים זהה על פני כל המסגרות "
+        "ולכן יוצגו גם אם בחרת רק מסגרת אחת." if lang == "he" else
+        "💡 Some findings (marked 🌐 Universal) apply identically across every "
+        "framework, so they'll show even if you select only one."
+    )
+
     active_frameworks: list[str] = []
     if do_il:   active_frameworks.append("IL")
     if do_us:   active_frameworks.append("US")
@@ -979,8 +1006,33 @@ def show_legal_scanner(prefill_url: str = "") -> None:
         except Exception:
             pass
 
-        with st.spinner(sc["spinner"]):
+        # st.status gives a step-by-step progress panel visible above the fold
+        # so the user can see something is happening — plain st.spinner was often
+        # missed, especially on pages that load quickly enough for it to flash by.
+        _fw_label = " · ".join(
+            _FRAMEWORK_INFO[fw]["flag"] + " " + _FRAMEWORK_INFO[fw].get("name", fw)
+            for fw in active_frameworks if fw in _FRAMEWORK_INFO
+        )
+        _status_label = (
+            f"⚖️ סורק {raw_url} — {_fw_label}…" if lang == "he"
+            else f"⚖️ Scanning {raw_url} — {_fw_label}…"
+        )
+        with st.status(_status_label, expanded=True) as _legal_status:
+            st.write("🌐 " + ("טוען דפים ומנתח HTML…" if lang == "he" else "Fetching pages, parsing HTML…"))
+            st.write("🍪 " + ("בודק קובצי Cookie ומטעיני עוקבים…" if lang == "he" else "Checking cookies & trackers…"))
+            st.write("📋 " + ("מנתח מדיניות פרטיות ותנאי שימוש…" if lang == "he" else "Analyzing privacy policy & ToS…"))
+            st.write("⚖️ " + ("מריץ בדיקות תאימות משפטית…" if lang == "he" else "Running legal compliance checks…"))
             result = run_legal_scan(raw_url, active_frameworks)
+            if result.error:
+                _legal_status.update(label="❌ " + sc["fail"], state="error")
+            else:
+                _legal_status.update(
+                    label=f"✅ {'סריקה הושלמה' if lang == 'he' else 'Scan complete'} — "
+                          f"{sum(1 for f in result.findings if f.status=='FAIL')} "
+                          f"{'כשלונות' if lang == 'he' else 'fails'} · "
+                          f"{round(result.scan_time, 1)}s",
+                    state="complete", expanded=False
+                )
 
         if result.error:
             st.error(f"{sc['fail']}: {result.error}")
