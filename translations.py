@@ -395,10 +395,28 @@ def is_rtl() -> bool:
 
 def inject_rtl_css() -> None:
     """Call once per page when RTL language is active."""
+    # Streamlit's frontend always renders <html lang="en"> itself — nothing in
+    # this app ever changed it, which silently broke every `html[lang="he"]`
+    # CSS rule (incl. the Hebrew-font rule below) for as long as they existed.
+    # Set it for real, every render, so language/dir-scoped CSS actually matches.
+    _lang = get_lang()
+    # st.markdown/st.html inject via innerHTML, which never executes embedded
+    # <script> tags (a browser rule, not a Streamlit bug) — verified this fails
+    # silently. components.v1.html() renders a real iframe; same-origin lets it
+    # reach window.parent.document to actually set the attributes — verified working.
+    import streamlit.components.v1 as _components
+    _components.html(f"""<script>
+window.parent.document.documentElement.lang = {_lang!r};
+window.parent.document.documentElement.dir  = {"'rtl'" if is_rtl() else "'ltr'"};
+</script>""", height=0)
     if is_rtl():
         st.markdown("""
 <style>
-/* RTL: text direction only — do NOT flip Streamlit layout containers */
+/* Real document.dir="rtl" (set above) already auto-mirrors every native
+   Streamlit flex layout (st.columns order, etc. — direction is inherited
+   CSS and flexbox's default "row" is direction-relative). The rules below
+   are belt-and-suspenders text alignment for elements that might set their
+   own explicit (non-inherited) direction/align and need reinforcement. */
 .block-container p, .block-container span, .block-container label,
 .block-container h1, .block-container h2, .block-container h3,
 .block-container li, .stMarkdown, .stMarkdown p {

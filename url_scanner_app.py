@@ -2754,18 +2754,25 @@ st.markdown(f"""
   box-shadow:0 0 24px rgba(34,211,238,0.1);
   transform:translateY(-1px);
 }}
-.scanner-card-icon {{font-size:1.6rem;margin-bottom:8px}}
+/* Icon + title are decorative/Latin-style branding, not bidi text — pin them
+   to the card's leading edge regardless of the page's RTL text-align so they
+   never compete with .scanner-card-badge for the same corner. */
+.scanner-card-icon {{font-size:1.6rem;margin-bottom:8px;text-align:left;margin-top:22px}}
 .scanner-card-title {{
   color:#f1f5f9;font-size:0.9rem;font-weight:700;margin-bottom:4px;
-  font-family:'JetBrains Mono',monospace;
+  font-family:{"'Heebo','Segoe UI',sans-serif" if _lang_now=='he' else "'JetBrains Mono',monospace"};
+  text-align:left;
 }}
-.scanner-card-sub {{color:#64748b;font-size:0.72rem;line-height:1.5}}
+.scanner-card-sub {{color:#64748b;font-size:0.72rem;line-height:1.5;text-align:left;
+  font-family:{"'Heebo','Segoe UI',sans-serif" if _lang_now=='he' else "inherit"};
+}}
 .scanner-card-badge {{
   position:absolute;top:12px;right:12px;
   background:rgba(34,211,238,0.08);color:#22d3ee;
   border:1px solid rgba(34,211,238,0.25);border-radius:20px;
   padding:2px 10px;font-size:0.65rem;font-weight:800;
   font-family:'JetBrains Mono',monospace;letter-spacing:0.06em;
+  white-space:nowrap;
 }}
 </style>
 <div class="scanner-hub">
@@ -2846,6 +2853,58 @@ if _current_user and not st.session_state.get("_onboarding_dismissed"):
                 st.rerun()
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Page-level overlays — rendered ABOVE the tab bar so they show regardless of
+# which tab is currently active (these used to live inside `with tab_url:`,
+# which meant clicking "Team"/"Admin"/etc. from the sidebar while viewing any
+# other tab appeared to do nothing — the panel rendered into the hidden,
+# inactive tab_url pane instead of where the user was looking).
+# ─────────────────────────────────────────────────────────────────────────────
+
+_legal = st.session_state.get("_show_legal", "")
+if _legal == "tos":
+    show_terms_of_service()
+    show_legal_nav()
+    if st.button("← Back", key="tos_back"): st.session_state.pop("_show_legal"); st.rerun()
+    st.stop()
+elif _legal == "privacy":
+    show_privacy_policy()
+    show_legal_nav()
+    if st.button("← Back", key="privacy_back"): st.session_state.pop("_show_legal"); st.rerun()
+    st.stop()
+
+if st.session_state.get("_show_pricing"):
+    show_pricing_page()
+    if st.button(t("back_to_scanner"), key="pricing_back_btn"):
+        st.session_state["_show_pricing"] = False
+        st.rerun()
+    st.stop()
+
+if st.session_state.get("_show_history") and _current_user:
+    show_scan_history_panel(_current_user.user_id)
+    st.divider()
+
+if st.session_state.get("_show_schedules") and _current_user:
+    show_scheduled_scans_panel(_current_user, is_paid=_current_user.is_paid)
+    st.divider()
+
+if st.session_state.get("_show_api_docs"):
+    show_api_docs()
+    if st.button(t("close_api_docs"), key="api_docs_close"):
+        st.session_state.pop("_show_api_docs"); st.rerun()
+    st.stop()
+
+if st.session_state.get("_show_team") and _current_user:
+    is_ent = _current_user.subscription_tier == "enterprise" or _current_user.is_admin
+    show_team_panel(_current_user, is_enterprise=is_ent)
+    st.divider()
+
+if st.session_state.get("_show_admin") and _current_user and _current_user.is_admin:
+    from auth.auth_pages import show_admin_panel
+    show_admin_panel()
+    st.divider()
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 # TAB 1 — URL Scanner
 # ═════════════════════════════════════════════════════════════════════════════
@@ -2858,13 +2917,21 @@ with tab_url:
     # Pre-fill from landing page hero URL input (one-shot, consumed here)
     _hero_prefill  = st.session_state.pop("hero_target_url", "")
     _demo_default  = _hero_prefill or (_DEMO_TARGET_URL if demo_mode else "")
-    url_input = st.text_input(
-        t("scan_input_label"),
-        value=_demo_default,
-        placeholder=t("scan_input_ph"),
-        help=t("scan_input_help"),
-        label_visibility="collapsed",
+    # URLs are inherently LTR content ("https://", ".com") — force LTR on this
+    # one field so the global RTL rule doesn't bidi-reorder the punctuation
+    # (e.g. placeholder rendering as "com.yoursite//:https").
+    st.markdown(
+        '<style>.st-key-url-scan-input input { direction: ltr !important; text-align: left !important; }</style>',
+        unsafe_allow_html=True,
     )
+    with st.container(key="url-scan-input"):
+        url_input = st.text_input(
+            t("scan_input_label"),
+            value=_demo_default,
+            placeholder=t("scan_input_ph"),
+            help=t("scan_input_help"),
+            label_visibility="collapsed",
+        )
     if demo_mode:
         st.caption("🎮 Demo Mode: showing a pre-built report for example.com — no real requests sent.")
 
@@ -3079,6 +3146,10 @@ button[kind="primary"]:hover {
             and bool(_current_url_key)
         )
 
+    # NOTE: no manual flex-direction hack needed here — now that
+    # inject_rtl_css() sets a real document.dir="rtl" (see translations.py),
+    # CSS direction-inheritance makes st.columns()'s default flex "row" auto-
+    # mirror site-wide (verified: column order visually reverses for free).
     col_scan, col_clear, col_cap = st.columns([2, 1, 3])
     scan_btn  = col_scan.button(
         _btn_label,
@@ -3126,56 +3197,6 @@ button[kind="primary"]:hover {
             f'cursor:pointer">{_g_btn}</div></div>',
             unsafe_allow_html=True,
         )
-
-    # ── Legal pages overlay ───────────────────────────────────────────────────
-    _legal = st.session_state.get("_show_legal", "")
-    if _legal == "tos":
-        show_terms_of_service()
-        show_legal_nav()
-        if st.button("← Back", key="tos_back"): st.session_state.pop("_show_legal"); st.rerun()
-        st.stop()
-    elif _legal == "privacy":
-        show_privacy_policy()
-        show_legal_nav()
-        if st.button("← Back", key="privacy_back"): st.session_state.pop("_show_legal"); st.rerun()
-        st.stop()
-
-    # ── Pricing page overlay ──────────────────────────────────────────────────
-    if st.session_state.get("_show_pricing"):
-        show_pricing_page()
-        if st.button(t("back_to_scanner"), key="pricing_back_btn"):
-            st.session_state["_show_pricing"] = False
-            st.rerun()
-        st.stop()
-
-    # ── Scan history overlay ──────────────────────────────────────────────────
-    if st.session_state.get("_show_history") and _current_user:
-        show_scan_history_panel(_current_user.user_id)
-        st.divider()
-
-    # ── Scheduled scans overlay ───────────────────────────────────────────────
-    if st.session_state.get("_show_schedules") and _current_user:
-        show_scheduled_scans_panel(_current_user, is_paid=_current_user.is_paid)
-        st.divider()
-
-    # ── API docs overlay ──────────────────────────────────────────────────────
-    if st.session_state.get("_show_api_docs"):
-        show_api_docs()
-        if st.button(t("close_api_docs"), key="api_docs_close"):
-            st.session_state.pop("_show_api_docs"); st.rerun()
-        st.stop()
-
-    # ── Team management overlay ───────────────────────────────────────────────
-    if st.session_state.get("_show_team") and _current_user:
-        is_ent = _current_user.subscription_tier == "enterprise" or _current_user.is_admin
-        show_team_panel(_current_user, is_enterprise=is_ent)
-        st.divider()
-
-    # ── Admin panel overlay ───────────────────────────────────────────────────
-    if st.session_state.get("_show_admin") and _current_user and _current_user.is_admin:
-        from auth.auth_pages import show_admin_panel
-        show_admin_panel()
-        st.divider()
 
     # ── Scan action ───────────────────────────────────────────────────────────
     if scan_btn:

@@ -3,6 +3,13 @@ headless = true
 enableCORS = false
 enableXsrfProtection = true
 
+# Hides Streamlit's built-in hamburger menu (Deploy button, "View app source"
+# link to the GitHub repo, Settings, etc.) from every visitor. Now that the
+# repo is public, that menu was a one-click path from the live app straight
+# to the full source code — minimal mode removes that chrome entirely.
+[client]
+toolbarMode = "minimal"
+
 [browser]
 gatherUsageStats = false
 
