@@ -111,7 +111,7 @@ SUPPORT_EMAIL       = _os.environ.get("SUPPORT_EMAIL",   CONTACT_EMAIL)
 APP_URL             = _os.environ.get("APP_URL",          "https://aicybershield.streamlit.app")
 
 # Guest scan limits (also read by ip_rate_limit.py)
-GUEST_DAILY_LIMIT   = int(_os.environ.get("GUEST_DAILY_LIMIT",  "3"))
+GUEST_DAILY_LIMIT   = int(_os.environ.get("GUEST_DAILY_LIMIT",  "2"))
 SCAN_RATE_PER_MIN   = int(_os.environ.get("SCAN_RATE_PER_MIN",  "5"))
 PAGE_RATE_PER_MIN   = int(_os.environ.get("PAGE_RATE_PER_MIN",  "30"))
 

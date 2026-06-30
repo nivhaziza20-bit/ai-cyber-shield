@@ -1,7 +1,13 @@
 """Pricing page and billing management for AI Cyber Shield."""
 from __future__ import annotations
 import streamlit as st
-from translations import t
+from translations import t, get_lang
+from audit_log import log_action
+
+# Flip to True once Stripe is in sk_live_ mode and ready to take real money.
+# Until then, paid-tier buttons collect waitlist interest instead of
+# launching a test-mode checkout that would decline every real card.
+_PAYMENTS_LIVE = False
 
 # ── Pricing config ────────────────────────────────────────────────────────────
 
@@ -333,6 +339,19 @@ def show_pricing_page(quota_exceeded: bool = False) -> None:
                     st.session_state["_show_contact"] = True
             elif plan["key"] == "free":
                 pass  # can't downgrade from UI
+            elif not _PAYMENTS_LIVE:
+                _is_he = get_lang() == "he"
+                _label = "🔜 בקרוב — הצטרף לרשימת המתנה" if _is_he else "🔜 Coming soon — join waitlist"
+                if st.button(_label, key=f"plan_{plan['key']}_waitlist",
+                             use_container_width=True):
+                    if not user:
+                        st.warning("התחבר קודם כדי להצטרף לרשימת ההמתנה." if _is_he
+                                   else "Please log in first to join the waitlist.")
+                    else:
+                        log_action("waitlist_signup", target=plan["key"],
+                                   details={"email": user.email})
+                        st.success("✅ נרשמת! נעדכן אותך כשהתשלומים יהיו זמינים." if _is_he
+                                   else "✅ You're on the list — we'll email you when payments go live.")
             elif not stripe_configured:
                 st.button(f"⚙ {plan['cta']}", key=f"plan_{plan['key']}_btn",
                           disabled=True, use_container_width=True,
