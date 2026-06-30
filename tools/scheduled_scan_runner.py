@@ -233,7 +233,12 @@ def _send_notification(result: dict, schedule: dict) -> None:
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
             json={
-                "from":    "AI Cyber Shield <alerts@aicybershield.com>",
+                # TODO: switch back to "AI Cyber Shield <alerts@aicybershield.com>"
+                # once that domain is added + DNS-verified in Resend. Until then,
+                # Resend's shared sandbox sender works without domain verification,
+                # but can only deliver to the email address the Resend account
+                # itself was signed up with.
+                "from":    "AI Cyber Shield <onboarding@resend.dev>",
                 "to":      [notify_email],
                 "subject": f"[{grade}] Security scan: {url} — score {score}/100",
                 "html":    html,
