@@ -1,5 +1,12 @@
 """
-app.py — AI Cyber Shield · Code Security Analyser
+app.py — AI Cyber Shield · Code Security Analyser (standalone)
+
+NOTE: The canonical, fully-featured product is `url_scanner_app.py` — it has
+its own embedded "Code Security Analyser" tab (see the `crew_pipeline_with_alerts`
+import there) plus billing, auth, rate limiting and guest quotas that this
+standalone file does not. Dockerfile boots `url_scanner_app.py`. Keep this
+file only if a separate, code-analysis-only deployment is intentional.
+
 Dark security theme, professional finding cards, plain-English explanations.
 """
 

@@ -53,12 +53,12 @@ _T: dict[str, dict[str, str]] = {
 
     "auth_confirm_email":{"he": "החשבון נוצר! בדוק את תיבת הדואר שלך.", "en": "Account created! Check your inbox for a confirmation email."},
     "auth_reset_sent":   {"he": "קישור נשלח — בדוק את המייל שלך (גם ספאם).", "en": "Reset link sent — check your inbox (and spam folder)."},
+    "auth_link_failed":  {"he": "קישור הכניסה פג תוקף או כבר נוצל. נסה שוב או בקש קישור חדש.", "en": "That sign-in link expired or was already used. Please try again or request a new one."},
 
     # ── Scan page ─────────────────────────────────────────────────────────────
     "scan_input_label":  {"he": "הכנס כתובת אתר לסריקה",  "en": "Enter target URL"},
     "scan_input_ph":     {"he": "https://האתר-שלך.com",    "en": "https://yourwebsite.com"},
-    "scan_btn_passive":  {"he": "🔵  הרץ סריקה פסיבית (18 כלים)", "en": "🔵  Run Passive Recon (18 Tools)"},
-    "scan_btn_standard": {"he": "🔍  הרץ סריקת אבטחה",    "en": "🔍  Run Security Scan"},
+    # scan_btn_passive / scan_btn_standard now defined once, below, alongside their captions
 
     "scan_empty_headline":{"he": "האתר שלך דולף מידע עכשיו?", "en": "Is your website leaking secrets right now?"},
 

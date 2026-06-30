@@ -171,8 +171,8 @@ def _prefetch_playwright() -> None:
         from tools.deep_js_crawler import _ensure_playwright_browser
         t = threading.Thread(target=_ensure_playwright_browser, daemon=True, name="playwright-prefetch")
         t.start()
-    except Exception:
-        pass  # playwright not installed — no-op
+    except Exception as _pf_exc:
+        logging.getLogger(__name__).debug("Playwright prefetch skipped: %s", _pf_exc)
 
 _prefetch_playwright()
 
@@ -214,8 +214,9 @@ if _qp.get("st_at"):
             if _sess and _sess.user:
                 from auth.streamlit_auth import _build_user_session
                 st.session_state["_user_session"] = _build_user_session(_sess.user, _sess)
-    except Exception:
-        pass
+    except Exception as _auth_exc:
+        logging.getLogger(__name__).warning("Auth token exchange failed: %s", _auth_exc)
+        st.session_state["_auth_exchange_failed"] = True
     # Always clear params + rerun, even on exchange failure, to avoid redirect loops
     st.query_params.clear()
     st.rerun()
@@ -371,8 +372,8 @@ a[href*="github.com/streamlit"]{display:none!important}
                 _tech = {}
                 try:
                     _tech = fingerprint_technologies(target)
-                except Exception:
-                    pass
+                except Exception as _tech_exc:
+                    logging.getLogger(__name__).debug("Tech fingerprint skipped: %s", _tech_exc)
                 _total = 18
                 for _tn, _tr in run_passive_recon_streaming(target, tech_results=_tech):
                     _pr_results[_tn] = _tr
@@ -451,7 +452,7 @@ a[href*="github.com/streamlit"]{display:none!important}
             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
             box-shadow:0 0 0 1px {_gcol}12,0 4px 40px rgba(0,0,0,0.5)">
   <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
-    <svg width="128" height="128" viewBox="0 0 120 120" style="flex-shrink:0">
+    <svg class="grade-ring" width="128" height="128" viewBox="0 0 120 120" style="flex-shrink:0">
       <circle cx="60" cy="60" r="52" fill="none" stroke="#1e2d3d" stroke-width="9"/>
       <circle cx="60" cy="60" r="52" fill="none" stroke="{_gcol}" stroke-width="9"
               stroke-linecap="round" transform="rotate(-90 60 60)" class="rng-{_uid}"/>
@@ -555,6 +556,9 @@ if st.session_state.get("_run_guest_scan") and st.session_state.get("hero_target
     _show_guest_scan_page(st.session_state["hero_target_url"])
     st.stop()
 
+
+if st.session_state.pop("_auth_exchange_failed", False):
+    st.error(t("auth_link_failed"))
 
 if supabase_available():
     _current_user = require_auth()  # shows login page + st.stop() if not authed
@@ -1220,16 +1224,21 @@ code, pre {
     margin-bottom: 12px;
 }
 
-/* ── Markdown inside report ───────────────────────────────────────────────── */
-.report-body h1, .report-body h2 { color: #e2e8f0; border-bottom: 1px solid #243049; padding-bottom: 6px; }
-.report-body h3 { color: #94a3b8; }
-.report-body h4 { color: #22d3ee; }
-.report-body table { background: #111827; border-collapse: collapse; width: 100%; border-radius: 6px; overflow: hidden; }
-.report-body th { background: #1f2d3d; color: #94a3b8; padding: 8px 12px; font-size: 0.8rem; text-align: left; }
-.report-body td { color: #c9d1d9; padding: 8px 12px; border-bottom: 1px solid #1a2535; font-size: 0.85rem; }
-.report-body li { color: #c9d1d9; margin: 4px 0; }
-.report-body strong { color: #e2e8f0; }
-.report-body blockquote { border-left: 3px solid #22d3ee; padding-left: 12px; color: #94a3b8; }
+/* ── Markdown inside report ─────────────────────────────────────────────────
+   Targets the real st.container(key="report-body-...") wrapper Streamlit
+   renders (class "st-key-report-body-..."), NOT a hand-written HTML div —
+   the LLM-generated report content itself is rendered via plain st.markdown
+   (no unsafe_allow_html) so it can never inject markup, only land inside
+   this wrapper for styling. */
+[class*="st-key-report-body"] h1, [class*="st-key-report-body"] h2 { color: #e2e8f0; border-bottom: 1px solid #243049; padding-bottom: 6px; }
+[class*="st-key-report-body"] h3 { color: #94a3b8; }
+[class*="st-key-report-body"] h4 { color: #22d3ee; }
+[class*="st-key-report-body"] table { background: #111827; border-collapse: collapse; width: 100%; border-radius: 6px; overflow: hidden; }
+[class*="st-key-report-body"] th { background: #1f2d3d; color: #94a3b8; padding: 8px 12px; font-size: 0.8rem; text-align: left; }
+[class*="st-key-report-body"] td { color: #c9d1d9; padding: 8px 12px; border-bottom: 1px solid #1a2535; font-size: 0.85rem; }
+[class*="st-key-report-body"] li { color: #c9d1d9; margin: 4px 0; }
+[class*="st-key-report-body"] strong { color: #e2e8f0; }
+[class*="st-key-report-body"] blockquote { border-left: 3px solid #22d3ee; padding-left: 12px; color: #94a3b8; }
 
 /* ── History / Diff cards ─────────────────────────────────────────────────── */
 .hist-card {
@@ -1467,11 +1476,51 @@ code, pre {
   .pr-tool-name { font-size: 0.85rem; }
   .pr-finding { font-size: 0.8rem; }
   .badge { font-size: 0.62rem !important; padding: 2px 7px !important; }
+
+  /* Main content area: Streamlit's default side padding eats ~10% of a phone
+     screen on each side — reclaim it for actual content. */
+  .block-container { padding-left: 12px !important; padding-right: 12px !important; }
+
+  /* Grade banner: stop forcing the SVG ring + text panel onto one row */
+  .grade-banner { padding: var(--sp-4) var(--sp-3); gap: var(--sp-3); }
+  .grade-circle { width: 76px; height: 76px; font-size: 2.1rem; }
+  .grade-title { font-size: 1rem; }
+  .grade-subtitle { font-size: 0.82rem; }
+
+  /* Any inline grade-ring SVG (width/height attrs are HTML, not inline
+     style, so this CSS rule legitimately overrides them) */
+  svg.grade-ring { width: 84px !important; height: 84px !important; }
+
+  /* Score / metric cards laid out via st.columns: Streamlit already stacks
+     columns vertically below ~640px, this just tightens the spacing once stacked */
+  .score-card { padding: var(--sp-3); }
+
+  /* Report tables: never let a wide table push the whole page into
+     horizontal scroll — scroll only the table itself */
+  [class*="st-key-report-body"] { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  [class*="st-key-report-body"] table { font-size: 0.78rem; min-width: 480px; }
+  [class*="st-key-report-body"] th, [class*="st-key-report-body"] td { padding: 6px 8px; }
+
+  /* Tab bar: let it scroll horizontally instead of wrapping/cramping */
+  .stTabs [data-baseweb="tab-list"] { overflow-x: auto; flex-wrap: nowrap !important; -webkit-overflow-scrolling: touch; }
+  .stTabs [data-baseweb="tab"] { padding: 8px 12px !important; font-size: 0.75rem !important; white-space: nowrap; }
+
+  /* Primary CTAs (scan button, upgrade button, etc.) — full-width and
+     tall enough to meet the ~44px touch-target guideline */
+  div[data-testid="stButton"] > button[kind="primary"],
+  div[data-testid="stDownloadButton"] > button {
+    width: 100%; min-height: 44px;
+  }
 }
 @media (max-width: 480px) {
   .pr-card { padding: 8px 10px; margin: 4px 0; }
   .pr-tool-name { font-size: 0.82rem; }
   .pr-finding { font-size: 0.8rem; line-height: 1.55; }
+
+  .block-container { padding-left: 8px !important; padding-right: 8px !important; }
+  .grade-circle { width: 64px; height: 64px; font-size: 1.7rem; }
+  svg.grade-ring { width: 68px !important; height: 68px !important; }
+  .grade-banner { flex-direction: column; align-items: flex-start; }
 }
 
 /* ── Bug bounty contact card ───────────────────────────────────────────────── */
@@ -1840,7 +1889,7 @@ def _render_grade_banner(grade: str, score: int, url: str) -> None:
      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
      animation:fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both">
   <div style="flex-shrink:0">
-    <svg width="128" height="128" viewBox="0 0 120 120">
+    <svg class="grade-ring" width="128" height="128" viewBox="0 0 120 120">
       <circle cx="60" cy="60" r="52" fill="none" stroke="#1a2236" stroke-width="8"/>
       <circle cx="60" cy="60" r="52" fill="none" stroke="{color}" stroke-width="8"
               stroke-linecap="round" transform="rotate(-90 60 60)"
@@ -2203,12 +2252,16 @@ def _render_report_sections(report_markdown: str) -> None:
     sections = _parse_report_sections(report_markdown)
 
     if not sections:
-        # Fallback: render raw
-        st.markdown(f'<div class="report-body">{report_markdown}</div>', unsafe_allow_html=True)
+        # Fallback: render raw. The LLM-generated report can echo attacker-
+        # controlled content scraped from the scanned target (page titles,
+        # headers, etc.) — render via plain st.markdown (no unsafe_allow_html)
+        # so any embedded HTML/script stays inert text, not executable markup.
+        with st.container(key="report-body-fallback"):
+            st.markdown(report_markdown)
         return
 
     # Group: intro (before first section), category findings, and final sections
-    for key, title, body in sections:
+    for _sec_idx, (key, title, body) in enumerate(sections):
         score     = _section_score_from_title(title)
         badge     = _severity_badge(title) if score is None else ""
         score_str = f'<span style="color:{_grade_color("A" if (score or 0)>=75 else "C" if (score or 0)>=40 else "F")};font-weight:700;font-family:monospace">{score}/100</span>' if score is not None else ""
@@ -2262,9 +2315,12 @@ def _render_report_sections(report_markdown: str) -> None:
         # Include score in expander label so users can see it without expanding
         _expander_score = f"  {score}/100" if score is not None else ""
         with st.expander(f"{section_icon} {title}{_expander_score}", expanded=default_open):
-            st.markdown(f'<div class="report-body">', unsafe_allow_html=True)
-            st.markdown(body)
-            st.markdown("</div>", unsafe_allow_html=True)
+            # body is LLM-generated and may echo attacker-controlled content
+            # from the scanned target — plain st.markdown keeps any embedded
+            # HTML/script inert (no unsafe_allow_html). st.container(key=...)
+            # gives a real, CSS-targetable wrapper without raw-HTML interpolation.
+            with st.container(key=f"report-body-{_sec_idx}-{key}"):
+                st.markdown(body)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2752,8 +2808,9 @@ if _current_user and not st.session_state.get("_onboarding_dismissed"):
     try:
         from scan_history_store import get_store as _ob_store
         _has_history = bool(_ob_store().get_all_scanned_urls())
-    except Exception:
-        _has_history = True   # assume returning user on any error
+    except Exception as _hist_exc:
+        logging.getLogger(__name__).debug("History store lookup failed: %s", _hist_exc)
+        _has_history = True   # assume returning user on any error — avoids re-showing onboarding to existing users
     if not _has_history:
         _ob_lang = get_lang()
         _ob_steps = [
@@ -3189,8 +3246,8 @@ button[kind="primary"]:hover {
                         _tech = {}
                         try:
                             _tech = fingerprint_technologies(target)
-                        except Exception:
-                            pass
+                        except Exception as _tech_exc:
+                            logging.getLogger(__name__).debug("Tech fingerprint skipped: %s", _tech_exc)
                         _pr_results: dict = {}
                         _sev_o    = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
                         _pr_total_tools = 18
@@ -3432,8 +3489,8 @@ button[kind="primary"]:hover {
                     use_container_width=True,
                     key="json_top",
                 )
-        except Exception:
-            pass   # PDF unavailable silently — bottom fallback still exists
+        except Exception as _pdf_exc:
+            logging.getLogger(__name__).debug("Top PDF widget unavailable: %s", _pdf_exc)   # bottom fallback still exists
 
         # ── Trend widget: score history for this target ───────────────────────
         try:
@@ -3456,8 +3513,8 @@ button[kind="primary"]:hover {
                     unsafe_allow_html=True,
                 )
                 st.line_chart(_trend_df["Score"], color="#22d3ee", height=150)
-        except Exception:
-            pass  # trend widget is non-critical
+        except Exception as _trend_exc:
+            logging.getLogger(__name__).debug("Trend widget unavailable: %s", _trend_exc)  # non-critical
 
         # ── 17-category score grid ────────────────────────────────────────────
         st.markdown(f'<div class="section-label">{t("section_scores")}</div>',
@@ -3480,7 +3537,8 @@ button[kind="primary"]:hover {
         if isinstance(_waf_res, dict):
             try:
                 _waf_data = json.loads(_waf_res) if isinstance(_waf_res, str) else _waf_res
-            except Exception:
+            except Exception as _waf_exc:
+                logging.getLogger(__name__).debug("WAF stealth data unparseable: %s", _waf_exc)
                 _waf_data = {}
             if _waf_data.get("stealth_used"):
                 st.markdown(f"""
@@ -3709,7 +3767,7 @@ button[kind="primary"]:hover {
   <div style="display:flex;align-items:flex-start;gap:22px;flex-wrap:wrap">
     <!-- SVG ring -->
     <div style="flex-shrink:0">
-      <svg width="130" height="130" viewBox="0 0 120 120">
+      <svg class="grade-ring" width="130" height="130" viewBox="0 0 120 120">
         <circle cx="60" cy="60" r="52" fill="none" stroke="#1e2d3d" stroke-width="9"/>
         <circle cx="60" cy="60" r="52" fill="none" stroke="{_gc}" stroke-width="9"
                 stroke-linecap="round" transform="rotate(-90 60 60)"

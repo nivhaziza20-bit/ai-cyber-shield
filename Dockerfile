@@ -42,7 +42,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
 # FIX 5: --server.headless=true stops Streamlit from trying to open a browser
 #         inside the container (which hangs the process).
 #         --server.address=0.0.0.0 makes it reachable from outside the container.
-CMD ["streamlit", "run", "app.py", \
+CMD ["streamlit", "run", "url_scanner_app.py", \
      "--server.port=8501", \
      "--server.address=0.0.0.0", \
      "--server.headless=true", \
