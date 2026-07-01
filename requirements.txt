@@ -83,3 +83,4 @@ anyio>=4.4.0
 # (Streamlit Cloud). playwright_executor.py already has a fallback to requests-based
 # static scanning when playwright is unavailable — no functionality lost.
 # playwright==1.49.0
+python-bidi>=0.4.2
