@@ -2,18 +2,24 @@
 api/routers/findings.py — AI Cyber Shield v6
 
 Endpoints:
-  GET /api/v1/scans/{scan_id}/findings              — paginated, filterable
-  GET /api/v1/scans/{scan_id}/findings/{finding_id} — single finding detail
-  GET /api/v1/scans/{scan_id}/sarif                 — SARIF 2.1 document
-  GET /api/v1/scans/{scan_id}/summary               — aggregate stats
+  GET  /api/v1/scans/{scan_id}/findings              — paginated, filterable
+  GET  /api/v1/scans/{scan_id}/findings/{finding_id} — single finding detail
+  GET  /api/v1/scans/{scan_id}/sarif                 — SARIF 2.1 document
+  GET  /api/v1/scans/{scan_id}/summary               — aggregate stats
+  POST /api/v1/scans/{scan_id}/findings/{finding_id}/verify — re-scan to verify fix
+  GET  /api/v1/scans/{scan_id}/chains                — attack chain detection
 """
 
 from __future__ import annotations
 
+import json
 import logging
+import time
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from pydantic import BaseModel
 
 from api.auth import verify_api_key
 from api.models import (
@@ -258,4 +264,241 @@ async def get_summary(
     return SummaryResponse(
         scan_id=scan_id,
         **stats,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Verify Fix — targeted single-tool re-scan
+# ─────────────────────────────────────────────────────────────────────────────
+
+class VerifyFixResponse(BaseModel):
+    finding_id:     str
+    status:         str          # "resolved" | "still_open" | "error"
+    tool_name:      str
+    previous_score: Optional[int]
+    new_score:      Optional[int]
+    scan_duration_ms: int
+    verified_at:    str
+    message:        str
+
+
+def _run_single_tool(tool_name: str, url: str) -> tuple[dict, int]:
+    """
+    Run a single registered tool against a URL.
+    Returns (result_dict, duration_ms).
+    Raises KeyError if tool_name not registered.
+    Raises RuntimeError if tool execution fails.
+    """
+    from tools.tool_registry import get_tool
+    config    = get_tool(tool_name)          # raises KeyError if unknown
+    fn        = config["function"]
+    args      = config["invoke_args"](url)
+    timeout_s = config["timeout_seconds"]
+
+    start = time.time()
+    try:
+        raw    = fn.invoke(args)
+        result = json.loads(raw) if isinstance(raw, str) else raw
+        duration_ms = int((time.time() - start) * 1000)
+        return result, duration_ms
+    except Exception as exc:
+        duration_ms = int((time.time() - start) * 1000)
+        raise RuntimeError(f"Tool {tool_name} failed: {exc}") from exc
+
+
+def _finding_still_present(finding_id: str, tool_result: dict) -> bool:
+    """
+    Check if a finding with the given ID still appears in the new tool result.
+    The tool result may contain 'findings' as a list of dicts with 'finding_id' key.
+    """
+    findings = tool_result.get("findings", [])
+    if not isinstance(findings, list):
+        return False
+    return any(
+        (f.get("finding_id") == finding_id or f.get("id") == finding_id)
+        for f in findings
+        if isinstance(f, dict)
+    )
+
+
+@router.post(
+    "/{scan_id}/findings/{finding_id}/verify",
+    response_model=VerifyFixResponse,
+    summary="Verify Fix — re-run the relevant tool to check if the finding was resolved",
+    status_code=200,
+)
+async def verify_fix(
+    scan_id:    str,
+    finding_id: str,
+    store:      ScanStore = Depends(get_store),
+    _api_key:   str       = Depends(verify_api_key),
+) -> VerifyFixResponse:
+    """
+    Re-run only the tool that produced this finding.
+    Returns status='resolved' if the finding no longer appears,
+    or 'still_open' if it does.
+
+    Costs 1/5 of a full scan against the user's quota.
+    Available on Starter tier and above (not the free tier).
+    Rate limit: 10 verify requests per minute per API key.
+    """
+    # ── Locate finding in completed scan ──────────────────────────────────────
+    state = _require_complete(store.get(scan_id), scan_id)
+    finding = next(
+        (f for f in state.findings if f.finding_id == finding_id), None
+    )
+    if not finding:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "Finding not found", "code": "FINDING_NOT_FOUND"},
+        )
+
+    tool_name = finding.tool
+    url       = state.url
+
+    # ── Validate tool exists in registry ─────────────────────────────────────
+    try:
+        from tools.tool_registry import get_tool
+        get_tool(tool_name)
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": f"Tool '{tool_name}' is not registered in the tool registry",
+                "code":  "UNKNOWN_TOOL_SOURCE",
+            },
+        )
+
+    # ── Re-run the single tool ────────────────────────────────────────────────
+    try:
+        tool_result, duration_ms = _run_single_tool(tool_name, url)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": str(exc), "code": "TOOL_EXECUTION_ERROR"},
+        )
+
+    # ── Evaluate result ───────────────────────────────────────────────────────
+    still_present = _finding_still_present(finding_id, tool_result)
+    verified_at   = datetime.now(timezone.utc).isoformat()
+    new_score     = tool_result.get("score") or tool_result.get("risk_score")
+    if isinstance(new_score, (int, float)):
+        new_score = int(new_score)
+    else:
+        new_score = None
+
+    if still_present:
+        result_status = "still_open"
+        message = (
+            f"Finding still detected after re-scanning with {tool_name}. "
+            "The fix may not have been deployed yet, or the issue persists."
+        )
+    else:
+        result_status = "resolved"
+        message = (
+            f"Finding no longer detected after re-scanning with {tool_name}. "
+            "The fix appears to be in effect."
+        )
+
+    return VerifyFixResponse(
+        finding_id      = finding_id,
+        status          = result_status,
+        tool_name       = tool_name,
+        previous_score  = int(finding.cvss.score * 10) if finding.cvss.score else None,
+        new_score       = new_score,
+        scan_duration_ms= duration_ms,
+        verified_at     = verified_at,
+        message         = message,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Attack Chain Detection
+# ─────────────────────────────────────────────────────────────────────────────
+
+class AttackChainNodeResponse(BaseModel):
+    finding_id: str
+    title:      str
+    severity:   str
+    tool:       str
+    role:       str   # "prerequisite" | "amplifier"
+
+
+class AttackChainResponse(BaseModel):
+    id:               str
+    name:             str
+    description:      str
+    severity:         str
+    cvss:             float
+    impact:           str
+    remediation:      str
+    detection_method: str
+    prerequisites:    list[AttackChainNodeResponse]
+    amplifiers:       list[AttackChainNodeResponse]
+
+
+class AttackChainsListResponse(BaseModel):
+    scan_id:      str
+    chains:       list[AttackChainResponse]
+    total:        int
+    critical:     int
+    high:         int
+
+
+@router.get(
+    "/{scan_id}/chains",
+    response_model=AttackChainsListResponse,
+    summary="Detect multi-step attack chains from scan findings",
+    tags=["chains"],
+)
+async def get_attack_chains(
+    scan_id:  str,
+    store:    ScanStore = Depends(get_store),
+    _api_key: str       = Depends(verify_api_key),
+) -> AttackChainsListResponse:
+    """
+    Analyze how individual findings combine into exploitable multi-step attack chains.
+
+    Returns chains sorted by severity (CRITICAL first), then CVSS descending.
+    A chain is only detected when ALL its prerequisite findings are present in the scan.
+    Amplifiers are optional — they worsen the attack but aren't required.
+
+    Available on all paid tiers.
+    """
+    state = _require_complete(store.get(scan_id), scan_id)
+
+    from core.attack_chain_engine import detect_chains
+    chains = detect_chains(state.findings)
+
+    def _node(n) -> AttackChainNodeResponse:
+        return AttackChainNodeResponse(
+            finding_id = n.finding_id,
+            title      = n.title,
+            severity   = n.severity,
+            tool       = n.tool,
+            role       = n.role,
+        )
+
+    chain_responses = [
+        AttackChainResponse(
+            id               = c.id,
+            name             = c.name,
+            description      = c.description,
+            severity         = c.severity,
+            cvss             = c.cvss,
+            impact           = c.impact,
+            remediation      = c.remediation,
+            detection_method = c.detection_method,
+            prerequisites    = [_node(n) for n in c.prerequisites],
+            amplifiers       = [_node(n) for n in c.amplifiers],
+        )
+        for c in chains
+    ]
+
+    return AttackChainsListResponse(
+        scan_id  = scan_id,
+        chains   = chain_responses,
+        total    = len(chain_responses),
+        critical = sum(1 for c in chain_responses if c.severity == "CRITICAL"),
+        high     = sum(1 for c in chain_responses if c.severity == "HIGH"),
     )

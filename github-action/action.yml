@@ -1,0 +1,70 @@
+name: 'AI Cyber Shield Security Scan'
+description: 'Scan a URL for security vulnerabilities with 17 OSINT tools and AI analysis'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  target_url:
+    description: 'URL to scan'
+    required: true
+  api_key:
+    description: 'AI Cyber Shield API key'
+    required: true
+  api_endpoint:
+    description: 'API base URL'
+    required: false
+    default: 'https://your-api-url.com'
+  fail_on_grade:
+    description: 'Fail pipeline if grade is this or worse (A/B/C/D/F)'
+    required: false
+    default: 'D'
+  fail_on_critical:
+    description: 'Fail pipeline if any CRITICAL severity finding exists'
+    required: false
+    default: 'true'
+  timeout_minutes:
+    description: 'Maximum time to wait for scan completion'
+    required: false
+    default: '5'
+  upload_sarif:
+    description: 'Upload SARIF results to GitHub Code Scanning'
+    required: false
+    default: 'true'
+
+outputs:
+  overall_score:
+    description: 'Security score (0-100)'
+  overall_grade:
+    description: 'Security grade (A-F)'
+  findings_critical:
+    description: 'Number of critical findings'
+  findings_high:
+    description: 'Number of high findings'
+  findings_total:
+    description: 'Total number of findings'
+  scan_url:
+    description: 'Link to full results in AI Cyber Shield dashboard'
+  sarif_file:
+    description: 'Path to SARIF output file'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Security Scan
+      shell: bash
+      run: python3 ${{ github.action_path }}/scan.py
+      env:
+        INPUT_TARGET_URL: ${{ inputs.target_url }}
+        INPUT_API_KEY: ${{ inputs.api_key }}
+        INPUT_API_ENDPOINT: ${{ inputs.api_endpoint }}
+        INPUT_FAIL_ON_GRADE: ${{ inputs.fail_on_grade }}
+        INPUT_FAIL_ON_CRITICAL: ${{ inputs.fail_on_critical }}
+        INPUT_TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
+        INPUT_UPLOAD_SARIF: ${{ inputs.upload_sarif }}
+        GITHUB_TOKEN: ${{ github.token }}
+        GITHUB_STEP_SUMMARY: ${{ github.step_summary }}
+        GITHUB_OUTPUT: ${{ github.output }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_SHA: ${{ github.sha }}
+        GITHUB_REF: ${{ github.ref }}

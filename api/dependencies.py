@@ -10,13 +10,13 @@ from __future__ import annotations
 from typing import Callable
 
 
-def _default_scanner(url: str, mode: str) -> dict:
+def _default_scanner(url: str, mode: str, progress_callback=None) -> dict:
     """
     Real scanner — lazy import so the API module can be imported
     even in environments where the full tool stack is not installed.
     """
     from url_scanner_pipeline import run_url_security_audit  # noqa: PLC0415
-    result = run_url_security_audit(url)
+    result = run_url_security_audit(url, progress_callback=progress_callback)
 
     # If PT mode, also run active verification
     if mode == "pt":

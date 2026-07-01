@@ -43,8 +43,10 @@ Returns:
 
 import json
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError, as_completed
-from typing import TYPE_CHECKING
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Callable, Optional
 from urllib.parse import urlparse
 
 if TYPE_CHECKING:
@@ -441,7 +443,71 @@ def _auth_wrapped(fn, scan_auth: "ScanAuth | None"):
 # Parallel tool runner
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _run_tools_parallel(url: str, scan_auth: "ScanAuth | None" = None) -> dict:
+def _run_tool_with_progress(
+    tool_name: str,
+    fn: Callable,
+    scan_auth: "ScanAuth | None",
+    progress_callback: Optional[Callable],
+) -> str:
+    """
+    Execute a tool with auth context and optional progress reporting.
+
+    Fires progress_callback("tool_started", ...) before the tool runs and
+    progress_callback("tool_completed" | "tool_failed", ...) after.
+    When progress_callback is None this is identical to _auth_wrapped(fn, scan_auth).
+    """
+    if progress_callback:
+        progress_callback("tool_started", {
+            "tool_name": tool_name,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+
+    t0 = time.perf_counter()
+    try:
+        raw = _auth_wrapped(fn, scan_auth)
+        duration_ms = int((time.perf_counter() - t0) * 1000)
+        if progress_callback:
+            try:
+                parsed = json.loads(raw)
+                score = (
+                    parsed.get("ssl_score")
+                    or parsed.get("security_score")
+                    or parsed.get("protection_score")
+                    or max(0, 100 - parsed.get("risk_score", 0))
+                )
+                findings_count = sum(
+                    len(parsed.get(k, []))
+                    for k in ("findings", "exposed_secrets", "missing_headers",
+                              "cve_findings", "sensitive_paths")
+                )
+            except Exception:
+                score = None
+                findings_count = 0
+            progress_callback("tool_completed", {
+                "tool_name":      tool_name,
+                "duration_ms":    duration_ms,
+                "score":          score,
+                "findings_count": findings_count,
+                "timestamp":      datetime.now(timezone.utc).isoformat(),
+            })
+        return raw
+    except Exception as exc:
+        duration_ms = int((time.perf_counter() - t0) * 1000)
+        if progress_callback:
+            progress_callback("tool_failed", {
+                "tool_name":   tool_name,
+                "error":       str(exc)[:200],
+                "duration_ms": duration_ms,
+                "timestamp":   datetime.now(timezone.utc).isoformat(),
+            })
+        raise
+
+
+def _run_tools_parallel(
+    url: str,
+    scan_auth: "ScanAuth | None" = None,
+    progress_callback: Optional[Callable] = None,
+) -> dict:
     """
     Run all 16 scanning tools in two phases:
 
@@ -453,6 +519,10 @@ def _run_tools_parallel(url: str, scan_auth: "ScanAuth | None" = None) -> dict:
     Phase 2 (sequential, depends on Phase 1):
       subdomain_takeover_checker receives the subdomain list from the
       cert_transparency result, avoiding a duplicate crt.sh query.
+
+    When progress_callback is provided, each tool fires tool_started,
+    tool_completed (or tool_failed) events.  Existing callers that pass
+    no callback are unaffected.
     """
     # ── Phase 1: 16 independent tools ────────────────────────────────────────
     phase1_tasks = {
@@ -477,7 +547,9 @@ def _run_tools_parallel(url: str, scan_auth: "ScanAuth | None" = None) -> dict:
     results: dict = {}
     with ThreadPoolExecutor(max_workers=16) as executor:
         futures = {
-            executor.submit(_auth_wrapped, fn, scan_auth): name
+            executor.submit(
+                _run_tool_with_progress, name, fn, scan_auth, progress_callback
+            ): name
             for name, fn in phase1_tasks.items()
         }
         for future in as_completed(futures, timeout=_TOOL_TIMEOUT_SECONDS + 10):
@@ -488,6 +560,13 @@ def _run_tools_parallel(url: str, scan_auth: "ScanAuth | None" = None) -> dict:
             except FutureTimeoutError:
                 logger.warning("Tool %s timed out after %ds", name, _TOOL_TIMEOUT_SECONDS)
                 results[name] = {"status": "timeout", "error": f"Tool exceeded {_TOOL_TIMEOUT_SECONDS}s"}
+                if progress_callback:
+                    progress_callback("tool_failed", {
+                        "tool_name": name,
+                        "error": f"timed out after {_TOOL_TIMEOUT_SECONDS}s",
+                        "duration_ms": _TOOL_TIMEOUT_SECONDS * 1000,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    })
             except Exception as exc:
                 logger.warning("Tool %s failed: %s", name, exc)
                 results[name] = {"status": "error", "error": str(exc)}
@@ -500,9 +579,11 @@ def _run_tools_parallel(url: str, scan_auth: "ScanAuth | None" = None) -> dict:
     try:
         with ThreadPoolExecutor(max_workers=1) as ex:
             fut = ex.submit(
-                _auth_wrapped,
+                _run_tool_with_progress,
+                "subdomain_takeover",
                 lambda: check_subdomain_takeover.invoke({"url": url, "subdomains_json": subs_json}),
                 scan_auth,
+                progress_callback,
             )
             raw = fut.result(timeout=_TOOL_TIMEOUT_SECONDS)
         results["subdomain_takeover"] = json.loads(raw)
@@ -524,6 +605,8 @@ def run_url_security_audit(
     url: str,
     scan_auth: "ScanAuth | None" = None,
     lang: str = "en",
+    progress_callback: Optional[Callable] = None,
+    compliance_mode: bool = False,
 ) -> dict:
     """
     Full URL security pipeline (17 tools → LLM → unified report).
@@ -570,7 +653,11 @@ def run_url_security_audit(
     else:
         logger.info("Starting 17-tool URL security audit: %s", url)
 
-    tool_results      = _run_tools_parallel(url, scan_auth=scan_auth if auth_active else None)
+    tool_results      = _run_tools_parallel(
+        url,
+        scan_auth=scan_auth if auth_active else None,
+        progress_callback=progress_callback,
+    )
     overall_score, category_scores = _aggregate_scores(tool_results)
     overall_grade     = _grade(overall_score)
     critical_findings = _extract_critical_findings(tool_results)
@@ -600,7 +687,32 @@ def run_url_security_audit(
             ) from _llm_exc
         raise RuntimeError(f"LLM analysis failed: {_llm_exc}") from _llm_exc
 
-    # ── Phase 3: multi-layer vulnerability chain analysis ─────────────────────
+    # ── Phase 3: Israeli compliance mapping (when compliance_mode=True) ──────
+    compliance_section = ""
+    if compliance_mode:
+        try:
+            from core.compliance.il_mapper import (
+                map_findings_to_il_compliance,
+                compliance_section_for_prompt,
+            )
+            from finding_enricher import enrich_scan_result
+            enriched = enrich_scan_result({
+                "url": url,
+                "tool_results": tool_results,
+                "critical_findings": critical_findings,
+            })
+            compliance_report = map_findings_to_il_compliance(enriched, language=lang)
+            compliance_section = compliance_section_for_prompt(compliance_report)
+            logger.info(
+                "Israeli compliance mapping: %d indicators (%d direct, %d related)",
+                len(compliance_report.indicators),
+                compliance_report.direct_count,
+                compliance_report.related_count,
+            )
+        except Exception as _exc:
+            logger.warning("Compliance mapping failed (non-fatal): %s", _exc)
+
+    # ── Phase 4: multi-layer vulnerability chain analysis ─────────────────────
     chain_section = ""
     try:
         from vulnerability_chainer import run_vulnerability_chainer
@@ -616,6 +728,8 @@ def run_url_security_audit(
         logger.warning("Vulnerability chainer failed (non-fatal): %s", exc)
 
     raw_output = llm_raw_output
+    if compliance_section:
+        raw_output = raw_output + "\n\n" + compliance_section
     if chain_section:
         raw_output = raw_output + "\n\n" + chain_section
 

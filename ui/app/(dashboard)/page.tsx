@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Header } from "@/components/layout/header";
 import { GradeRing } from "@/components/scan/grade-ring";
 import { ScoreGrid } from "@/components/scan/score-grid";
 import { FindingsPanel } from "@/components/scan/findings-panel";
+import ScanProgressPanel from "@/components/scan/ScanProgressPanel";
 import { useLang } from "@/contexts/language-context";
-import { startScan, type ScanResult, type ScanMode } from "@/lib/api";
+import { triggerScan, getScan, type ScanResult, type ScanMode } from "@/lib/api";
+import { useScanProgress } from "@/lib/useScanProgress";
 
 type ScanState = "idle" | "scanning" | "done" | "error";
 
@@ -194,18 +196,56 @@ export default function DashboardPage() {
   const [state,  setState]  = useState<ScanState>("idle");
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error,  setError]  = useState<string | null>(null);
+  const [scanId, setScanId] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // SSE progress — active while scanning
+  const progress = useScanProgress(state === "scanning" ? scanId : null);
+
+  // Elapsed timer
+  useEffect(() => {
+    if (state !== "scanning") { setElapsed(0); return; }
+    const t = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [state]);
+
+  // When SSE completes, fetch the final scan summary
+  useEffect(() => {
+    if (!progress.isComplete || state !== "scanning" || !scanId) return;
+    if (progress.error) {
+      setError(progress.error);
+      setState("error");
+      return;
+    }
+    // Build a minimal ScanResult from SSE data + overallResult
+    const r = progress.overallResult;
+    const synthetic: ScanResult = {
+      scan_id:           scanId,
+      url,
+      overall_score:     r?.score   ?? 0,
+      overall_grade:     (r?.grade  ?? "F") as any,
+      category_scores:   {},
+      critical_findings: [],
+      findings:          [],
+      scan_mode:         mode,
+      scan_duration_s:   elapsed,
+      scanned_at:        new Date().toISOString(),
+    };
+    setResult(synthetic);
+    setState("done");
+  }, [progress.isComplete, progress.error, progress.overallResult, state, scanId, url, mode, elapsed]);
 
   const handleScan = useCallback(async () => {
     const target = url.trim();
     if (!target) { inputRef.current?.focus(); return; }
     setState("scanning");
+    setScanId(null);
     setResult(null);
     setError(null);
     try {
-      const res = await startScan(target, mode);
-      setResult(res);
-      setState("done");
+      const { scan_id } = await triggerScan(target, mode);
+      setScanId(scan_id);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Scan failed");
       setState("error");
@@ -422,7 +462,15 @@ export default function DashboardPage() {
 
         {/* ── Results area ─────────────────────────────────────────────────── */}
         {state === "idle" && <EmptyState />}
-        {state === "scanning" && <ScanningState url={url} />}
+        {state === "scanning" && scanId && (
+          <ScanProgressPanel
+            scanId={scanId}
+            url={url}
+            progress={progress}
+            elapsedSeconds={elapsed}
+          />
+        )}
+        {state === "scanning" && !scanId && <ScanningState url={url} />}
 
         {state === "error" && error && (
           <div className="animate-fade-up" style={{

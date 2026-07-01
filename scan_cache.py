@@ -2,6 +2,9 @@
 Result caching layer — stores completed scan results in Supabase.
 Same URL scanned within TTL returns cached result instantly (no GROQ call).
 Paid users get longer TTL. Enterprise users can force-bust.
+
+Cache key is tenant-scoped: different tenants, languages, or scan modes
+always get independent cache entries to prevent cross-tenant data leakage.
 """
 from __future__ import annotations
 import hashlib
@@ -28,12 +31,48 @@ def _client():
     return auth_client()
 
 
-def _url_hash(url: str, scan_mode: str) -> str:
-    return hashlib.sha256(f"{url.lower().strip()}:{scan_mode}".encode()).hexdigest()[:40]
+def _make_cache_key(
+    url: str,
+    scan_mode: str,
+    tenant_id: str = "anonymous",
+    lang: str = "en",
+    compliance_mode: bool = False,
+    pt_mode: bool = False,
+) -> str:
+    """
+    Deterministic, tenant-scoped SHA-256 cache key.
+
+    Every dimension that produces a meaningfully different result gets its
+    own slot in the key, preventing cross-tenant or cross-language leakage.
+    """
+    raw = "|".join([
+        tenant_id,
+        url.lower().strip(),
+        scan_mode,
+        lang,
+        str(compliance_mode),
+        str(pt_mode),
+    ])
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
-def get_cached_scan(url: str, scan_mode: str, tier: str, is_admin: bool) -> dict | None:
-    """Return cached scan result if fresh, else None."""
+def get_cached_scan(
+    url: str,
+    scan_mode: str,
+    tier: str,
+    is_admin: bool,
+    tenant_id: str = "anonymous",
+    lang: str = "en",
+    compliance_mode: bool = False,
+    pt_mode: bool = False,
+) -> dict | None:
+    """Return cached scan result if fresh, else None.
+
+    Callers that don't have tenant context (e.g. legacy Streamlit paths that
+    haven't been updated yet) can omit the keyword arguments; they will fall
+    into the "anonymous" bucket and still benefit from caching, just without
+    tenant isolation.
+    """
     if is_admin:
         return None  # admins always see fresh results
 
@@ -41,7 +80,7 @@ def get_cached_scan(url: str, scan_mode: str, tier: str, is_admin: bool) -> dict
     if ttl_minutes == 0:
         return None
 
-    url_hash = _url_hash(url, scan_mode)
+    url_hash = _make_cache_key(url, scan_mode, tenant_id, lang, compliance_mode, pt_mode)
     c = _client()
     if c is None:
         return None
@@ -66,9 +105,17 @@ def get_cached_scan(url: str, scan_mode: str, tier: str, is_admin: bool) -> dict
     return None
 
 
-def set_cached_scan(url: str, scan_mode: str, result: dict) -> None:
-    """Store a scan result in the cache."""
-    url_hash = _url_hash(url, scan_mode)
+def set_cached_scan(
+    url: str,
+    scan_mode: str,
+    result: dict,
+    tenant_id: str = "anonymous",
+    lang: str = "en",
+    compliance_mode: bool = False,
+    pt_mode: bool = False,
+) -> None:
+    """Store a scan result in the tenant-scoped cache."""
+    url_hash = _make_cache_key(url, scan_mode, tenant_id, lang, compliance_mode, pt_mode)
     c = _client()
     if c is None:
         return
@@ -85,9 +132,16 @@ def set_cached_scan(url: str, scan_mode: str, result: dict) -> None:
         _log.debug("set_cached_scan: %s", exc)
 
 
-def bust_cache(url: str, scan_mode: str) -> bool:
+def bust_cache(
+    url: str,
+    scan_mode: str,
+    tenant_id: str = "anonymous",
+    lang: str = "en",
+    compliance_mode: bool = False,
+    pt_mode: bool = False,
+) -> bool:
     """Delete cache entry for a URL — Enterprise/admin feature."""
-    url_hash = _url_hash(url, scan_mode)
+    url_hash = _make_cache_key(url, scan_mode, tenant_id, lang, compliance_mode, pt_mode)
     c = _client()
     if c is None:
         return False

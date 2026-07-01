@@ -3347,120 +3347,163 @@ button[kind="primary"]:hover {
             except ValueError as _ve:
                 st.error(f"🚫 {_ve}")
                 st.stop()
-            _limiter = get_limiter()
-            if not _limiter.acquire(target):
-                st.warning(f"⏳ A scan for **{target}** is already running. Please wait.")
+            # ── Tenant-scoped cache check (Brief 0: cross-tenant isolation fix) ──
+            _scan_mode  = st.session_state.get("scan_mode_radio", "standard")
+            _tenant_id  = _current_user.user_id if _current_user else "anonymous"
+            _lang       = get_lang()
+            _tier       = _current_user.subscription_tier if _current_user else "free"
+            _is_admin   = (_current_user.is_admin if _current_user else False)
+            _cached = get_cached_scan(
+                url=target,
+                scan_mode=_scan_mode,
+                tier=_tier,
+                is_admin=_is_admin,
+                tenant_id=_tenant_id,
+                lang=_lang,
+                pt_mode=pt_mode_active,
+            )
+            if _cached:
+                st.info("⚡ Serving cached results — within your plan's TTL window.")
+                _meta_c = {
+                    "overall_grade":    _cached["overall_grade"],
+                    "overall_score":    _cached["overall_score"],
+                    "category_scores":  _cached.get("category_scores", {}),
+                    "critical_findings": _cached.get("critical_findings", []),
+                }
+                st.session_state["url_report"]       = _cached.get("raw_output", "")
+                st.session_state["url_meta"]         = _meta_c
+                st.session_state["url_target"]       = target
+                st.session_state["url_tool_results"] = _cached.get("tool_results", {})
+                st.session_state["url_last_mode"]    = "standard"
+                st.session_state["url_auth_mode"]    = _cached.get("auth_mode", "unauthenticated")
+                st.session_state["url_auth_profile"] = _cached.get("auth_profile", "")
+                st.session_state.pop("url_passive_recon", None)
+                log_action("scan_cache_hit", target=target, details={"mode": _scan_mode, "lang": _lang})
             else:
-                with st.status("🔍 Running 17-tool security scan…", expanded=True) as status:
-                    _prog = st.progress(0, text="Initialising parallel tool pipeline…")
-                    st.write("⚡ Launching 18 tools in parallel…")
-                    try:
-                        _prog.progress(8,  text="🔒 SSL/TLS certificate analysis…")
-                        st.write("🔒 SSL/TLS · 📋 Security Headers · 🌐 HTML/JS scanning…")
-                        _prog.progress(22, text="🕷️ Crawling links and resources…")
-                        st.write("🕷️ Web Crawler · 🔀 CORS/CSP policy · 🌍 DNS records…")
-                        _prog.progress(40, text="📂 Checking exposed files and endpoints…")
-                        st.write("📂 Exposed files · 📌 HSTS preload · ↪️ Open redirects…")
-                        _prog.progress(58, text="🛡️ WAF detection + stealth fingerprint…")
-                        st.write("🛡 WAF detection · 📜 Certificate Transparency · 🔌 API Spec…")
-                        _prog.progress(72, text="🔓 Port scanning · 🍪 Cookie security…")
-                        st.write("🔓 Port scan · 🍪 Cookie audit · ⚡ SPA/Deep JS crawler…")
-                        _prog.progress(85, text="🤖 Running AI analysis and generating report…")
-                        result = run_url_security_audit(target, scan_auth=_active_scan_auth, lang=get_lang())
-                        _prog.progress(100, text="✅ Scan complete!")
-                        st.write("🤖 LLM analysis complete — generating report…")
-                        meta = {
-                            "overall_grade":   result["overall_grade"],
-                            "overall_score":   result["overall_score"],
-                            "category_scores": result["category_scores"],
-                            "critical_findings": result.get("critical_findings", []),
-                        }
-                        st.session_state["url_report"]       = result["raw_output"]
-                        st.session_state["url_meta"]         = meta
-                        st.session_state["url_target"]       = target
-                        st.session_state["url_tool_results"] = result.get("tool_results", {})
-                        st.session_state["url_last_mode"]    = "standard"
-                        st.session_state["url_auth_mode"]    = result.get("auth_mode", "unauthenticated")
-                        st.session_state["url_auth_profile"] = result.get("auth_profile", "")
-                        st.session_state.pop("url_passive_recon", None)
-                        # Auto-save to history (both stores kept in sync)
+                _limiter = get_limiter()
+                if not _limiter.acquire(target):
+                    st.warning(f"⏳ A scan for **{target}** is already running. Please wait.")
+                else:
+                    with st.status("🔍 Running 17-tool security scan…", expanded=True) as status:
+                        _prog = st.progress(0, text="Initialising parallel tool pipeline…")
+                        st.write("⚡ Launching 18 tools in parallel…")
                         try:
-                            get_store().save_scan({**meta, "url": target})
-                        except Exception as _he:
-                            logging.getLogger(__name__).warning("History save (store) failed: %s", _he)
-                        if _current_user:
+                            _prog.progress(8,  text="🔒 SSL/TLS certificate analysis…")
+                            st.write("🔒 SSL/TLS · 📋 Security Headers · 🌐 HTML/JS scanning…")
+                            _prog.progress(22, text="🕷️ Crawling links and resources…")
+                            st.write("🕷️ Web Crawler · 🔀 CORS/CSP policy · 🌍 DNS records…")
+                            _prog.progress(40, text="📂 Checking exposed files and endpoints…")
+                            st.write("📂 Exposed files · 📌 HSTS preload · ↪️ Open redirects…")
+                            _prog.progress(58, text="🛡️ WAF detection + stealth fingerprint…")
+                            st.write("🛡 WAF detection · 📜 Certificate Transparency · 🔌 API Spec…")
+                            _prog.progress(72, text="🔓 Port scanning · 🍪 Cookie security…")
+                            st.write("🔓 Port scan · 🍪 Cookie audit · ⚡ SPA/Deep JS crawler…")
+                            _prog.progress(85, text="🤖 Running AI analysis and generating report…")
+                            result = run_url_security_audit(target, scan_auth=_active_scan_auth, lang=get_lang())
+                            _prog.progress(100, text="✅ Scan complete!")
+                            st.write("🤖 LLM analysis complete — generating report…")
+                            meta = {
+                                "overall_grade":   result["overall_grade"],
+                                "overall_score":   result["overall_score"],
+                                "category_scores": result["category_scores"],
+                                "critical_findings": result.get("critical_findings", []),
+                            }
+                            st.session_state["url_report"]       = result["raw_output"]
+                            st.session_state["url_meta"]         = meta
+                            st.session_state["url_target"]       = target
+                            st.session_state["url_tool_results"] = result.get("tool_results", {})
+                            st.session_state["url_last_mode"]    = "standard"
+                            st.session_state["url_auth_mode"]    = result.get("auth_mode", "unauthenticated")
+                            st.session_state["url_auth_profile"] = result.get("auth_profile", "")
+                            st.session_state.pop("url_passive_recon", None)
+                            # Auto-save to history (both stores kept in sync)
                             try:
-                                import time as _t
-                                _crit_cnt = len(meta.get("critical_findings", []))
-                                _high_cnt = sum(
-                                    1 for v in meta.get("category_scores", {}).values()
-                                    if v <= 40
+                                get_store().save_scan({**meta, "url": target})
+                            except Exception as _he:
+                                logging.getLogger(__name__).warning("History save (store) failed: %s", _he)
+                            if _current_user:
+                                try:
+                                    import time as _t
+                                    _crit_cnt = len(meta.get("critical_findings", []))
+                                    _high_cnt = sum(
+                                        1 for v in meta.get("category_scores", {}).values()
+                                        if v <= 40
+                                    )
+                                    _save_scan_rich(
+                                        user_id=_current_user.user_id,
+                                        target_url=target,
+                                        overall_grade=meta.get("overall_grade", "F"),
+                                        overall_score=meta.get("overall_score", 0),
+                                        category_scores=meta.get("category_scores", {}),
+                                        critical_count=_crit_cnt,
+                                        high_count=_high_cnt,
+                                        scan_mode=st.session_state.get("scan_mode_radio", "standard"),
+                                        scan_duration_s=_t.time() - st.session_state.get("_scan_start_ts", _t.time()),
+                                        report_md=result.get("raw_output", "")[:50_000],
+                                    )
+                                except Exception as _he2:
+                                    logging.getLogger(__name__).warning("History save (rich) failed: %s", _he2)
+                            log_action("scan_complete", target=target, details={"mode": "standard", "score": result.get("overall_score"), "grade": result.get("overall_grade")})
+                            # ── Write to tenant-scoped cache ──────────────────────
+                            try:
+                                set_cached_scan(
+                                    url=target,
+                                    scan_mode=_scan_mode,
+                                    result=result,
+                                    tenant_id=_tenant_id,
+                                    lang=_lang,
+                                    pt_mode=pt_mode_active,
                                 )
-                                _save_scan_rich(
-                                    user_id=_current_user.user_id,
-                                    target_url=target,
-                                    overall_grade=meta.get("overall_grade", "F"),
-                                    overall_score=meta.get("overall_score", 0),
-                                    category_scores=meta.get("category_scores", {}),
-                                    critical_count=_crit_cnt,
-                                    high_count=_high_cnt,
-                                    scan_mode=st.session_state.get("scan_mode_radio", "standard"),
-                                    scan_duration_s=_t.time() - st.session_state.get("_scan_start_ts", _t.time()),
-                                    report_md=result.get("raw_output", "")[:50_000],
+                            except Exception as _ce:
+                                logging.getLogger(__name__).debug("Cache write failed: %s", _ce)
+                            # ── PT Mode: auto-run active verification ─────────────
+                            if pt_mode_active:
+                                st.write("🔬 PT Mode: running active verification probes…")
+                                from active_verification_runner import run_active_verification
+                                _tool_res = result.get("tool_results", {})
+                                _av = run_active_verification(target, _tool_res)
+                                st.session_state["url_av_results"] = _av
+                                _confirmed = sum(1 for r in _av if r.is_confirmed)
+                                _blocked   = sum(1 for r in _av if not r.is_confirmed
+                                                 and "BLOCKED" in r.status.value)
+                                if _confirmed:
+                                    st.write(f"🔴 {_confirmed} vulnerability(s) CONFIRMED with live probe")
+                                elif _av:
+                                    st.write(f"⚪ {len(_av)} probe(s) sent — no confirmed vulns"
+                                             f"{f', {_blocked} WAF-blocked' if _blocked else ''}")
+                                else:
+                                    st.write("✅ No verifiable findings — no probes dispatched")
+                            status.update(
+                                label=("✅ Scan + Active Verification complete!" if pt_mode_active
+                                       else "✅ Scan complete!"),
+                                state="complete",
+                            )
+                        except ValueError:
+                            status.update(label="❌ Invalid URL", state="error")
+                            st.error("Invalid URL — enter a full URL starting with https:// or http://")
+                        except Exception as exc:
+                            logging.getLogger(__name__).error("URL scan error: %s", exc, exc_info=True)
+                            status.update(label="❌ Scan failed", state="error")
+                            _exc_str = str(exc)
+                            if "GROQ_QUOTA_EXCEEDED" in _exc_str:
+                                st.error(
+                                    "⏳ **Groq API quota reached** — the free tier allows ~30 requests/minute. "
+                                    "Please wait 1-2 minutes and scan again."
                                 )
-                            except Exception as _he2:
-                                logging.getLogger(__name__).warning("History save (rich) failed: %s", _he2)
-                        log_action("scan_complete", target=target, details={"mode": "standard", "score": result.get("overall_score"), "grade": result.get("overall_grade")})
-
-                        # ── PT Mode: auto-run active verification ─────────────
-                        if pt_mode_active:
-                            st.write("🔬 PT Mode: running active verification probes…")
-                            from active_verification_runner import run_active_verification
-                            _tool_res = result.get("tool_results", {})
-                            _av = run_active_verification(target, _tool_res)
-                            st.session_state["url_av_results"] = _av
-                            _confirmed = sum(1 for r in _av if r.is_confirmed)
-                            _blocked   = sum(1 for r in _av if not r.is_confirmed
-                                             and "BLOCKED" in r.status.value)
-                            if _confirmed:
-                                st.write(f"🔴 {_confirmed} vulnerability(s) CONFIRMED with live probe")
-                            elif _av:
-                                st.write(f"⚪ {len(_av)} probe(s) sent — no confirmed vulns"
-                                         f"{f', {_blocked} WAF-blocked' if _blocked else ''}")
+                            elif "GROQ_AUTH_ERROR" in _exc_str:
+                                st.error(
+                                    "🔑 **Groq API key missing or invalid** — add a valid `GROQ_API_KEY` "
+                                    "in Streamlit → Settings → Secrets, then reboot the app."
+                                )
                             else:
-                                st.write("✅ No verifiable findings — no probes dispatched")
-
-                        status.update(
-                            label=("✅ Scan + Active Verification complete!" if pt_mode_active
-                                   else "✅ Scan complete!"),
-                            state="complete",
-                        )
-                    except ValueError:
-                        status.update(label="❌ Invalid URL", state="error")
-                        st.error("Invalid URL — enter a full URL starting with https:// or http://")
-                    except Exception as exc:
-                        logging.getLogger(__name__).error("URL scan error: %s", exc, exc_info=True)
-                        status.update(label="❌ Scan failed", state="error")
-                        _exc_str = str(exc)
-                        if "GROQ_QUOTA_EXCEEDED" in _exc_str:
-                            st.error(
-                                "⏳ **Groq API quota reached** — the free tier allows ~30 requests/minute. "
-                                "Please wait 1-2 minutes and scan again."
-                            )
-                        elif "GROQ_AUTH_ERROR" in _exc_str:
-                            st.error(
-                                "🔑 **Groq API key missing or invalid** — add a valid `GROQ_API_KEY` "
-                                "in Streamlit → Settings → Secrets, then reboot the app."
-                            )
-                        else:
-                            st.error(f"❌ Scan failed — {_exc_str[:200] if _exc_str else 'Unknown error'}. "
-                                     "Check the target URL and try again.")
-                    finally:
-                        _limiter.release(target)
-                        st.session_state["_scanning"] = False
-                if "url_report" in st.session_state:
-                    st.session_state["_scroll_to_results"] = True
-                    st.rerun()
+                                st.error(f"❌ Scan failed — {_exc_str[:200] if _exc_str else 'Unknown error'}. "
+                                         "Check the target URL and try again.")
+                        finally:
+                            _limiter.release(target)
+                            st.session_state["_scanning"] = False
+                    if "url_report" in st.session_state:
+                        st.session_state["_scroll_to_results"] = True
+                        st.rerun()
 
     # ── Empty state ───────────────────────────────────────────────────────────
     if (not st.session_state.get("url_report") and

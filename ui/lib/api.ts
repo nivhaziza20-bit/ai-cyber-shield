@@ -134,14 +134,56 @@ const MOCK_SCHEDULES: Schedule[] = [
 
 /* ── API functions ────────────────────────────────────────────────────────── */
 const MOCK = process.env.NEXT_PUBLIC_MOCK_API === "true";
+const API_KEY = process.env.NEXT_PUBLIC_AICS_API_KEY ?? "aics-dev-key-DO-NOT-USE-IN-PRODUCTION";
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api/proxy${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": API_KEY,
+    },
     ...init,
   });
   if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
   return res.json() as Promise<T>;
+}
+
+/**
+ * Trigger an async scan — returns immediately with scan_id.
+ * Connect to useScanProgress(scanId) for real-time progress.
+ */
+export async function triggerScan(
+  url: string,
+  mode: ScanMode = "standard"
+): Promise<{ scan_id: string }> {
+  return apiFetch<{ scan_id: string }>("/api/v1/scans", {
+    method: "POST",
+    body: JSON.stringify({ url, mode }),
+  });
+}
+
+/**
+ * Fetch the status / basic result of a completed scan.
+ */
+export interface ScanStatusResult {
+  scan_id:       string;
+  status:        string;
+  url:           string;
+  overall_score: number | null;
+  overall_grade: string | null;
+  finding_count: number | null;
+  error_message: string | null;
+  started_at:    string | null;
+  completed_at:  string | null;
+}
+
+export async function getScan(scanId: string): Promise<ScanStatusResult> {
+  return apiFetch<ScanStatusResult>(`/api/v1/scans/${scanId}`);
+}
+
+/** SSE URL for scan progress (no auth required — scan_id is the token). */
+export function sseUrl(scanId: string): string {
+  return `/api/proxy/api/v1/scans/${scanId}/events`;
 }
 
 export async function startScan(url: string, mode: ScanMode = "standard"): Promise<ScanResult> {

@@ -15,6 +15,7 @@ Environment variables:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -23,8 +24,14 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from api.events import scan_events
 from api.models import ErrorResponse, HealthResponse
+from api.routers import badge as badge_router
+from api.routers import chat as chat_router
 from api.routers import findings, scans
+from api.routers import events as events_router
+from api.routers import trends as trends_router
+from scheduler.engine import get_engine as get_scheduler_engine
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Logging
@@ -60,6 +67,15 @@ _CORS_ORIGINS = (
 # Application lifespan
 # ─────────────────────────────────────────────────────────────────────────────
 
+async def _cleanup_loop() -> None:
+    """Purge SSE event history for scans completed >5 minutes ago."""
+    while True:
+        await asyncio.sleep(300)  # run every 5 minutes
+        purged = scan_events.cleanup()
+        if purged:
+            _log.debug("SSE event cleanup: purged %d expired scan(s)", purged)
+
+
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
     _log.info("AI Cyber Shield API v6 starting — env=%s", _ENV)
@@ -68,7 +84,25 @@ async def lifespan(app_: FastAPI):
             "Running in DEVELOPMENT mode. "
             "Set AICS_ENV=production and AICS_API_KEYS for deployment."
         )
+    cleanup_task = asyncio.create_task(_cleanup_loop())
+
+    # Start scan scheduler (unless disabled via env)
+    _scheduler_enabled = os.environ.get("SCHEDULER_ENABLED", "true").lower() == "true"
+    if _scheduler_enabled:
+        try:
+            get_scheduler_engine().start()
+            _log.info("Scan scheduler started")
+        except Exception as exc:
+            _log.warning("Scan scheduler could not start: %s", exc)
+
     yield
+
+    cleanup_task.cancel()
+    if _scheduler_enabled:
+        try:
+            get_scheduler_engine().shutdown(wait=False)
+        except Exception:
+            pass
     _log.info("AI Cyber Shield API shutting down")
 
 
@@ -137,5 +171,9 @@ async def health() -> HealthResponse:
 # Routers
 # ─────────────────────────────────────────────────────────────────────────────
 
-app.include_router(scans.router,    prefix="/api/v1")
-app.include_router(findings.router, prefix="/api/v1")
+app.include_router(scans.router,          prefix="/api/v1")
+app.include_router(findings.router,       prefix="/api/v1")
+app.include_router(events_router.router,  prefix="/api/v1")
+app.include_router(badge_router.router,   prefix="/api/v1")
+app.include_router(chat_router.router,    prefix="/api/v1")
+app.include_router(trends_router.router,  prefix="/api/v1")

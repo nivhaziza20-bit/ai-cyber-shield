@@ -30,6 +30,33 @@ router = APIRouter(prefix="/scans", tags=["scans"])
 # Background task
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _make_progress_callback(scan_id: str):
+    """
+    Build a progress_callback that publishes SSE events for a scan.
+    Publishes scan_progress (percent complete) after each tool finishes.
+    """
+    from api.events import ScanEvent, scan_events  # noqa: PLC0415
+    from datetime import datetime, timezone          # noqa: PLC0415
+
+    completed = 0
+    total = 17
+
+    def _callback(event_type: str, data: dict) -> None:
+        nonlocal completed
+        ts = data.get("timestamp", datetime.now(timezone.utc).isoformat())
+        scan_events.publish(scan_id, ScanEvent(event_type=event_type, timestamp=ts, data=data))
+        if event_type in ("tool_completed", "tool_failed"):
+            completed += 1
+            scan_events.publish(scan_id, ScanEvent(
+                event_type="scan_progress",
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                data={"completed": completed, "total": total,
+                      "percent": int((completed / total) * 100)},
+            ))
+
+    return _callback
+
+
 def _execute_scan(
     scan_id:        str,
     url:            str,
@@ -42,13 +69,18 @@ def _execute_scan(
     """
     Runs in FastAPI's thread pool (sync background task).
     Executes the full scan pipeline and stores enriched findings.
+    Publishes real-time SSE events via _make_progress_callback.
     """
+    from api.events import ScanEvent, scan_events  # noqa: PLC0415
+    from datetime import datetime, timezone          # noqa: PLC0415
+
     _log.info("Scan %s started: %s [%s]", scan_id, url, mode)
     store.mark_running(scan_id)
+    progress_callback = _make_progress_callback(scan_id)
 
     try:
-        # 1. Run the scanner (synchronous, ~30s)
-        raw_result = scanner_fn(url, mode)
+        # 1. Run the scanner (synchronous, ~30s) with progress reporting
+        raw_result = scanner_fn(url, mode, progress_callback=progress_callback)
 
         # 2. Enrich findings
         av_results = raw_result.pop("av_results", None)
@@ -64,7 +96,19 @@ def _execute_scan(
             len(findings),
         )
 
-        # 4. Webhook notification
+        # 4. Publish terminal SSE event
+        scan_events.publish(scan_id, ScanEvent(
+            event_type="scan_completed",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            data={
+                "overall_score":  raw_result.get("overall_score"),
+                "grade":          raw_result.get("overall_grade"),
+                "findings_count": len(findings),
+            },
+        ))
+        scan_events.mark_completed(scan_id)
+
+        # 5. Webhook notification
         if webhook_url:
             payload = {
                 "scan_id":       scan_id,
@@ -79,6 +123,13 @@ def _execute_scan(
     except Exception as exc:
         _log.exception("Scan %s failed: %s", scan_id, exc)
         store.mark_failed(scan_id, str(exc))
+
+        scan_events.publish(scan_id, ScanEvent(
+            event_type="scan_failed",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            data={"error": str(exc)[:500]},
+        ))
+        scan_events.mark_completed(scan_id)
 
         if webhook_url:
             try:

@@ -1,0 +1,250 @@
+# Israeli Compliance Mapping — AI Cyber Shield v6
+# DISCLAIMER: This mapping is INDICATIVE ONLY and is NOT legal advice.
+# All regulatory references require verification by a qualified legal
+# professional specializing in Israeli privacy law.
+# Last reviewed: 2026-07
+# Sources:
+#   - Privacy Protection Law, 5741-1981
+#   - Privacy Protection Regulations (Data Security), 5777-2017
+#   - Amendment 13 to the Privacy Protection Law (enacted Aug 2023, effective Aug 2025)
+#   - Israeli Privacy Authority (ILPA) guidance documents
+
+mappings:
+  - finding_category: "exposure"
+    finding_types:
+      - exposed_env
+      - exposed_git
+      - exposed_backup
+      - directory_listing
+      - exposed_phpinfo
+      - exposed_debug_page
+    regulation:
+      name: "Privacy Protection Regulations (Data Security), 5777-2017"
+      section: "Regulation 2 — Information Security Requirements"
+      requirement: >
+        Database managers must implement reasonable security measures to
+        protect personal data from unauthorized access, including
+        preventing exposure of configuration files, access credentials,
+        and backup files.
+      confidence: direct_indicator
+      description_he: >
+        חשיפת קבצי תצורה, קבצי .env, גיבויים, או מידע debug עשויה להוות
+        הפרה של חובת אבטחת המידע המוטלת על מנהלי מאגרי מידע לפי תקנות
+        הגנת הפרטיות (אבטחת מידע), תשע"ז-2017. אובדן שליטה על פרטי גישה
+        או על מבנה מסד הנתונים עלול להוביל לפריצת מאגר המידע ולחובת
+        דיווח לרשות להגנת הפרטיות.
+      description_en: >
+        Exposed configuration files, .env files, backups, or debug
+        information may indicate a failure to implement required security
+        measures for database protection under the Privacy Protection
+        Regulations (Data Security) 2017. Loss of access credential
+        control may trigger breach notification obligations.
+
+  - finding_category: "ssl"
+    finding_types:
+      - weak_tls
+      - expired_cert
+      - self_signed
+      - protocol_downgrade
+      - missing_hsts
+      - ssl_tls_v1_0
+      - ssl_tls_v1_1
+      - ssl_weak_cipher
+      - ssl_self_signed
+      - ssl_cert_expiring_soon
+      - hsts_missing
+    regulation:
+      name: "Privacy Protection Regulations (Data Security), 5777-2017"
+      section: "Regulation 4 — Encryption Requirements"
+      requirement: >
+        Transfer of personal data must use adequate encryption. Database
+        managers must implement encryption for data in transit,
+        particularly when personal information is transmitted over
+        public networks.
+      confidence: direct_indicator
+      description_he: >
+        שימוש בפרוטוקולי הצפנה חלשים (TLS 1.0/1.1), תעודות SSL שפגו
+        תוקפן, או היעדר HSTS עלולים להפר את דרישות ההצפנה של תקנות
+        הגנת הפרטיות (אבטחת מידע). העברת מידע אישי ללא הצפנה מספקת
+        מהווה הפרה פוטנציאלית של הדרישות.
+      description_en: >
+        Weak TLS protocols (1.0/1.1), expired certificates, or missing
+        HSTS may violate encryption requirements under the Privacy
+        Protection Regulations (Data Security). Transmitting personal
+        data without adequate encryption is a potential violation.
+
+  - finding_category: "dns"
+    finding_types:
+      - spf_missing
+      - spf_softfail
+      - dmarc_missing
+      - dmarc_none
+      - dkim_missing
+      - dns_spf_missing
+      - dns_dmarc_missing
+      - dns_dkim_missing
+    regulation:
+      name: "Privacy Protection Law (Amendment 13), 5783-2023"
+      section: "Section 13D — Notification of Security Breach"
+      requirement: >
+        Email authentication failures may enable impersonation attacks
+        that could trigger breach notification obligations. Under
+        Amendment 13, organizations must notify the ILPA within 72 hours
+        of discovering a breach that poses real harm.
+      confidence: related_context
+      description_he: >
+        היעדר SPF, DKIM או DMARC מאפשר לתוקפים לשלוח הודעות דוא"ל
+        מתחזות לארגון, מה שעלול להוביל לפריצת מידע ולחובת הודעה לרשות
+        להגנת הפרטיות בתוך 72 שעות לפי תיקון 13 לחוק הגנת הפרטיות.
+      description_en: >
+        Missing SPF, DKIM or DMARC allows attackers to impersonate your
+        organization in emails. This could lead to a data breach
+        triggering the 72-hour notification requirement to the ILPA
+        under Amendment 13 (August 2025).
+
+  - finding_category: "cookie_security"
+    finding_types:
+      - missing_httponly
+      - missing_secure_flag
+      - missing_samesite
+      - broad_cookie_domain
+    regulation:
+      name: "Privacy Protection Regulations (Data Security), 5777-2017"
+      section: "Regulation 3 — Access Control"
+      requirement: >
+        Access to personal data must be restricted to authorized
+        personnel only. Cookies that lack security flags may enable
+        unauthorized access to authenticated sessions and personal data.
+      confidence: related_context
+      description_he: >
+        עוגיות ללא דגלי HttpOnly, Secure, ו-SameSite חושפות מפגשי
+        משתמש וגישה למידע אישי. זאת עשויה להוות כשל בבקרת גישה בהתאם
+        לתקנות הגנת הפרטיות (אבטחת מידע).
+      description_en: >
+        Cookies without HttpOnly, Secure, and SameSite flags expose
+        user sessions and access to personal data. This may represent
+        an access control failure under the Privacy Protection
+        Regulations (Data Security).
+
+  - finding_category: "cors_csp"
+    finding_types:
+      - cors_wildcard
+      - cors_credentials
+      - missing_csp
+      - unsafe_inline
+    regulation:
+      name: "Privacy Protection Regulations (Data Security), 5777-2017"
+      section: "Regulation 3 — Access Control"
+      requirement: >
+        Organizations must restrict access to personal data systems to
+        authorized parties only. CORS misconfigurations and missing CSP
+        may allow unauthorized cross-origin access to personal data.
+      confidence: related_context
+      description_he: >
+        הגדרות CORS שגויות (כגון Allow-Origin: *) עלולות לאפשר גישה
+        ממקורות לא מורשים למידע אישי. לפי תקנות הגנת הפרטיות, יש
+        להגביל גישה לנתונים אישיים לגורמים מורשים בלבד.
+      description_en: >
+        Misconfigured CORS (wildcard origin) and missing CSP may allow
+        unauthorized cross-origin access to personal data systems,
+        potentially violating access control requirements under the
+        Privacy Protection Regulations.
+
+  - finding_category: "headers"
+    finding_types:
+      - missing_hsts
+      - missing_csp
+      - x_powered_by
+      - server_version_disclosed
+    regulation:
+      name: "Privacy Protection Regulations (Data Security), 5777-2017"
+      section: "Regulation 2 — Information Security Requirements"
+      requirement: >
+        Organizations must implement security measures commensurate with
+        the sensitivity of the data. Missing security headers indicate
+        absence of basic security hardening required for personal data
+        systems.
+      confidence: related_context
+      description_he: >
+        היעדר כותרות אבטחה (HSTS, CSP, X-Frame-Options וכדומה) מצביע
+        על אי-יישום אמצעי אבטחה בסיסיים הנדרשים לפי תקנות הגנת
+        הפרטיות לגבי מאגרי מידע המכילים מידע אישי.
+      description_en: >
+        Missing security headers (HSTS, CSP, X-Frame-Options, etc.)
+        indicate absence of basic security hardening. For systems
+        processing personal data, these measures are expected under the
+        Privacy Protection Regulations.
+
+  - finding_category: "port_scanner"
+    finding_types:
+      - exposed_database_port
+      - exposed_admin_port
+      - high_risk_port
+      - redis_exposed
+      - mongodb_exposed
+    regulation:
+      name: "Privacy Protection Regulations (Data Security), 5777-2017"
+      section: "Regulation 3 — Access Control & Regulation 5 — Physical and Logical Security"
+      requirement: >
+        Database systems must be protected from unauthorized access.
+        Publicly accessible database ports represent a direct violation
+        of the requirement to restrict access to authorized users only.
+      confidence: direct_indicator
+      description_he: >
+        פורטים של מסדי נתונים (MySQL, MongoDB, Redis וכדומה) הנגישים
+        מהאינטרנט הציבורי מהווים הפרה ברורה של חובת הגנת מסדי מידע
+        לפי תקנות הגנת הפרטיות (אבטחת מידע). יש לסגור פורטים אלה
+        לגישה ציבורית באופן מיידי.
+      description_en: >
+        Publicly accessible database ports (MySQL, MongoDB, Redis, etc.)
+        represent a clear violation of the requirement to protect
+        database systems from unauthorized access under the Privacy
+        Protection Regulations.
+
+  - finding_category: "html"
+    finding_types:
+      - form_without_csrf
+      - missing_consent_mechanism
+      - potential_xss
+    regulation:
+      name: "Privacy Protection Law, 5741-1981 (as amended)"
+      section: "Section 11 — Consent for Data Collection"
+      requirement: >
+        Collection of personal data requires explicit informed consent.
+        Forms that collect personal information without proper CSRF
+        protection or consent mechanisms may violate consent requirements.
+        # TODO: Verify exact section number with qualified legal counsel
+      confidence: related_context
+      description_he: >
+        טפסים האוספים מידע אישי ללא הגנת CSRF או ללא מנגנון הסכמה
+        מתאים עשויים להפר את הוראות חוק הגנת הפרטיות בנוגע לאיסוף
+        מידע אישי בהסכמה. יש לאמת עם יועץ משפטי.
+      description_en: >
+        Forms collecting personal information without CSRF protection or
+        proper consent mechanisms may violate consent requirements under
+        the Privacy Protection Law. Verify exact obligations with legal
+        counsel — marked as related context only.
+
+  - finding_category: "subdomain_takeover"
+    finding_types:
+      - dangling_cname
+      - potential_takeover
+      - subdomain_takeover
+    regulation:
+      name: "Privacy Protection Law (Amendment 13), 5783-2023"
+      section: "Section 13D — Notification of Security Breach"
+      requirement: >
+        A successful subdomain takeover that enables access to user
+        data, sessions, or cookies would constitute a security breach
+        requiring notification to the ILPA within 72 hours and
+        potentially to affected individuals.
+      confidence: related_context
+      description_he: >
+        השתלטות על תת-דומיין (subdomain takeover) שמאפשרת גישה לנתוני
+        משתמשים, לעוגיות, או לפעולות בשם המשתמשים תהווה הפרת אבטחה
+        הדורשת הודעה לרשות להגנת הפרטיות תוך 72 שעות לפי תיקון 13.
+      description_en: >
+        A subdomain takeover enabling access to user data, cookies, or
+        sessions would constitute a security breach requiring ILPA
+        notification within 72 hours under Amendment 13 (effective
+        August 2025).
