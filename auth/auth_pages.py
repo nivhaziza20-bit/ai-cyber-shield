@@ -1444,16 +1444,30 @@ def show_auth_page() -> None:
   box-shadow:0 2px 8px rgba(0,0,0,0.18)!important;
 }
 </style>""", unsafe_allow_html=True)
-            from auth.streamlit_auth import sign_in_with_google as _sig
-            _gg = _sig()
-            if "url" in _gg:
-                # st.link_button renders a real <a href> — no JavaScript needed,
-                # works in all browsers including Streamlit Cloud iframes.
+            from auth.streamlit_auth import sign_in_with_google as _sig, _is_configured
+            # Cache the Google OAuth URL for this session to avoid an API call on every render
+            _google_url_key = "_google_oauth_url"
+            if _google_url_key not in st.session_state:
+                if _is_configured():
+                    _gg = _sig()
+                    st.session_state[_google_url_key] = _gg.get("url", "")
+                else:
+                    st.session_state[_google_url_key] = ""
+            _google_url = st.session_state.get(_google_url_key, "")
+            if _google_url:
                 st.link_button(
                     f"G  {_t('auth_google')}",
-                    url=_gg["url"],
+                    url=_google_url,
                     use_container_width=True,
                 )
+            elif not _is_configured():
+                st.button(
+                    f"G  {_t('auth_google')}",
+                    use_container_width=True,
+                    disabled=True,
+                    key=f"google_disabled_{_view}",
+                )
+                st.info("🔑 Google sign-in requires Supabase to be configured. Contact the administrator.")
             else:
                 st.button(
                     f"G  {_t('auth_google')}",
@@ -1461,7 +1475,7 @@ def show_auth_page() -> None:
                     disabled=True,
                     key=f"google_disabled_{_view}",
                 )
-                st.error(_gg.get("error", "Google OAuth is not configured. Enable it in Supabase → Auth → Providers → Google."))
+                st.warning("Google sign-in is not enabled yet. Enable it in Supabase → Authentication → Providers → Google.")
 
             st.markdown(f"""
 <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px">

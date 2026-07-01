@@ -43,12 +43,26 @@ class UserSession:
         return self.subscription_tier != "free"
 
 
-def _client():
-    """Return a Supabase client or None if not configured."""
+_PLACEHOLDER_KEYS = frozenset({
+    "PASTE_YOUR_ANON_OR_SERVICE_ROLE_KEY_HERE",
+    "PASTE_YOUR_SUPABASE_KEY_HERE",
+    "",
+})
+
+
+def _is_configured() -> bool:
+    """True only when real credentials are present (not placeholders)."""
     url = st.secrets.get("SUPABASE_URL", "")
     key = st.secrets.get("SUPABASE_KEY", "")
-    if not url or not key:
+    return bool(url and key and key not in _PLACEHOLDER_KEYS)
+
+
+def _client():
+    """Return a Supabase client or None if not configured."""
+    if not _is_configured():
         return None
+    url = st.secrets.get("SUPABASE_URL", "")
+    key = st.secrets.get("SUPABASE_KEY", "")
     try:
         from supabase import create_client
         return create_client(url, key)
@@ -77,7 +91,7 @@ def _authed_client(session: UserSession):
 def sign_up(email: str, password: str) -> dict:
     c = _client()
     if c is None:
-        return {"error": "Supabase not configured — add SUPABASE_URL and SUPABASE_KEY to Secrets"}
+        return {"error": "Registration is temporarily unavailable. Please contact support or try again later."}
     try:
         resp = c.auth.sign_up({"email": email, "password": password})
         if resp.user:
@@ -145,7 +159,7 @@ def _build_user_session(supabase_user, supabase_session) -> "UserSession":
 def sign_in(email: str, password: str) -> dict:
     c = _client()
     if c is None:
-        return {"error": "Supabase not configured"}
+        return {"error": "Sign-in is temporarily unavailable. Please contact support or try again later."}
 
     bf = _check_brute_force(email)
     if bf.get("blocked"):
